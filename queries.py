@@ -3,7 +3,7 @@ import json
 import pickle
 from datetime import datetime
 
-db_file = 'newdb.sqlite'
+db_file = 'db.sqlite'
 tables = {
     'ProductListing': {
         'product_id': 'TEXT PRIMARY KEY',
@@ -57,7 +57,7 @@ tables = {
 }
 
 
-def create_tables(db_file='newdb.sqlite'):
+def create_tables(db_file='db.sqlite'):
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
 
@@ -176,7 +176,7 @@ def insert_product_reviews(conn, reviews, product_id, table='Reviews'):
 
 if __name__ == '__main__':
     # Setup the DB
-    create_tables()
+    create_tables(db_file='db.sqlite')
 
     with open('dump.pkl', 'rb') as f:
         product_listing = pickle.load(f)

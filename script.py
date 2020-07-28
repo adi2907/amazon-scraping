@@ -1,18 +1,22 @@
 import os
 import pickle
 import random
+import sqlite3
 import sys
 import time
 from string import Template
 
 import requests
 from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
+
+import parse_html
+import queries
+
+#from fake_useragent import UserAgent
 #from selenium import webdriver
 #from selenium.common.exceptions import NoSuchElementException
 #from webdriver_manager.chrome import ChromeDriverManager
 
-import parse_html
 
 # ua = UserAgent()
 # headers = {'User-Agent': str(ua.chrome)}
@@ -31,6 +35,11 @@ customer_reviews_template = Template('https://www.amazon.in/review/widgets/avera
 
 # Start the session
 session = requests.Session()
+
+
+# Dump Directory
+if not os.path.exists(os.path.join(os.getcwd(), 'dumps')):
+	os.mkdir(os.path.join(os.getcwd(), 'dumps'))
 
 
 def scrape_category_listing(categories):
@@ -104,7 +113,13 @@ def scrape_category_listing(categories):
 			curr_url = server_url + page_url
 			time.sleep(5)
 			curr_page += 1
-			
+		
+		# Dump the category results
+		results = dict()
+		results[category] = final_results[category]
+		with open(f'dumps/{category}.pkl', 'wb') as f:
+			pickle.dump(results, f)
+		
 		time.sleep(5)
 	return final_results
 
@@ -141,8 +156,14 @@ def scrape_product_detail(category, product_url):
 	# Get the product details
 	details = parse_html.get_product_data(soup)
 	details['product_id'] = product_id # Add the product ID
-	with open(f'dump_{product_id}.pkl', 'wb') as f:
-		pickle.dump(details, f)
+	
+	# Insert to the DB
+	queries.create_tables('db.sqlite')
+	with sqlite3.connect('db.sqlite') as conn:
+		queries.insert_product_details(conn, details)
+
+	#with open(f'dumps/dump_{product_id}.pkl', 'wb') as f:
+	#	pickle.dump(details, f)
 	
 	time.sleep(4)
 	
@@ -157,8 +178,14 @@ def scrape_product_detail(category, product_url):
 		html = response.content
 		soup = BeautifulSoup(html, 'html.parser')
 		qanda, next_url = parse_html.get_qanda(soup)
-		with open(f'dump_{product_id}_qanda.pkl', 'wb') as f:
-			pickle.dump(qanda, f)
+		
+		# Insert to the DB
+		queries.create_tables('db.sqlite')
+		with sqlite3.connect('db.sqlite') as conn:
+			queries.insert_product_qanda(conn, qanda, product_id=product_id)
+		
+		#with open(f'dumps/dump_{product_id}_qanda.pkl', 'wb') as f:
+		#	pickle.dump(qanda, f)
 		print("URL for qand a is " + next_url)
 	
 	# Get the customer reviews
@@ -172,8 +199,14 @@ def scrape_product_detail(category, product_url):
 		html = response.content
 		soup = BeautifulSoup(html, 'html.parser')
 		reviews, next_url = parse_html.get_customer_reviews(soup)
-		with open(f'dump_{product_id}_reviews.pkl', 'wb') as f:
-			pickle.dump(reviews, f)
+		
+		# Insert the reviews to the DB
+		queries.create_tables('db.sqlite')
+		with sqlite3.connect('db.sqlite') as conn:
+			queries.insert_product_reviews(conn, reviews, product_id=product_id)
+		
+		#with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
+		#	pickle.dump(reviews, f)
 		print("URL for customer reviews is " + next_url)
 	
 	time.sleep(3)
@@ -183,25 +216,19 @@ def scrape_product_detail(category, product_url):
 
 
 if __name__ == '__main__':
-	#results = scrape_category_listing(categories)
+	results = scrape_category_listing(categories)
 	#with open('dump.pkl', 'wb') as f:
 	#	pickle.dump(results, f)
 	
-	#print(results)
-	with open('dump.pkl', 'rb') as f:
-		results = pickle.load(f)
-	#print(results)
-	for title in results['mobile'][1]:
-		if results['mobile'][1][title]['product_url'] is not None:
-			product_url = results['mobile'][1][title]['product_url']
-			print(product_url)
-			results = scrape_product_detail('mobile', product_url)
-			print(results)
-			break
+	for category in categories:
+		with open(f'dumps/{category}.pkl', 'rb') as f:
+			results = pickle.load(f)
+
+		for title in results[category][1]:
+			if results[category][1][title]['product_url'] is not None:
+				product_url = results[category][1][title]['product_url']
+				print(product_url)
+				results = scrape_product_detail(category, product_url)
+				break
 	#results = scrape_product_detail('headphones', '/Sony-WH-1000XM3-Wireless-Cancellation-Headphones/dp/B07HZ8JWCL/ref=sr_1_197?dchild=1&keywords=headphones&qid=1595772158&sr=8-197')
 	#print(results)
-	if False:
-		with open('dump.pkl', 'rb') as f:
-			results = pickle.load(f)
-		print(results)
-	pass
