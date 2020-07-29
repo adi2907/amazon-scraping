@@ -1,3 +1,4 @@
+import argparse
 import os
 import pickle
 import random
@@ -23,11 +24,6 @@ import queries
 
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 
-if len(sys.argv) >= 2:
-	categories = [arg for arg in sys.argv[1:]]
-else:
-	raise ValueError(f'Run the program using: python {sys.argv[0]} CATEGORY1 CATEGORY2 ...')
-
 url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
 
 customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
@@ -42,8 +38,15 @@ if not os.path.exists(os.path.join(os.getcwd(), 'dumps')):
 	os.mkdir(os.path.join(os.getcwd(), 'dumps'))
 
 
-def scrape_category_listing(categories):
+def scrape_category_listing(categories, num_pages=None):
 	# session = requests.Session()
+
+	if num_pages is None:
+		num_pages = 10000 # Keeping a big number
+	else:
+		if not isinstance(num_pages, int) or num_pages <= 0:
+			raise ValueError("num_pages must be a positive integer or None (for all pages)")
+
 	server_url = 'https://amazon.in'
 	response = session.get(server_url, headers=headers)
 	assert response.status_code == 200
@@ -61,11 +64,12 @@ def scrape_category_listing(categories):
 		assert response.status_code == 200
 		if hasattr(response, 'cookies'):
 			cookies = {**cookies, **dict(response.cookies)}
+		
 		time.sleep(5)
 		curr_page = 1
 		curr_url = base_url
 
-		while curr_page < 3:
+		while curr_page <= num_pages:
 			time.sleep(3)
 			html = response.content
 			soup = BeautifulSoup(html, 'html.parser')
@@ -117,10 +121,16 @@ def scrape_category_listing(categories):
 		# Dump the category results
 		results = dict()
 		results[category] = final_results[category]
+		
 		with open(f'dumps/{category}.pkl', 'wb') as f:
 			pickle.dump(results, f)
 		
-		time.sleep(5)
+		# Insert to the DB
+		queries.create_tables('db.sqlite')
+		with sqlite3.connect('db.sqlite') as conn:
+			queries.insert_product_listing(conn, results)
+		
+		time.sleep(4)
 	return final_results
 
 
@@ -157,10 +167,13 @@ def scrape_product_detail(category, product_url):
 	details = parse_html.get_product_data(soup)
 	details['product_id'] = product_id # Add the product ID
 	
+	# Check if the product is sponsored
+	sponsored = parse_html.is_sponsored(product_url)
+
 	# Insert to the DB
 	queries.create_tables('db.sqlite')
 	with sqlite3.connect('db.sqlite') as conn:
-		queries.insert_product_details(conn, details)
+		queries.insert_product_details(conn, details, is_sponsored=sponsored)
 
 	#with open(f'dumps/dump_{product_id}.pkl', 'wb') as f:
 	#	pickle.dump(details, f)
@@ -216,19 +229,57 @@ def scrape_product_detail(category, product_url):
 
 
 if __name__ == '__main__':
-	results = scrape_category_listing(categories)
-	#with open('dump.pkl', 'wb') as f:
-	#	pickle.dump(results, f)
-	
-	for category in categories:
-		with open(f'dumps/{category}.pkl', 'rb') as f:
-			results = pickle.load(f)
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-c', '--categories', help='List of all categories (comma separated)', type=lambda s: [item.strip() for item in s.split(',')])
+	parser.add_argument('--listing', help='Scraping the category listing', default=False, action='store_true')
+	parser.add_argument('--detail', help='Scraping individual product details', default=False, action='store_true')
+	parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
+	parser.add_argument('--pages', help='Number of pages to scrape the listing details per category', type=int, default=1)
 
-		for title in results[category][1]:
-			if results[category][1][title]['product_url'] is not None:
-				product_url = results[category][1][title]['product_url']
-				print(product_url)
-				results = scrape_product_detail(category, product_url)
-				break
+	args = parser.parse_args()
+
+	categories = args.categories
+	listing = args.listing
+	detail = args.detail
+	num_items = args.number
+	num_pages = args.pages
+	
+	if categories is not None:
+		if listing == True:
+			results = scrape_category_listing(categories, num_pages=num_pages)
+			if detail == True:
+				for category in categories:
+					curr_item = 0
+					curr_page = 1
+					while curr_item < num_items:
+						if curr_page in results[category]:
+							for title in results[category][curr_page]:
+								if results[category][curr_page][title]['product_url'] is not None:
+									product_url = results[category][curr_page][title]['product_url']
+									print(product_url)
+									product_detail_results = scrape_product_detail(category, product_url)
+									curr_item += 1
+									if curr_item == num_items:
+										break
+						else:
+							break
+						curr_page += 1
+		else:
+			for category in categories:
+				with open(f'dumps/{category}.pkl', 'rb') as f:
+					results = pickle.load(f)
+				curr_item = 0
+				curr_page = 1
+				while curr_item < num_items:
+					for title in results[category][curr_page]:
+						if results[category][curr_page][title]['product_url'] is not None:
+							product_url = results[category][curr_page][title]['product_url']
+							print(product_url)
+							product_detail_results = scrape_product_detail(category, product_url)
+							curr_item += 1
+							if curr_item == num_items:
+								break
+					curr_page += 1
+
 	#results = scrape_product_detail('headphones', '/Sony-WH-1000XM3-Wireless-Cancellation-Headphones/dp/B07HZ8JWCL/ref=sr_1_197?dchild=1&keywords=headphones&qid=1595772158&sr=8-197')
 	#print(results)

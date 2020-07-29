@@ -15,6 +15,10 @@ def init_parser(category: str):
     return soup
 
 
+def is_sponsored(url: str) -> bool:
+    return url.startswith("/gp/slredirect")
+
+
 def get_product_id(url):
     if url.startswith("/gp/slredirect"):
         # Only match until the first % (?)
@@ -449,9 +453,17 @@ def get_customer_reviews(soup, content={}):
 
             # Number of people who liked this review
             helpful_votes = review.find("span", {"data-hook": "helpful-vote-statement"})
-            if helpful_votes is not None:
-                helpful_votes = helpful_votes
-            data['helpful_votes'] = int(helpful_votes.text.strip().split()[0].replace(',', ''))
+            if helpful_votes is None:
+                data['helpful_votes'] = helpful_votes
+            else:
+                value = helpful_votes.text.strip().split()[0].replace(',', '')
+                try:
+                    data['helpful_votes'] = int(value)
+                except ValueError:
+                    # Possible words like 'One', 'Two'
+                    value = value.lower()
+                    mapping = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9}
+                    data['helpful_votes'] = mapping[value]
 
             review_data.append(data)
 

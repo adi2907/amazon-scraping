@@ -2,6 +2,7 @@ import sqlite3
 import json
 import pickle
 from datetime import datetime
+import parse_html
 
 db_file = 'db.sqlite'
 tables = {
@@ -18,8 +19,7 @@ tables = {
         'image': 'TEXT',
         },
     'ProductDetails': {
-        'id': 'INTEGER PRIMARY KEY',
-        'product_id': 'TEXT',
+        'product_id': 'TEXT PRIMARY KEY',
         'product_title': 'TEXT',
         'byline_info': 'TEXT',
         'num_reviews': 'INTEGER',
@@ -33,7 +33,24 @@ tables = {
         'customer_lazy': 'INTEGER',
         'customer_reviews': 'TEXT',
         'created_on': 'DATETIME',
-        '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
+        # '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
+    },
+    'SponsoredProductDetails': {
+        'product_id': 'TEXT PRIMARY KEY',
+        'product_title': 'TEXT',
+        'byline_info': 'TEXT',
+        'num_reviews': 'INTEGER',
+        'answered_questions': 'TEXT',
+        'curr_price': 'FLOAT',
+        'features': 'TEXT',
+        'offers': 'TEXT',
+        'description': 'TEXT',
+        'product_details': 'TEXT',
+        'customer_qa': 'TEXT',
+        'customer_lazy': 'INTEGER',
+        'customer_reviews': 'TEXT',
+        'created_on': 'DATETIME',
+        # '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'QandA': {
         'id': 'INTEGER PRIMARY KEY',
@@ -113,9 +130,13 @@ def insert_product_listing(conn, data, table='ProductListing'):
     cursor.close()
 
 
-def insert_product_details(conn, data, table='ProductDetails'):
+def insert_product_details(conn, data, table='ProductDetails', is_sponsored=False):
     cursor = conn.cursor()
     useless_fields = set({'id', '_product_id'})
+    
+    if is_sponsored == True:
+        table = 'SponsoredProductDetails'
+    
     fields = ", ".join(field for field in tables[table] if field not in useless_fields)
     group = "(" + ", ".join('?' for field in tables[table] if field not in useless_fields) +  ")"
     query = f"INSERT INTO {table} ({fields}) VALUES {group}"
@@ -178,21 +199,21 @@ if __name__ == '__main__':
     # Setup the DB
     create_tables(db_file='db.sqlite')
 
-    with open('dump.pkl', 'rb') as f:
+    with open('dumps/mobile.pkl', 'rb') as f:
         product_listing = pickle.load(f)
 
-    with open('dump_B07HGH8D2R.pkl', 'rb') as f:
+    with open('dumps/dump_B07DJLVJ5M.pkl', 'rb') as f:
         product_details = pickle.load(f)
 
-    with open('dump_B07HGH8D2R_qanda.pkl', 'rb') as f:
+    with open('dumps/dump_B07DJLVJ5M_qanda.pkl', 'rb') as f:
         qanda = pickle.load(f)
     
-    with open('dump_B07HZ8JWCL_reviews.pkl', 'rb') as f:
-        reviews = pickle.load(f)
+    #with open('dumps/dump_B07DJLVJ5M_reviews.pkl', 'rb') as f:
+    #    reviews = pickle.load(f)
 
     with sqlite3.connect(db_file) as conn:
         insert_product_listing(conn, product_listing)
-        insert_product_details(conn, product_details)
-        product_id = product_details['product_id']
-        insert_product_qanda(conn, qanda, product_id=product_id)
-        insert_product_reviews(conn, reviews, product_id=product_id)
+        #insert_product_details(conn, product_details)
+        #product_id = product_details['product_id']
+        #insert_product_qanda(conn, qanda, product_id=product_id)
+        #insert_product_reviews(conn, reviews, product_id=product_id)
