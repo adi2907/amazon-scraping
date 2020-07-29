@@ -9,7 +9,9 @@ from string import Template
 
 import requests
 from bs4 import BeautifulSoup
+from sqlalchemy.orm import sessionmaker
 
+import db_engine
 import parse_html
 import queries
 
@@ -36,6 +38,14 @@ session = requests.Session()
 # Dump Directory
 if not os.path.exists(os.path.join(os.getcwd(), 'dumps')):
 	os.mkdir(os.path.join(os.getcwd(), 'dumps'))
+
+# Database Session setup
+engine = db_engine.MyDatabase().db_engine
+db_engine.create_tables(engine)
+
+Session = sessionmaker(bind=engine)
+
+db_session = Session()
 
 
 def scrape_category_listing(categories, num_pages=None):
@@ -126,9 +136,7 @@ def scrape_category_listing(categories, num_pages=None):
 			pickle.dump(results, f)
 		
 		# Insert to the DB
-		queries.create_tables('db.sqlite')
-		with sqlite3.connect('db.sqlite') as conn:
-			queries.insert_product_listing(conn, results)
+		db_engine.insert_product_listing(db_session, results)
 		
 		time.sleep(4)
 	return final_results
@@ -171,9 +179,7 @@ def scrape_product_detail(category, product_url):
 	sponsored = parse_html.is_sponsored(product_url)
 
 	# Insert to the DB
-	queries.create_tables('db.sqlite')
-	with sqlite3.connect('db.sqlite') as conn:
-		queries.insert_product_details(conn, details, is_sponsored=sponsored)
+	db_engine.insert_product_details(db_session, details, is_sponsored=sponsored)
 
 	#with open(f'dumps/dump_{product_id}.pkl', 'wb') as f:
 	#	pickle.dump(details, f)
@@ -193,9 +199,7 @@ def scrape_product_detail(category, product_url):
 		qanda, next_url = parse_html.get_qanda(soup)
 		
 		# Insert to the DB
-		queries.create_tables('db.sqlite')
-		with sqlite3.connect('db.sqlite') as conn:
-			queries.insert_product_qanda(conn, qanda, product_id=product_id)
+		db_engine.insert_product_qanda(db_session, qanda, product_id=product_id)
 		
 		#with open(f'dumps/dump_{product_id}_qanda.pkl', 'wb') as f:
 		#	pickle.dump(qanda, f)
@@ -214,9 +218,7 @@ def scrape_product_detail(category, product_url):
 		reviews, next_url = parse_html.get_customer_reviews(soup)
 		
 		# Insert the reviews to the DB
-		queries.create_tables('db.sqlite')
-		with sqlite3.connect('db.sqlite') as conn:
-			queries.insert_product_reviews(conn, reviews, product_id=product_id)
+		db_engine.insert_product_reviews(db_session, reviews, product_id=product_id)
 		
 		#with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
 		#	pickle.dump(reviews, f)
