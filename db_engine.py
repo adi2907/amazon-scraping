@@ -168,7 +168,7 @@ class Reviews(Base):
 
 
 
-db_file = 'new_db.sqlite'
+db_file = 'db.sqlite'
 class MyDatabase:
     DB_ENGINE = {
         'sqlite': f'sqlite:///{db_file}'
