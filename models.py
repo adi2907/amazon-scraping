@@ -4,9 +4,9 @@ import sqlite3
 from datetime import datetime
 
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String, create_engine, exc)
+                        String, Table, create_engine, exc, MetaData)
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import mapper, relationship, sessionmaker
 
 import parse_html
 
@@ -68,7 +68,7 @@ tables = {
         'id': 'INTEGER PRIMARY KEY',
         'product_id': 'TEXT',
         'rating': 'FLOAT',
-        'review_date': 'DATETIME',
+        'review_date': 'TEXT',
         'title': 'TEXT',
         'body': 'TEXT',
         'product_info': 'TEXT',
@@ -79,101 +79,12 @@ tables = {
 }
 
 field_map = {
-    'INTEGER': 'Integer',
-    'TEXT': 'String',
-    'FLOAT': 'Float',
-    'DATETIME': 'DateTime',
+    'INTEGER': Integer,
+    'TEXT': String,
+    'FLOAT': Float,
+    'DATETIME': DateTime,
+    'BOOLEAN': Boolean,
 }
-
-Base = declarative_base()
-
-class ProductListing(Base):
-    __tablename__ = 'ProductListing'
-
-    product_id = Column(String, primary_key=True)
-    category = Column(String)
-    title = Column(String)
-    product_url = Column(String)
-    avg_rating = Column(Float)
-    total_ratings = Column(Integer)
-    price = Column(Integer)
-    old_price = Column(Integer)
-    secondary_information = Column(String)
-    image = Column(String)
-    qanda = relationship('QandA')
-    reviews = relationship('Reviews')
-
-    def __repr__(self):
-        return f"<ProductListing(product_id={self.product_id}, category={self.category}, title={self.title})>"
-
-
-class ProductDetails(Base):
-    __tablename__ = 'ProductDetails'
-
-    product_id = Column(String, primary_key=True)
-    product_title = Column(String)
-    byline_info = Column(String)
-    num_reviews = Column(Integer)
-    answered_questions = Column(String)
-    curr_price = Column(Float)
-    features = Column(String)
-    offers = Column(String)
-    description = Column(String)
-    product_details = Column(String)
-    customer_qa = Column(String)
-    customer_lazy = Column(Boolean)
-    customer_reviews = Column(String)
-    created_on = Column(DateTime)
-
-    def __repr__(self):
-        return f"<ProductDetails(product_id={self.product_id}, product_tile={self.product_title})>"
-
-
-class SponsoredProductDetails(Base):
-    __tablename__ = 'SponsoredProductDetails'
-
-    product_id = Column(String, primary_key=True)
-    product_title = Column(String)
-    byline_info = Column(String)
-    num_reviews = Column(Integer)
-    answered_questions = Column(String)
-    curr_price = Column(Float)
-    features = Column(String)
-    offers = Column(String)
-    description = Column(String)
-    product_details = Column(String)
-    customer_qa = Column(String)
-    customer_lazy = Column(Boolean)
-    customer_reviews = Column(String)
-    created_on = Column(DateTime)
-
-    def __repr__(self):
-        return f"<SponsoredProductDetails(product_id={self.product_id}, product_tile={self.product_title})>"
-
-
-class QandA(Base):
-    __tablename__ = 'QandA'
-
-    id = Column(Integer, primary_key=True)
-    question = Column(String)
-    answer = Column(String)
-    product_id = Column(String, ForeignKey('Product Listing.product_id'))
-
-
-class Reviews(Base):
-    __tablename__ = 'Reviews'
-
-    id = Column(Integer, primary_key=True)
-    rating = Column(Float)
-    review_date = Column(String)
-    title = Column(String)
-    body = Column(String)
-    product_info = Column(String)
-    verified_purchase = Column(Boolean)
-    helpful_votes = Column(Integer)
-    product_id = Column(String, ForeignKey('Product Listing.product_id'))
-
-
 
 db_file = 'db.sqlite'
 class MyDatabase:
@@ -190,6 +101,82 @@ class MyDatabase:
             self.db_engine = create_engine(engine_url)
         else:
             raise ValueError("DBType is not found in DB_ENGINE")
+
+engine = MyDatabase().db_engine
+metadata = MetaData(bind=engine)
+
+def apply_schema(cls):
+    # Refer https://stackoverflow.com/a/2575016
+    table = tables[cls.__name__]
+    columns = []
+
+    _fk_field = {} # Assume one FK per table
+    for field in table:
+        if isinstance(table[field], list) and 'FOREIGN KEY' in table[field]:
+            _fk_field = {'field': field[1:], 'parent': table[field][1].split()[1], 'fk_field': table[field][1].split()[2][1:-1]}
+    
+    for field in table:
+        is_foreign_key = False
+        
+        if 'field' in _fk_field and field == _fk_field['field']:
+            is_foreign_key = True
+            parent = _fk_field['parent']
+            fk_field = _fk_field['fk_field']
+        
+        if isinstance(table[field], list) and 'FOREIGN KEY' in table[field]:
+            continue
+        
+        datatype = table[field].split()[0]
+        datatype = field_map[datatype]
+        args = [field, datatype]
+        kwargs = dict()
+
+        if 'PRIMARY KEY' in table[field]:
+            kwargs['primary_key'] = True
+        if is_foreign_key == True:
+            # Set the relationship attribute on the parent class
+            relation = relationship(cls.__name__)
+            setattr(globals()[parent], cls.__name__.lower(), relation)
+
+            fk_args = [parent + '.' + fk_field]
+            fk = ForeignKey(*fk_args)
+            args.append(fk)
+        
+        column = Column(*args, **kwargs)
+        columns.append(column)
+    
+    table = Table(cls.__name__, metadata, *(column for column in columns))
+    metadata.create_all()
+    mapper(cls, table)
+    return cls
+
+
+Base = declarative_base()
+
+
+@apply_schema
+class ProductListing():
+    pass
+
+
+@apply_schema
+class ProductDetails():
+    pass
+
+
+@apply_schema
+class SponsoredProductDetails():
+    pass
+
+
+@apply_schema
+class QandA():
+    pass
+
+
+@apply_schema
+class Reviews():
+    pass
 
 
 def create_tables(engine):
@@ -218,15 +205,20 @@ def insert_product_listing(session, data, table='ProductListing'):
                         row[key] = value[key]
                 try:
                     if row['product_id'] is not None:
-                        session.add(ProductListing(**row))
+                        obj = ProductListing()
+                        [setattr(obj, key, value) for key, value in row.items()]
+                        session.add(obj)
                         session.commit()
                 except exc.IntegrityError:
                     session.rollback()
                     result = session.query(ProductListing).filter_by(product_id=row['product_id']).first()
-                    update_fields = (field for field in tables[table] if getattr(result, field) is None)
-                    for field in update_fields:
-                        setattr(result, field, row[field])
-                    session.commit()
+                    if result is None:
+                        pass
+                    else:
+                        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
+                        for field in update_fields:
+                            setattr(result, field, row[field])
+                        session.commit()
 
 
 def insert_product_details(session, data, table='ProductDetails', is_sponsored=False):
@@ -243,14 +235,18 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
     row['created_on'] = datetime.now()
     try:
         if is_sponsored == True:
-            session.add(SponsoredProductDetails(**row))
+            obj = SponsoredProductDetails()
+            [setattr(obj, key, value) for key, value in row.items()]
+            session.add(obj)
         else:
-            session.add(ProductDetails(**row))
+            obj = ProductDetails()
+            [setattr(obj, key, value) for key, value in row.items()]
+            session.add(obj)
         session.commit()
     except exc.IntegrityError:
         session.rollback()
         result = session.query(ProductListing).filter_by(product_id=row['product_id']).first()
-        update_fields = (field for field in tables[table] if getattr(result, field) is None)
+        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
         for field in update_fields:
             setattr(result, field, row[field])
         session.commit()
@@ -260,7 +256,9 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
     for pair in qanda:
         question, answer = pair['question'], pair['answer']
         row = {'question': question, 'answer': answer, 'product_id': product_id}
-        session.add(QandA(**row))
+        obj = QandA()
+        [setattr(obj, key, val) for key, val in row.items()]
+        session.add(obj)
     session.commit()
 
 
@@ -277,16 +275,18 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
             row['product_info'] = json.dumps(review['product_info'])
         row['verified_purchase'] = review['verified_purchase']
         row['helpful_votes'] = review['helpful_votes']
-        session.add(Reviews(**row))
+        obj = Reviews()
+        [setattr(obj, key, val) for key, val in row.items()]
+        session.add(obj)
     session.commit()
 
 
 if __name__ == '__main__':
     # Setup the Engine
-    engine = MyDatabase().db_engine
-    create_tables(engine)
+    #engine = MyDatabase().db_engine
+    #create_tables(engine)
     
-    Session = sessionmaker(bind=engine)
+    Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
     session = Session()
 
@@ -294,3 +294,13 @@ if __name__ == '__main__':
         product_listing = pickle.load(f)
 
     insert_product_listing(session, product_listing)
+
+    with open('dumps/dump_B07DJLVJ5M.pkl', 'rb') as f:
+        product_details = pickle.load(f)
+    
+    insert_product_details(session, product_details, is_sponsored=False)
+
+    with open('dumps/dump_B07DJLVJ5M_qanda.pkl', 'rb') as f:
+        qanda = pickle.load(f)
+    
+    insert_product_qanda(session, qanda, product_id='B07DJLVJ5M')
