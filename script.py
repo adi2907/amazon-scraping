@@ -88,14 +88,10 @@ def scrape_category_listing(categories, num_pages=None):
 			if not os.path.exists(os.path.join(os.getcwd(), 'data', f'{category}')):
 				os.mkdir(os.path.join(os.getcwd(), 'data', f'{category}'))
 				
-			with open(os.path.join(os.getcwd(), 'data', f'{category}', f'page_{curr_page}.html'), 'wb') as f:
-				f.write(html)
-			
-			# product_map = parse_html.get_product_mapping(soup)
-			
+			#with open(os.path.join(os.getcwd(), 'data', f'{category}', f'page_{curr_page}.html'), 'wb') as f:
+			#	f.write(html)
+						
 			product_info = parse_html.get_product_info(soup)
-
-			print(product_info)
 
 			final_results[category][curr_page] = product_info
 
@@ -133,8 +129,8 @@ def scrape_category_listing(categories, num_pages=None):
 		results = dict()
 		results[category] = final_results[category]
 		
-		with open(f'dumps/{category}.pkl', 'wb') as f:
-			pickle.dump(results, f)
+		#with open(f'dumps/{category}.pkl', 'wb') as f:
+		#	pickle.dump(results, f)
 		
 		# Insert to the DB
 		models.insert_product_listing(db_session, results)
@@ -167,8 +163,8 @@ def scrape_product_detail(category, product_url):
 	product_id = parse_html.get_product_id(product_url)
 	print(product_id)
 	
-	with open(os.path.join(os.getcwd(), 'data', f'{category}', f'{product_id}.html'), 'wb') as f:
-		f.write(html)
+	#with open(os.path.join(os.getcwd(), 'data', f'{category}', f'{product_id}.html'), 'wb') as f:
+	#	f.write(html)
 	
 	soup = BeautifulSoup(html, 'html.parser')
 
@@ -210,22 +206,23 @@ def scrape_product_detail(category, product_url):
 	# Get the customer reviews
 	if 'customer_reviews' in details and 'reviews_url' in details['customer_reviews']:
 		reviews_url = details['customer_reviews']['reviews_url']
-		response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
-		if hasattr(response, 'cookies'):
-			cookies = {**cookies, **dict(response.cookies)}
-		assert response.status_code == 200
-		time.sleep(5)
-		html = response.content
-		soup = BeautifulSoup(html, 'html.parser')
-		reviews, next_url = parse_html.get_customer_reviews(soup)
-		
-		# Insert the reviews to the DB
-		models.insert_product_reviews(db_session, reviews, product_id=product_id)
-		
-		#with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
-		#	pickle.dump(reviews, f)
-		if next_url is not None:
-			print("URL for customer reviews is " + next_url)
+		if reviews_url is not None and product_url is not None:
+			response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
+			if hasattr(response, 'cookies'):
+				cookies = {**cookies, **dict(response.cookies)}
+			assert response.status_code == 200
+			time.sleep(5)
+			html = response.content
+			soup = BeautifulSoup(html, 'html.parser')
+			reviews, next_url = parse_html.get_customer_reviews(soup)
+			
+			# Insert the reviews to the DB
+			models.insert_product_reviews(db_session, reviews, product_id=product_id)
+			
+			#with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
+			#	pickle.dump(reviews, f)
+			if next_url is not None:
+				print("URL for customer reviews is " + next_url)
 	
 	time.sleep(3)
 

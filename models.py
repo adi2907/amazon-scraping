@@ -64,13 +64,15 @@ tables = {
         'product_id': 'TEXT',
         'question': 'TEXT',
         'answer': 'TEXT',
+        'date': 'DATETIME',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'Reviews': {
         'id': 'INTEGER PRIMARY KEY',
         'product_id': 'TEXT',
         'rating': 'FLOAT',
-        'review_date': 'TEXT',
+        'review_date': 'DATETIME',
+        'country': 'TEXT',
         'title': 'TEXT',
         'body': 'TEXT',
         'product_info': 'TEXT',
@@ -269,6 +271,7 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
         row = dict()
         row['rating'] = float(review['rating'].split()[0])
         row['review_date'] = review['review_date']
+        row['country'] = review['country']
         row['title'] = review['title']
         row['body'] = review['body']
         if isinstance(review['product_info'], list) or isinstance(review['product_info'], dict):

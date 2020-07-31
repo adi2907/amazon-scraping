@@ -64,6 +64,7 @@ tables = {
         'product_id': 'TEXT',
         'question': 'TEXT',
         'answer': 'TEXT',
+        'date': 'DATETIME',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'Reviews': {
@@ -161,6 +162,7 @@ class QandA(Base):
     id = Column(Integer, primary_key=True)
     question = Column(String)
     answer = Column(String)
+    date = Column(DateTime)
     product_id = Column(String, ForeignKey('Product Listing.product_id'))
 
 

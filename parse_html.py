@@ -1,7 +1,9 @@
-from bs4 import BeautifulSoup
 import os
-import re
 import pickle
+import re
+from datetime import datetime
+
+from bs4 import BeautifulSoup
 
 
 def init_parser(category: str):
@@ -384,6 +386,20 @@ def get_qanda(soup):
             if pairs is not None:
                 for pair in pairs:
                     qanda = dict()
+                    date = pair.find("span", class_="a-color-tertiary aok-align-center")
+                    if date is not None and hasattr(date, 'text'):
+                        date = date.text.strip()
+                        # Convert it into a datetime object
+                        try:
+                            date = datetime.strptime(date, '· %d %B, %Y')
+                        except ValueError:
+                            if ',' in date:
+                                date = datetime.strptime(date, '%d %B, %Y')
+                            else:
+                                date = datetime.strptime(date, '%d %B %Y')
+                    else:
+                        date = None
+
                     pair = pair.find_all("div", class_="a-fixed-left-grid-col a-col-right")
                     if pair is None:
                         continue
@@ -395,6 +411,7 @@ def get_qanda(soup):
                     qanda['question'] = question
                     answer = pair[1].span.text.strip()
                     qanda['answer'] = answer
+                    qanda['date'] = date
                     results.append(qanda)
     
     # Get the url of the next page, if it exists
@@ -443,7 +460,15 @@ def get_customer_reviews(soup, content={}):
             date = review.find("span", {"data-hook": "review-date"})
             if date is not None:
                 date = date.text.strip()
+                country = date.split()[2]
+                date = ' '.join(date.split()[4:])
+                # Convert it into a datetime object
+                if ',' in date:
+                    date = datetime.strptime(date, '%d %B, %Y')
+                else:
+                    date = datetime.strptime(date, '%d %B %Y')
             data['review_date'] = date
+            data['country'] = country
 
             # Review about which product type
             product_info = review.find("a", {"data-hook": "format-strip"})
@@ -517,16 +542,16 @@ if __name__ == '__main__':
     #print(len(results.keys()))
 
     # Get the Product Data (Including Customer Reviews)
-    soup =  init_parser('headphones/B07HZ8JWCL')
-    results = get_product_data(soup)
+    #soup =  init_parser('headphones/B07HZ8JWCL')
+    #results = get_product_data(soup)
     #print(results)
 
     # Get the customer reviews alone (https://www.amazon.in/Sony-WH-1000XM3-Wireless-Cancellation-Headphones/product-reviews/B07HZ8JWCL/ref=cm_cr_getr_d_paging_btm_prev_1?ie=UTF8&pageNumber=1&reviewerType=all_reviews)
-    #soup = init_parser('headphones/reviews_B07HZ8JWCL')
-    #results, next_url = get_customer_reviews(soup)
+    soup = init_parser('headphones/reviews_B07HZ8JWCL')
+    results, next_url = get_customer_reviews(soup)
     #with open('dump_B07HZ8JWCL_reviews.pkl', 'wb') as f:
     #    pickle.dump(results, f)
-    #print(results, next_url)
+    print(results, next_url)
 
     # Get the QandA for this product alone (https://www.amazon.in/ask/questions/asin/B07HZ8JWCL/ref=cm_cd_dp_lla_ql_ll#nav-top)
     #soup = init_parser('headphones/qanda_B07HZ8JWCL')
