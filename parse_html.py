@@ -295,6 +295,33 @@ def get_product_data(soup):
                 data = {star: percent}
                 content['histogram'].append(data)
         
+        # Get the feature wise ratings
+        attribute_widget = customer_reviews.find("div", {"data-hook": "summarization-attributes-widget"})
+        if attribute_widget is not None:
+            featurewise_reviews = dict()
+
+            # Now we go to each featurewise review
+            featurewise_reviews = attribute_widget.find("div", {"data-hook": "cr-summarization-attributes-list"})
+            if featurewise_reviews is not None:
+                nodes = featurewise_reviews.find_all("div", {"data-hook": "cr-summarization-attribute"})
+                if nodes is not None:
+                    featurewise_reviews = dict()
+                    for node in nodes:
+                        key = None
+                        if hasattr(node, 'span') and hasattr(node.span, 'text'):
+                            key = node.span.text.strip()
+                        rating = node.find("span", class_="a-icon-alt")
+                        if rating is not None:
+                            rating = float(rating.text.strip())
+                        else:
+                            rating = 0.0
+                        if key is not None:
+                            featurewise_reviews[key] = rating
+            
+            results['featurewise_reviews'] = featurewise_reviews
+        else:
+            results['featurewise_reviews'] = None
+        
         # Now capture the reviews
         reviews = customer_reviews.find_all("div", id=re.compile(r'customer_review-.+'))
         if reviews is None:
@@ -490,16 +517,16 @@ if __name__ == '__main__':
     #print(len(results.keys()))
 
     # Get the Product Data (Including Customer Reviews)
-    #soup =  init_parser('headphones/B07HZ8JWCL')
-    #results = get_product_data(soup)
+    soup =  init_parser('headphones/B07HZ8JWCL')
+    results = get_product_data(soup)
     #print(results)
 
     # Get the customer reviews alone (https://www.amazon.in/Sony-WH-1000XM3-Wireless-Cancellation-Headphones/product-reviews/B07HZ8JWCL/ref=cm_cr_getr_d_paging_btm_prev_1?ie=UTF8&pageNumber=1&reviewerType=all_reviews)
-    soup = init_parser('headphones/reviews_B07HZ8JWCL')
-    results, next_url = get_customer_reviews(soup)
+    #soup = init_parser('headphones/reviews_B07HZ8JWCL')
+    #results, next_url = get_customer_reviews(soup)
     #with open('dump_B07HZ8JWCL_reviews.pkl', 'wb') as f:
     #    pickle.dump(results, f)
-    print(results, next_url)
+    #print(results, next_url)
 
     # Get the QandA for this product alone (https://www.amazon.in/ask/questions/asin/B07HZ8JWCL/ref=cm_cd_dp_lla_ql_ll#nav-top)
     #soup = init_parser('headphones/qanda_B07HZ8JWCL')

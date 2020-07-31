@@ -34,6 +34,7 @@ tables = {
         'offers': 'TEXT',
         'description': 'TEXT',
         'product_details': 'TEXT',
+        'featurewise_reviews': 'TEXT',
         'customer_qa': 'TEXT',
         'customer_lazy': 'INTEGER',
         'customer_reviews': 'TEXT',
@@ -51,6 +52,7 @@ tables = {
         'offers': 'TEXT',
         'description': 'TEXT',
         'product_details': 'TEXT',
+        'featurewise_reviews': 'TEXT',
         'customer_qa': 'TEXT',
         'customer_lazy': 'INTEGER',
         'customer_reviews': 'TEXT',
@@ -120,6 +122,7 @@ class ProductDetails(Base):
     offers = Column(String)
     description = Column(String)
     product_details = Column(String)
+    featurewise_reviews = Column(String)
     customer_qa = Column(String)
     customer_lazy = Column(Boolean)
     customer_reviews = Column(String)
@@ -142,6 +145,7 @@ class SponsoredProductDetails(Base):
     offers = Column(String)
     description = Column(String)
     product_details = Column(String)
+    featurewise_reviews = Column(String)
     customer_qa = Column(String)
     customer_lazy = Column(Boolean)
     customer_reviews = Column(String)

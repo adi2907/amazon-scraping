@@ -204,7 +204,8 @@ def scrape_product_detail(category, product_url):
 		
 		#with open(f'dumps/dump_{product_id}_qanda.pkl', 'wb') as f:
 		#	pickle.dump(qanda, f)
-		print("URL for qand a is " + next_url)
+		if next_url is not None:
+			print("URL for qand a is " + next_url)
 	
 	# Get the customer reviews
 	if 'customer_reviews' in details and 'reviews_url' in details['customer_reviews']:
@@ -223,7 +224,8 @@ def scrape_product_detail(category, product_url):
 		
 		#with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
 		#	pickle.dump(reviews, f)
-		print("URL for customer reviews is " + next_url)
+		if next_url is not None:
+			print("URL for customer reviews is " + next_url)
 	
 	time.sleep(3)
 
