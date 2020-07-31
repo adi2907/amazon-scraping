@@ -1,14 +1,14 @@
+# Represents all the Models used to create our scraper
+
 import json
 import pickle
 import sqlite3
 from datetime import datetime
 
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String, Table, create_engine, exc, MetaData)
+                        MetaData, String, Table, create_engine, exc)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
-
-import parse_html
 
 tables = {
     'ProductListing': {
@@ -39,7 +39,6 @@ tables = {
         'customer_lazy': 'INTEGER',
         'customer_reviews': 'TEXT',
         'created_on': 'DATETIME',
-        # '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT PRIMARY KEY',
@@ -57,7 +56,6 @@ tables = {
         'customer_lazy': 'INTEGER',
         'customer_reviews': 'TEXT',
         'created_on': 'DATETIME',
-        # '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'QandA': {
         'id': 'INTEGER PRIMARY KEY',
@@ -90,8 +88,9 @@ field_map = {
     'BOOLEAN': Boolean,
 }
 
-db_file = 'db.sqlite'
-class MyDatabase:
+
+class Database():
+    db_file = 'db.sqlite'
     DB_ENGINE = {
         'sqlite': f'sqlite:///{db_file}'
     }
@@ -106,8 +105,13 @@ class MyDatabase:
         else:
             raise ValueError("DBType is not found in DB_ENGINE")
 
-engine = MyDatabase().db_engine
+
+# Setup the database engine
+engine = Database().db_engine
+
+# And the metadata
 metadata = MetaData(bind=engine)
+
 
 def apply_schema(cls):
     # Refer https://stackoverflow.com/a/2575016
@@ -290,10 +294,7 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
 
 
 if __name__ == '__main__':
-    # Setup the Engine
-    #engine = MyDatabase().db_engine
-    #create_tables(engine)
-    
+    # Start a session using the existing engine    
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
     session = Session()
