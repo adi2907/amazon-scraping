@@ -258,8 +258,9 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
 
 def insert_product_qanda(session, qanda, product_id, table='QandA'):
     for pair in qanda:
-        question, answer = pair['question'], pair['answer']
-        row = {'question': question, 'answer': answer, 'product_id': product_id}
+        row = {key: (value if not isinstance(value, list) and not isinstance(value, dict) else json.dumps(value)) for key, value in pair.items()}
+        # Add product id
+        row['product_id'] = product_id
         obj = QandA()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
@@ -269,6 +270,7 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
 def insert_product_reviews(session, reviews, product_id, table='Reviews'):
     for review in reviews['reviews']:
         row = dict()
+        # Add product id
         row['product_id'] = product_id
         row['rating'] = float(review['rating'].split()[0])
         row['review_date'] = review['review_date']
