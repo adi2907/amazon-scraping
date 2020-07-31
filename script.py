@@ -139,7 +139,7 @@ def scrape_category_listing(categories, num_pages=None):
 	return final_results
 
 
-def scrape_product_detail(category, product_url):
+def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None):
 	# session = requests.Session()
 	server_url = 'https://amazon.in'
 	response = session.get(server_url, headers=headers)
@@ -186,43 +186,59 @@ def scrape_product_detail(category, product_url):
 	# Get the qanda for this product
 	if 'customer_lazy' in details and details['customer_lazy'] == True:
 		qanda_url = details['customer_qa']
-		response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
-		if hasattr(response, 'cookies'):
-			cookies = {**cookies, **dict(response.cookies)}
-		assert response.status_code == 200
-		time.sleep(5)
-		html = response.content
-		soup = BeautifulSoup(html, 'html.parser')
-		qanda, next_url = parse_html.get_qanda(soup)
-		
-		# Insert to the DB
-		models.insert_product_qanda(db_session, qanda, product_id=product_id)
-		
-		#with open(f'dumps/dump_{product_id}_qanda.pkl', 'wb') as f:
-		#	pickle.dump(qanda, f)
-		if next_url is not None:
-			print("URL for qand a is " + next_url)
-	
-	# Get the customer reviews
-	if 'customer_reviews' in details and 'reviews_url' in details['customer_reviews']:
-		reviews_url = details['customer_reviews']['reviews_url']
-		if reviews_url is not None and product_url is not None:
-			response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
+		curr = 0
+		while qanda_url is not None:
+			response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
 			if hasattr(response, 'cookies'):
 				cookies = {**cookies, **dict(response.cookies)}
 			assert response.status_code == 200
 			time.sleep(5)
 			html = response.content
 			soup = BeautifulSoup(html, 'html.parser')
-			reviews, next_url = parse_html.get_customer_reviews(soup)
+			qanda, next_url = parse_html.get_qanda(soup)
 			
-			# Insert the reviews to the DB
-			models.insert_product_reviews(db_session, reviews, product_id=product_id)
+			# Insert to the DB
+			models.insert_product_qanda(db_session, qanda, product_id=product_id)
 			
-			#with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
-			#	pickle.dump(reviews, f)
+			#with open(f'dumps/dump_{product_id}_qanda.pkl', 'wb') as f:
+			#	pickle.dump(qanda, f)
 			if next_url is not None:
-				print("URL for customer reviews is " + next_url)
+				print("URL for qand a is " + next_url)
+				qanda_url = server_url + next_url
+				curr += 1
+				if qanda_pages is not None and curr == qanda_pages:
+					break
+			else:
+				break
+	
+	# Get the customer reviews
+	if 'customer_reviews' in details and 'reviews_url' in details['customer_reviews']:
+		reviews_url = details['customer_reviews']['reviews_url']
+		curr = 0
+		while reviews_url is not None:
+			if reviews_url is not None and product_url is not None:
+				response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
+				if hasattr(response, 'cookies'):
+					cookies = {**cookies, **dict(response.cookies)}
+				assert response.status_code == 200
+				time.sleep(5)
+				html = response.content
+				soup = BeautifulSoup(html, 'html.parser')
+				reviews, next_url = parse_html.get_customer_reviews(soup)
+				
+				# Insert the reviews to the DB
+				models.insert_product_reviews(db_session, reviews, product_id=product_id)
+				
+				#with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
+				#	pickle.dump(reviews, f)
+				if next_url is not None:
+					print("URL for customer reviews is " + next_url)
+					qanda_url = server_url + next_url
+					curr += 1
+					if review_pages is not None and curr == review_pages:
+						break
+				else:
+					break
 	
 	time.sleep(3)
 
@@ -237,6 +253,8 @@ if __name__ == '__main__':
 	parser.add_argument('--detail', help='Scraping individual product details', default=False, action='store_true')
 	parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
 	parser.add_argument('--pages', help='Number of pages to scrape the listing details per category', type=int, default=1)
+	parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int)
+	parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int)
 
 	args = parser.parse_args()
 
@@ -245,7 +263,9 @@ if __name__ == '__main__':
 	detail = args.detail
 	num_items = args.number
 	num_pages = args.pages
-	
+	review_pages = args.review_pages
+	qanda_pages = args.qanda_pages
+
 	if categories is not None:
 		if listing == True:
 			results = scrape_category_listing(categories, num_pages=num_pages)
@@ -259,7 +279,7 @@ if __name__ == '__main__':
 								if results[category][curr_page][title]['product_url'] is not None:
 									product_url = results[category][curr_page][title]['product_url']
 									print(product_url)
-									product_detail_results = scrape_product_detail(category, product_url)
+									product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
 									curr_item += 1
 									if curr_item == num_items:
 										break
@@ -277,7 +297,7 @@ if __name__ == '__main__':
 						if results[category][curr_page][title]['product_url'] is not None:
 							product_url = results[category][curr_page][title]['product_url']
 							print(product_url)
-							product_detail_results = scrape_product_detail(category, product_url)
+							product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
 							curr_item += 1
 							if curr_item == num_items:
 								break

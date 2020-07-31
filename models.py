@@ -269,6 +269,7 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
 def insert_product_reviews(session, reviews, product_id, table='Reviews'):
     for review in reviews['reviews']:
         row = dict()
+        row['product_id'] = product_id
         row['rating'] = float(review['rating'].split()[0])
         row['review_date'] = review['review_date']
         row['country'] = review['country']
