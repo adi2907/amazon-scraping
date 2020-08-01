@@ -273,7 +273,14 @@ def insert_product_listing(session, data, table='ProductListing'):
                         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
                         for field in update_fields:
                             setattr(result, field, row[field])
-                        session.commit()
+                        try:
+                            session.commit()
+                        except:
+                            session.rollback()
+                            print(f"WARNING: For Product {row['product_id']}, there is an error with the data.")
+                except Exception:
+                    session.rollback()
+                    print(f"WARNING: For Product {row['product_id']}, there is an error with the data.")
 
 
 def insert_product_details(session, data, table='ProductDetails', is_sponsored=False):
@@ -304,7 +311,14 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
         for field in update_fields:
             setattr(result, field, row[field])
-        session.commit()
+        try:
+            session.commit()
+        except:
+            session.rollback()
+            print(f"WARNING: For Product {row['product_id']}, there is an error with the data.")
+    except Exception:
+        session.rollback()
+        print(f"WARNING: For Product {row['product_id']}, there is an error with the data.")
 
 
 def insert_product_qanda(session, qanda, product_id, table='QandA'):
@@ -315,7 +329,11 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
         obj = QandA()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
-    session.commit()
+    try:
+        session.commit()
+    except:
+        session.rollback()
+        print(f"WARNING: For Product {product_id}, there is an error with the data.")
 
 
 def insert_product_reviews(session, reviews, product_id, table='Reviews'):
@@ -337,7 +355,11 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
         obj = Reviews()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
-    session.commit()
+    try:
+        session.commit()
+    except:
+        session.rollback()
+        print(f"WARNING: For Product {product_id}, there is an error with the data.")
 
 
 if __name__ == '__main__':
