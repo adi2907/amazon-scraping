@@ -74,6 +74,9 @@ def goto_product_listing(category):
 
     # Change the User Agent
     headers["User-Agent"] = my_proxy.user_agent
+
+    # Reset the cookies
+    cookies = dict()
     
     response = my_proxy.get(server_url)
     assert response.status_code == 200
