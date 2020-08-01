@@ -107,6 +107,9 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
     cookies = dict(response.cookies)
     
     print(cookies)
+
+    if my_proxy is not None:
+        my_proxy.cookies = cookies
     
     time.sleep(10)
 
@@ -280,7 +283,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 break
     
     # Get the customer reviews
-    if 'customer_reviews' in details and 'reviews_url' in details['customer_reviews']:
+    if 'customer_reviews' in details and details['customer_reviews'] is not None and 'reviews_url' in details['customer_reviews']:
         reviews_url = details['customer_reviews']['reviews_url']
         curr = 0
         while reviews_url is not None:
