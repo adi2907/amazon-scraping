@@ -49,7 +49,7 @@ try:
     DB_NAME = config('DB_NAME')
     DB_SERVER = config('DB_SERVER')
     DB_TYPE = config('DB_TYPE')
-    engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, server=DB_SERVER)
+    engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, server=DB_SERVER).db_engine
 except UndefinedValueError:
     DB_TYPE = 'sqlite'
     engine = db_manager.Database(dbtype=DB_TYPE).db_engine

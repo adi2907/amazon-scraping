@@ -9,6 +9,12 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
                         MetaData, String, Table, create_engine, exc)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
+from decouple import config, UndefinedValueError
+
+import pymysql
+
+pymysql.install_as_MySQLdb()
+
 
 tables = {
     'ProductListing': {
@@ -106,14 +112,24 @@ class Database():
             # mysql+pymysql also supported
             engine_url = f'{dbtype}://{username}:{password}@{server}'
             self.db_engine = create_engine(engine_url)
+            self.db_engine.connect()
             self.db_engine.execute(f"CREATE DATABASE IF NOT EXISTS {dbname}")
             self.db_engine.execute(f"USE {dbname}")
         else:
             raise ValueError("DBType is not found in DB_ENGINE")
 
 
-# Setup the database engine
-engine = Database().db_engine
+# Database Session setup
+try:
+    DB_USER = config('DB_USER')
+    DB_PASSWORD = config('DB_PASSWORD')
+    DB_NAME = config('DB_NAME')
+    DB_SERVER = config('DB_SERVER')
+    DB_TYPE = config('DB_TYPE')
+    engine = Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, dbname=DB_NAME, server=DB_SERVER).db_engine
+except UndefinedValueError:
+    DB_TYPE = 'sqlite'
+    engine = Database(dbtype=DB_TYPE).db_engine
 
 # And the metadata
 metadata = MetaData(bind=engine)
@@ -128,20 +144,25 @@ def apply_schema(cls):
     for field in table:
         if isinstance(table[field], list) and 'FOREIGN KEY' in table[field]:
             _fk_field = {'field': field[1:], 'parent': table[field][1].split()[1], 'fk_field': table[field][1].split()[2][1:-1]}
-    
+
     for field in table:
         is_foreign_key = False
-        
+
         if 'field' in _fk_field and field == _fk_field['field']:
             is_foreign_key = True
             parent = _fk_field['parent']
             fk_field = _fk_field['fk_field']
-        
+
         if isinstance(table[field], list) and 'FOREIGN KEY' in table[field]:
             continue
-        
+
         datatype = table[field].split()[0]
         datatype = field_map[datatype]
+        if datatype == String:
+            if field == 'product_id':
+                datatype = String(20)
+            else:
+                datatype = String(5000)
         args = [field, datatype]
         kwargs = dict()
 
@@ -155,10 +176,10 @@ def apply_schema(cls):
             fk_args = [parent + '.' + fk_field]
             fk = ForeignKey(*fk_args)
             args.append(fk)
-        
+
         column = Column(*args, **kwargs)
         columns.append(column)
-    
+
     table = Table(cls.__name__, metadata, *(column for column in columns))
     metadata.create_all()
     mapper(cls, table)
@@ -300,22 +321,23 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
 
 
 if __name__ == '__main__':
-    # Start a session using the existing engine    
+    # Start a session using the existing engine
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
     session = Session()
 
-    with open('dumps/mobile.pkl', 'rb') as f:
+    # with open('dumps/mobile.pkl', 'rb') as f:
+    with open('dumps/phones.pkl', 'rb') as f:
         product_listing = pickle.load(f)
 
     insert_product_listing(session, product_listing)
 
     with open('dumps/dump_B07DJLVJ5M.pkl', 'rb') as f:
         product_details = pickle.load(f)
-    
+
     insert_product_details(session, product_details, is_sponsored=False)
 
     with open('dumps/dump_B07DJLVJ5M_qanda.pkl', 'rb') as f:
         qanda = pickle.load(f)
-    
+
     insert_product_qanda(session, qanda, product_id='B07DJLVJ5M')
