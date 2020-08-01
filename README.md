@@ -79,6 +79,15 @@ Put your Tor password in the below format:
 TOR_PASSWORD = YOUR-TOR-PASSWORD
 ```
 
+Finally, add the `ExitNodes` option to the `torrc`.
+
+```bash
+# ExitNodes Options
+ExitNodes {IN}
+```
+
+This will mean that the Tor exit nodes will be an address in India. 
+
 You have now setup the necessary requirements for running the scraper.
 
 ************
