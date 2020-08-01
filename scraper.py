@@ -54,7 +54,7 @@ except UndefinedValueError:
     DB_TYPE = 'sqlite'
     engine = db_manager.Database(dbtype=DB_TYPE).db_engine
 
-db_manager.create_tables(engine)
+# db_manager.create_tables(engine)
 
 Session = sessionmaker(bind=engine)
 

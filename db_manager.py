@@ -165,7 +165,7 @@ def apply_schema(cls):
     return cls
 
 
-Base = declarative_base()
+# Base = declarative_base()
 
 
 @apply_schema
