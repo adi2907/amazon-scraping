@@ -19,15 +19,15 @@ pymysql.install_as_MySQLdb()
 tables = {
     'ProductListing': {
         'product_id': 'TEXT(16) PRIMARY KEY',
-        'category': 'TEXT(60)',
-        'title': 'TEXT(100)',
+        'category': 'TEXT(100)',
+        'title': 'LONGTEXT',
         'product_url': 'LONGTEXT',
         'avg_rating': 'FLOAT',
         'total_ratings': 'INTEGER',
         'price': 'INTEGER',
         'old_price': 'INTEGER',
         'secondary_information': 'LONGTEXT',
-        'image': 'TEXT(500)',
+        'image': 'TEXT(1000)',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -44,7 +44,7 @@ tables = {
         'customer_qa': 'LONGTEXT',
         'customer_lazy': 'INTEGER',
         'histogram': 'LONGTEXT',
-        'reviews_url': 'TEXT(500)',
+        'reviews_url': 'LONGTEXT',
         'created_on': 'DATETIME',
     },
     'SponsoredProductDetails': {
@@ -79,7 +79,7 @@ tables = {
         'rating': 'FLOAT',
         'review_date': 'DATETIME',
         'country': 'TEXT(40)',
-        'title': 'TEXT(500)',
+        'title': 'TEXT(1000)',
         'body': 'LONGTEXT',
         'product_info': 'LONGTEXT',
         'verified_purchase': 'INTEGER',
