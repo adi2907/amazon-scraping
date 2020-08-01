@@ -5,6 +5,7 @@ import random
 import sqlite3
 import sys
 import time
+from collections import OrderedDict
 from string import Template
 
 import requests
@@ -74,11 +75,12 @@ def goto_product_listing(category):
 
     # Change the User Agent
     headers["User-Agent"] = my_proxy.user_agent
+    headers = OrderedDict(headers)
 
     # Reset the cookies
     cookies = dict()
     
-    response = my_proxy.get(server_url)
+    response = my_proxy.get(server_url, headers=headers)
     assert response.status_code == 200
 
     time.sleep(random.randint(4, 7))
