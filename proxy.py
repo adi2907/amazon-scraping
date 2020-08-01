@@ -1,6 +1,9 @@
 import random
+import socket
+import time
 
 import requests
+import socks
 from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
 from stem import Signal
@@ -37,13 +40,28 @@ class Proxy():
             "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
         ]
+        self.ip_address = None
+        self.max_retries = 3
     
 
     def reset(self):
+        self.session = requests.Session()
         self.cookies = dict()
+    
+
+    def get_ip(self):
+        urls = ["https://ident.me", "http://myip.dnsomatic.com", "https://checkip.amazonaws.com"]
+        for url in urls:
+            response = requests.get(url)
+            if response.status_code == 200:
+                ip = response.text.strip()
+                return ip
+            else:
+                continue
+        raise ValueError("Couldn't get the external IP Address. Please Check the URLs")
 
 
-    def change_ip(self):
+    def change_identity(self):
         """Method which will change both the IP address as well as the user agent
         """
         # Change the user agent
@@ -54,11 +72,45 @@ class Proxy():
 
         # Reset the cookies
         self.cookies = dict()
-
-        # Now change the IP via the Tor Relay Controller
-        with Controller.from_port(port = self.control_port) as controller:
-            controller.authenticate(password = TOR_PASSWORD)
-            controller.signal(Signal.NEWNYM)
+        
+        curr = 0
+        while curr <= self.max_retries:
+            # Now change the IP via the Tor Relay Controller
+            with Controller.from_port(port = self.control_port) as controller:
+                controller.authenticate(password = TOR_PASSWORD)
+                socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", self.proxy_port)
+                socket.socket = socks.socksocket
+                controller.signal(Signal.NEWNYM)
+            
+            # Now let's find out the new IP, if this worked correctly
+            ip = self.get_ip()
+            
+            if ip is not None:
+                if self.ip_address is None:
+                    self.ip_address = ip
+                    print(f"IP Address is: {self.ip_address}")
+                    break
+                else:
+                    # Let's compare
+                    if ip != self.ip_address:
+                        self.ip_address = ip
+                        print(f"New IP Address is: {self.ip_address}")
+                        break
+                    else:
+                        curr += 1
+                        if curr < self.max_retries:
+                            print("Error during changing the IP Address. Retrying...")
+                            time.sleep(5)
+                        else:
+                            raise TimeoutError("Maximum Retries Exceeded. Couldn't change the IP Address")
+            else:
+                curr += 1
+                if curr < self.max_retries:
+                    print("Error during changing the IP Address. Retrying...")
+                    time.sleep(5)
+                else:
+                    raise TimeoutError("Maximum Retries Exceeded. Couldn't change the IP Address")
+            
 
 
     def make_request(self, request_type, url, **kwargs):
@@ -110,7 +162,7 @@ def test_proxy(proxy: Proxy, change: bool = False) -> None:
     print(f"Old (Current) IP: {old_ip_address}")
 
     if change == True:
-        proxy.change_ip()
+        proxy.change_identity()
 
         response = proxy.make_request('get', 'https://check.torproject.org')
 
@@ -129,4 +181,5 @@ def test_proxy(proxy: Proxy, change: bool = False) -> None:
 
 if __name__ == '__main__':
     proxy = Proxy(proxy_port=9050, control_port=9051)
-    test_proxy(proxy, change=False)
+    test_proxy(proxy, change=True)
+    # print(proxy.get_ip())
