@@ -1,6 +1,7 @@
 import random
 import socket
 import time
+from collections import OrderedDict
 
 import requests
 import socks
@@ -27,8 +28,8 @@ class Proxy():
         self.proxy_port = proxy_port
         self.control_port = control_port
         self.proxies = {
-            'http': f'socks5://127.0.0.1:{self.proxy_port}',
-            'https': f'socks5://127.0.0.1:{self.proxy_port}',
+            'http': f'socks5h://127.0.0.1:{self.proxy_port}',
+            'https': f'socks5h://127.0.0.1:{self.proxy_port}',
         }
         if OS == 'Windows':
             self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0"
@@ -41,6 +42,7 @@ class Proxy():
         self.user_agent_choices = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/80.0",
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15',
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
             "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
@@ -57,7 +59,7 @@ class Proxy():
     def get_ip(self):
         urls = ["https://ident.me", "http://myip.dnsomatic.com", "https://checkip.amazonaws.com"]
         for url in urls:
-            response = requests.get(url)
+            response = requests.get(url, proxies=self.proxies)
             if response.status_code == 200:
                 ip = response.text.strip()
                 return ip
@@ -70,7 +72,7 @@ class Proxy():
         """Method which will change both the IP address as well as the user agent
         """
         # Change the user agent
-        # self.user_agent = random.choice(self.user_agent_choices)
+        self.user_agent = random.choice(self.user_agent_choices)
 
         # Create a new session object
         self.session = requests.Session()
@@ -126,21 +128,19 @@ class Proxy():
             # Provide a random user agent
             if url.startswith('https://amazon'):
                 # Amazon specific headers
-                headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"keep-alive", "Upgrade-Insecure-Requests":"1"}
-                headers['TE'] = 'Trailers'
-                headers['Sec-Fetch-User'] = '?1'
-                headers['Sec-Fetch-Site'] = 'none'
-                headers['Sec-Fetch-Mode'] = 'navigate'
-                headers['Sec-Fetch-Dest'] = 'document'
+                headers = {"Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Connection":"close", "DNT": "1", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
+                headers = OrderedDict(headers)
             else:
                 headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate"}
+                headers = OrderedDict(headers)
             kwargs['headers'] = headers
         
         if 'referer' in kwargs:
             kwargs['headers']['referer'] = kwargs['referer']
             del kwargs['referer']
         
-        kwargs['cookies'] = self.cookies
+        if 'cookies' not in kwargs:
+            kwargs['cookies'] = self.cookies
         
         # Now make the request
         if hasattr(requests, request_type):

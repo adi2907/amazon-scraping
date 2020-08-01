@@ -102,7 +102,6 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
             response = session.get(server_url, headers=headers)
     else:
         response = session.get(server_url, headers=headers)
-    
     assert response.status_code == 200
     cookies = dict(response.cookies)
     
@@ -120,7 +119,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         base_url = url_template.substitute(category=category)
         
         if my_proxy is not None:
-            response = my_proxy.get(base_url)
+            response = my_proxy.get(base_url, headers=headers, cookies=cookies)
         else:
             response = session.get(base_url, headers=headers, cookies=cookies)
         
@@ -153,7 +152,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 if my_proxy is None:
                     response = session.get(base_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(base_url)
+                    response = my_proxy.get(base_url, headers=headers, cookies=cookies)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -165,7 +164,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 if my_proxy is None:
                     response = session.get(base_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(base_url)
+                    response = my_proxy.get(base_url, headers=headers, cookies=cookies)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -177,7 +176,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
             if my_proxy is None:       
                 response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
             else:
-                response = my_proxy.get(server_url + page_url, referer=curr_url)
+                response = my_proxy.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
             
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
@@ -211,7 +210,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if my_proxy is None:
         response = session.get(server_url, headers=headers)
     else:
-        response = my_proxy.get(server_url)
+        response = my_proxy.get(server_url, headers=headers)
     
     assert response.status_code == 200
     cookies = dict(response.cookies)
@@ -220,7 +219,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if my_proxy is None:
         response = session.get(server_url + product_url, headers=headers, cookies=cookies)
     else:
-        response = my_proxy.get(server_url + product_url)
+        response = my_proxy.get(server_url + product_url, headers=headers, cookies=cookies)
     
     if hasattr(response, 'cookies'):
         cookies = {**cookies, **dict(response.cookies)}
@@ -259,7 +258,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             if my_proxy is None:
                 response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
             else:
-                response = my_proxy.get(qanda_url, referer=server_url + product_url)
+                response = my_proxy.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
             
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
@@ -291,7 +290,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 if my_proxy is None:
                     response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
                 else:
-                    response = my_proxy.get(server_url + reviews_url, referer=server_url + product_url)
+                    response = my_proxy.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
