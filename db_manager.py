@@ -92,16 +92,21 @@ field_map = {
 class Database():
     db_file = 'db.sqlite'
     DB_ENGINE = {
-        'sqlite': f'sqlite:///{db_file}'
+        'sqlite': f'sqlite:///{db_file}',
     }
 
     # Main DB Connection Ref Obj
     db_engine = None
-    def __init__(self, dbtype='sqlite', username='', password='', dbname=''):
+    def __init__(self, dbtype='sqlite', username='', password='', dbname='', server=''):
         dbtype = dbtype.lower()
         if dbtype in self.DB_ENGINE.keys():
             engine_url = self.DB_ENGINE[dbtype].format(DB=dbname)
             self.db_engine = create_engine(engine_url)
+        elif dbtype == 'mysql':
+            engine_url = f'mysql://{username}:{password}@{server}'
+            self.db_engine = create_engine(engine_url)
+            self.db_engine.execute(f"CREATE DATABASE IF NOT EXISTS {dbname}")
+            self.db_engine.execute(f"USE {dbname}")
         else:
             raise ValueError("DBType is not found in DB_ENGINE")
 
