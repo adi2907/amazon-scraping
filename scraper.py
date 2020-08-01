@@ -46,6 +46,26 @@ Session = sessionmaker(bind=engine)
 db_session = Session()
 
 
+def goto_product_listing(category):
+    global my_proxy
+    if my_proxy is None:
+        return
+    
+    my_proxy.change_identity()
+    server_url = 'https://amazon.in'
+    
+    response = my_proxy.get(server_url)
+    assert response.status_code == 200
+
+    time.sleep(random.randint(4, 7))
+
+    listing_url = url_template.substitute(category=category)
+    response = my_proxy.get(listing_url)
+    assert response.status_code == 200
+
+    time.sleep(random.randint(3, 6))
+
+
 def scrape_category_listing(categories, num_pages=None, dump=False):
     global my_proxy, session
     # session = requests.Session()
@@ -303,6 +323,8 @@ if __name__ == '__main__':
     qanda_pages = args.qanda_pages
     dump = args.dump
 
+    MAX_ITEMS = random.randint(3, 7)
+
     if categories is not None:
         if listing == True:
             results = scrape_category_listing(categories, num_pages=num_pages, dump=dump)
@@ -310,13 +332,25 @@ if __name__ == '__main__':
                 for category in categories:
                     curr_item = 0
                     curr_page = 1
+
+                    # Reference Count for reset
+                    reference = 0
+
                     while curr_item < num_items:
                         if curr_page in results[category]:
                             for title in results[category][curr_page]:
                                 if results[category][curr_page][title]['product_url'] is not None:
                                     product_url = results[category][curr_page][title]['product_url']
+                                    
+                                    if reference > 0 and reference == MAX_ITEMS:
+                                        # Change Identity
+                                        goto_product_listing(category)
+                                        reference = 0
+                                        MAX_ITEMS = random.randint(2, 8)
+                                    
                                     product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
                                     curr_item += 1
+                                    reference += 1
                                     if curr_item == num_items:
                                         break
                         else:
@@ -328,13 +362,25 @@ if __name__ == '__main__':
                     results = pickle.load(f)
                 curr_item = 0
                 curr_page = 1
+
+                # Reference Count for reset
+                reference = 0
+
                 while curr_item < num_items:
                     if curr_page in results[category]:
                         for title in results[category][curr_page]:
                             if results[category][curr_page][title]['product_url'] is not None:
                                 product_url = results[category][curr_page][title]['product_url']
+
+                                if curr_item > 0 and curr_item == MAX_ITEMS:
+                                    # Change Identity
+                                    goto_product_listing(category)
+                                    reference = 0
+                                    MAX_ITEMS = random.randint(2, 8)
+
                                 product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
                                 curr_item += 1
+                                reference += 1
                                 if curr_item == num_items:
                                     break
                     else:
