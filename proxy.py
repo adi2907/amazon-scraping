@@ -23,14 +23,19 @@ class Proxy():
     """Our own Proxy Class which will use Tor relays to keep shifting between IP addresses
     """
 
-    def __init__(self, proxy_port=9050, control_port=9051):
+    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows'):
         self.proxy_port = proxy_port
         self.control_port = control_port
         self.proxies = {
             'http': f'socks5://127.0.0.1:{self.proxy_port}',
             'https': f'socks5://127.0.0.1:{self.proxy_port}',
         }
-        self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0"
+        if OS == 'Windows':
+            self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0"
+        else:
+            # Linux
+            self.user_agent = "Mozilla/5.0 (X11; Linux i686; rv:78.0) Gecko/20100101 Firefox/78.0"
+        
         self.session = requests.Session()
         self.cookies = dict()
         self.user_agent_choices = [
@@ -65,7 +70,7 @@ class Proxy():
         """Method which will change both the IP address as well as the user agent
         """
         # Change the user agent
-        self.user_agent = random.choice(self.user_agent_choices)
+        # self.user_agent = random.choice(self.user_agent_choices)
 
         # Create a new session object
         self.session = requests.Session()

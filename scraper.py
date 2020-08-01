@@ -22,12 +22,16 @@ url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
 
 customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
 
+try:
+    OS = config('OS')
+except UndefinedValueError:
+    OS = 'Windows'
 
 # Start the session
 session = requests.Session()
 
 # Use a proxy if possible
-my_proxy = proxy.Proxy()
+my_proxy = proxy.Proxy(OS=OS)
 
 try:
     my_proxy.change_identity()
