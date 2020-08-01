@@ -102,8 +102,9 @@ class Database():
         if dbtype in self.DB_ENGINE.keys():
             engine_url = self.DB_ENGINE[dbtype].format(DB=dbname)
             self.db_engine = create_engine(engine_url)
-        elif dbtype == 'mysql':
-            engine_url = f'mysql://{username}:{password}@{server}'
+        elif dbtype.startswith('mysql'):
+            # mysql+pymysql also supported
+            engine_url = f'{dbtype}://{username}:{password}@{server}'
             self.db_engine = create_engine(engine_url)
             self.db_engine.execute(f"CREATE DATABASE IF NOT EXISTS {dbname}")
             self.db_engine.execute(f"USE {dbname}")
