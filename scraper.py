@@ -11,7 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import sessionmaker
 
-import models
+import db_manager
 import parse_data
 import proxy
 
@@ -33,8 +33,8 @@ my_proxy = proxy.Proxy()
 #    os.mkdir(os.path.join(os.getcwd(), 'dumps'))
 
 # Database Session setup
-engine = models.Database().db_engine
-models.create_tables(engine)
+engine = db_manager.Database().db_engine
+db_manager.create_tables(engine)
 
 Session = sessionmaker(bind=engine)
 
@@ -148,7 +148,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 pickle.dump(results, f)
         
         # Insert to the DB
-        models.insert_product_listing(db_session, results)
+        db_manager.insert_product_listing(db_session, results)
 
         time.sleep(4)
     return final_results
@@ -198,7 +198,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     sponsored = parse_data.is_sponsored(product_url)
 
     # Insert to the DB
-    models.insert_product_details(db_session, details, is_sponsored=sponsored)
+    db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
     
     time.sleep(4)
     
@@ -222,7 +222,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             qanda, next_url = parse_data.get_qanda(soup)
             
             # Insert to the DB
-            models.insert_product_qanda(db_session, qanda, product_id=product_id)
+            db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
             
             if next_url is not None:
                 print(f"QandA: Going to Page {curr}")
@@ -253,7 +253,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 reviews, next_url = parse_data.get_customer_reviews(soup)
                 
                 # Insert the reviews to the DB
-                models.insert_product_reviews(db_session, reviews, product_id=product_id)
+                db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
                 
                 #with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
                 #	pickle.dump(reviews, f)

@@ -12,6 +12,75 @@ To install the requirements for this project, run the following:
 pip install -r requirements.txt
 ```
 
+### Setting up the Tor Relay Service
+
+In order to use proxy services to switch identities periodically, you need to install the Tor service on your machine.
+
+While the scraper will work even without the Tor service, it is highly recommended that you use it, in order to avoid getting an IP ban.
+
+**Warning**: Don't misuse the rate of sending requests. It's possible that even with Tor, your real IP may get leaked. Proceed safely when scraping any website.
+
+* Now, on your Linux machine, you can install tor via your package manager.
+
+For example, in Ubuntu / Debian, you can install it using the below command:
+
+```bash
+sudo apt install tor
+```
+
+* You need to allow access to the Tor control port (9150). To do this, go to the configuration file `/etc/tor/torrc`
+
+```bash
+sudo vi /etc/tor/torrc
+```
+
+Now, you must uncomment the below lines
+
+```bash
+ControlPort 9051
+## If you enable the controlport, be sure to enable one of these
+## authentication methods, to prevent attackers from accessing it.
+HashedControlPassword ABCDEFGHIJKLMNOP
+CookieAuthentication 1
+```
+
+For the `HashedControlPassword`, you must get the hash using a password that you choose.
+
+```bash
+tor --hash-password "<YOUR-TOR-PASSWORD>"
+```
+
+Note down this password. We will need it later for authorising it via Python.
+
+Get the hash from the output, and put it instead of `ABCDEFGHIJKLMNOP` in the `HashedControlPassword` option.
+
+
+* Now, you can start the tor service using:
+
+```bash
+sudo service tor start
+```
+
+* To verify that Tor is working correctly, you must get the correct output when running this command:
+
+```bash
+curl --socks5 localhost:9050 --socks5-hostname localhost:9050 -s https://check.torproject.org/ | cat | grep -m 1 Congratulations | xargs
+```
+
+Now, go to your project directory (where the scraper is) and create a `.env` file. A sample template is given in the `.env.example` file.
+
+```bash
+touch .env
+```
+
+Put your Tor password in the below format:
+
+```bash
+TOR_PASSWORD = YOUR-TOR-PASSWORD
+```
+
+You have now setup the necessary requirements for running the scraper.
+
 ************
 
 ## Running the Scraper
