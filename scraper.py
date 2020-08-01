@@ -282,8 +282,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 break
     
     # Get the customer reviews
-    if 'customer_reviews' in details and details['customer_reviews'] is not None and 'reviews_url' in details['customer_reviews']:
-        reviews_url = details['customer_reviews']['reviews_url']
+    if details is not None and 'reviews_url' in details:
+        reviews_url = details['reviews_url']
         curr = 0
         while reviews_url is not None:
             if reviews_url is not None and product_url is not None:

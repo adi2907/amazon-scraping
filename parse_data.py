@@ -287,7 +287,7 @@ def get_product_data(soup):
         # Capture the Histogram first
         histogram = customer_reviews.find("span", class_="cr-widget-Histogram")
         if histogram is not None:
-            content['histogram'] = []
+            results['histogram'] = []
             rows = histogram.find_all("tr", class_="a-histogram-row a-align-center")
             for row in rows:
                 star = row.find("td", class_="aok-nowrap")
@@ -295,7 +295,9 @@ def get_product_data(soup):
                 percent = row.find("td", class_="a-text-right a-nowrap")
                 percent = percent.find("a", class_="a-link-normal").text.strip()
                 data = {star: percent}
-                content['histogram'].append(data)
+                results['histogram'].append(data)
+        else:
+            results['histogram'] = None
         
         # Get the feature wise ratings
         attribute_widget = customer_reviews.find("div", {"data-hook": "summarization-attributes-widget"})
@@ -324,7 +326,7 @@ def get_product_data(soup):
         else:
             results['featurewise_reviews'] = None
         
-        # Now capture the reviews
+        # Now capture the reviews URL
         reviews = customer_reviews.find_all("div", id=re.compile(r'customer_review-.+'))
         if reviews is None:
             content['reviews'] = None
@@ -334,43 +336,7 @@ def get_product_data(soup):
                 reviews_url = reviews_url.find("a", {"data-hook": "see-all-reviews-link-foot"})
                 if reviews_url is not None:
                     reviews_url = reviews_url.attrs['href']
-            content['reviews_url'] = reviews_url
-            
-            review_data = []
-            for review in reviews:
-                data = dict()
-                header = review.find("a", class_="a-link-normal")
-                if header is None:
-                    continue
-                
-                # Rating of the review
-                rating = header.attrs['title']
-                data['rating'] = rating
-                title = review.find("a", {"data-hook": "review-title"})
-                if title is not None:
-                    data['title'] = title.span.text.strip()
-                else:
-                    data['title'] = None
-                
-                # Review Date
-                date = review.find("span", {"data-hook": "review-date"})
-                if date is not None:
-                    date = date.text.strip()
-                data['review_date'] = date
-
-                # Review Body
-                regex = re.compile(r"<br/?>", re.IGNORECASE)
-                body = review.find("div", {"data-hook": "review-collapsed"})
-                if body is not None:
-                    body = re.sub(regex, '\n', str(body.span))
-                    body = body[6:-7] # Remove <span> and </span>
-                data['body'] = body
-
-                review_data.append(data)
-
-            content['reviews'] = review_data
-
-        results['customer_reviews'] = content
+            results['reviews_url'] = reviews_url
 
     return results
 

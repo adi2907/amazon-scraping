@@ -2,84 +2,86 @@
 
 import json
 import pickle
+import re
 import sqlite3
 from datetime import datetime
 
+import pymysql
+from decouple import UndefinedValueError, config
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        MetaData, String, Table, create_engine, exc)
+                        MetaData, String, Text, Table, create_engine, exc)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
-from decouple import config, UndefinedValueError
-
-import pymysql
 
 pymysql.install_as_MySQLdb()
 
 
 tables = {
     'ProductListing': {
-        'product_id': 'TEXT PRIMARY KEY',
-        'category': 'TEXT',
-        'title': 'TEXT',
-        'product_url': 'TEXT',
+        'product_id': 'TEXT(16) PRIMARY KEY',
+        'category': 'TEXT(25)',
+        'title': 'TEXT(60)',
+        'product_url': 'TEXT(30)',
         'avg_rating': 'FLOAT',
         'total_ratings': 'INTEGER',
         'price': 'INTEGER',
         'old_price': 'INTEGER',
-        'secondary_information': 'TEXT',
-        'image': 'TEXT',
+        'secondary_information': 'LONGTEXT',
+        'image': 'TEXT(30)',
         },
     'ProductDetails': {
-        'product_id': 'TEXT PRIMARY KEY',
-        'product_title': 'TEXT',
-        'byline_info': 'TEXT',
+        'product_id': 'TEXT(16) PRIMARY KEY',
+        'product_title': 'LONGTEXT',
+        'byline_info': 'LONGTEXT',
         'num_reviews': 'INTEGER',
-        'answered_questions': 'TEXT',
+        'answered_questions': 'TEXT(25)',
         'curr_price': 'FLOAT',
-        'features': 'TEXT',
-        'offers': 'TEXT',
-        'description': 'TEXT',
-        'product_details': 'TEXT',
-        'featurewise_reviews': 'TEXT',
-        'customer_qa': 'TEXT',
+        'features': 'LONGTEXT',
+        'offers': 'LONGTEXT',
+        'description': 'LONGTEXT',
+        'product_details': 'LONGTEXT',
+        'featurewise_reviews': 'LONGTEXT',
+        'customer_qa': 'LONGTEXT',
         'customer_lazy': 'INTEGER',
-        'customer_reviews': 'TEXT',
+        'histogram': 'LONGTEXT',
+        'reviews_url': 'TEXT(30)',
         'created_on': 'DATETIME',
     },
     'SponsoredProductDetails': {
-        'product_id': 'TEXT PRIMARY KEY',
-        'product_title': 'TEXT',
-        'byline_info': 'TEXT',
+        'product_id': 'TEXT(16) PRIMARY KEY',
+        'product_title': 'LONGTEXT',
+        'byline_info': 'LONGTEXT',
         'num_reviews': 'INTEGER',
-        'answered_questions': 'TEXT',
+        'answered_questions': 'TEXT(25)',
         'curr_price': 'FLOAT',
-        'features': 'TEXT',
-        'offers': 'TEXT',
-        'description': 'TEXT',
-        'product_details': 'TEXT',
-        'featurewise_reviews': 'TEXT',
-        'customer_qa': 'TEXT',
+        'features': 'LONGTEXT',
+        'offers': 'LONGTEXT',
+        'description': 'LONGTEXT',
+        'product_details': 'LONGTEXT',
+        'featurewise_reviews': 'LONGTEXT',
+        'customer_qa': 'LONGTEXT',
         'customer_lazy': 'INTEGER',
-        'customer_reviews': 'TEXT',
+        'histogram': 'LONGTEXT',
+        'reviews_url': 'TEXT(30)',
         'created_on': 'DATETIME',
     },
     'QandA': {
         'id': 'INTEGER PRIMARY KEY',
-        'product_id': 'TEXT',
-        'question': 'TEXT',
-        'answer': 'TEXT',
+        'product_id': 'TEXT(16)',
+        'question': 'LONGTEXT',
+        'answer': 'LONGTEXT',
         'date': 'DATETIME',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'Reviews': {
         'id': 'INTEGER PRIMARY KEY',
-        'product_id': 'TEXT',
+        'product_id': 'TEXT(16)',
         'rating': 'FLOAT',
         'review_date': 'DATETIME',
-        'country': 'TEXT',
-        'title': 'TEXT',
-        'body': 'TEXT',
-        'product_info': 'TEXT',
+        'country': 'TEXT(20)',
+        'title': 'TEXT(50)',
+        'body': 'LONGTEXT',
+        'product_info': 'LONGTEXT',
         'verified_purchase': 'INTEGER',
         'helpful_votes': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
@@ -92,6 +94,7 @@ field_map = {
     'FLOAT': Float,
     'DATETIME': DateTime,
     'BOOLEAN': Boolean,
+    'LONGTEXT': Text,
 }
 
 
@@ -157,12 +160,29 @@ def apply_schema(cls):
             continue
 
         datatype = table[field].split()[0]
+        
+        pattern = r'(.+)\ *\(([0-9]+)\)$'
+        match = re.match(pattern, datatype)
+        
+        if match is not None:
+            datatype = match.groups()[0]
+            size = int(match.groups()[1])
+        else:
+            size = None
+
         datatype = field_map[datatype]
+
         if datatype == String:
-            if field == 'product_id':
-                datatype = String(20)
+            if size is not None:
+                datatype = String(size)
             else:
-                datatype = String(5000)
+                datatype = String(None)
+        elif datatype == Text:
+            if size is not None:
+                datatype = Text(size)
+            else:
+                datatype = Text()
+        
         args = [field, datatype]
         kwargs = dict()
 
