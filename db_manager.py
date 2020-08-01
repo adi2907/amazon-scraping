@@ -21,7 +21,7 @@ tables = {
         'product_id': 'TEXT(16) PRIMARY KEY',
         'category': 'TEXT(60)',
         'title': 'TEXT(100)',
-        'product_url': 'TEXT(500)',
+        'product_url': 'LONGTEXT',
         'avg_rating': 'FLOAT',
         'total_ratings': 'INTEGER',
         'price': 'INTEGER',
@@ -62,7 +62,7 @@ tables = {
         'customer_qa': 'LONGTEXT',
         'customer_lazy': 'INTEGER',
         'histogram': 'LONGTEXT',
-        'reviews_url': 'TEXT(500)',
+        'reviews_url': 'LONGTEXT',
         'created_on': 'DATETIME',
     },
     'QandA': {
