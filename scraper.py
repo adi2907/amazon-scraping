@@ -144,6 +144,9 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         results[category] = final_results[category]
         
         if dump == True:
+            if not os.path.exists(os.path.join(os.getcwd(), 'dumps')):
+                os.mkdir(os.path.join(os.getcwd(), 'dumps'))
+            
             with open(f'dumps/{category}.pkl', 'wb') as f:
                 pickle.dump(results, f)
         
