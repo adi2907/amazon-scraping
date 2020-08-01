@@ -28,6 +28,11 @@ session = requests.Session()
 # Use a proxy if possible
 my_proxy = proxy.Proxy()
 
+try:
+    my_proxy.change_identity()
+except:
+    my_proxy = None
+
 # Dump Directory
 #if not os.path.exists(os.path.join(os.getcwd(), 'dumps')):
 #    os.mkdir(os.path.join(os.getcwd(), 'dumps'))
