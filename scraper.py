@@ -114,6 +114,9 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
 
     final_results = dict()
 
+    count = 0
+    MAX_ITEMS = random.randint(2, 6)
+
     for category in categories:
         final_results[category] = dict()
         base_url = url_template.substitute(category=category)
@@ -129,6 +132,14 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
+        
+        count += 1
+
+        if count > 0 and count == MAX_ITEMS:
+            # Change Identity
+            goto_product_listing(category)
+            count = 0
+            MAX_ITEMS = random.randint(2, 6)
         
         time.sleep(5)
         curr_page = 1
@@ -156,6 +167,15 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
+                
+                count += 1
+                
+                if count > 0 and count == MAX_ITEMS:
+                    # Change Identity
+                    goto_product_listing(category)
+                    count = 0
+                    MAX_ITEMS = random.randint(2, 5)
+
                 time.sleep(3)
                 break
             
@@ -168,6 +188,14 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
+                
+                count += 1
+                if count > 0 and count == MAX_ITEMS:
+                    # Change Identity
+                    goto_product_listing(category)
+                    count = 0
+                    MAX_ITEMS = random.randint(2, 4)
+
                 time.sleep(3)
                 break
             
@@ -181,6 +209,15 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
             curr_url = server_url + page_url
+
+            count += 1
+
+            if count > 0 and count == MAX_ITEMS:
+                # Change Identity
+                goto_product_listing(category)
+                count = 0
+                MAX_ITEMS = random.randint(2, 5)
+
             time.sleep(5)
             curr_page += 1
         
