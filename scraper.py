@@ -18,6 +18,8 @@ import proxy
 
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 
+cookies = dict()
+
 url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
 
 customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
@@ -63,26 +65,41 @@ db_session = Session()
 
 def goto_product_listing(category):
     global my_proxy
+    global headers, cookies
     if my_proxy is None:
         return
     
     my_proxy.change_identity()
     server_url = 'https://amazon.in'
+
+    # Change the User Agent
+    headers["User-Agent"] = my_proxy.user_agent
     
     response = my_proxy.get(server_url)
     assert response.status_code == 200
 
     time.sleep(random.randint(4, 7))
 
+    if hasattr(response, 'cookies'):
+        cookies = {**cookies, **dict(response.cookies)}
+        # Starting Cookies
+        print(cookies)
+
+    my_proxy.cookies = cookies
+
     listing_url = url_template.substitute(category=category)
-    response = my_proxy.get(listing_url)
+    response = my_proxy.get(listing_url, headers=headers, cookies=cookies)
     assert response.status_code == 200
+
+    if hasattr(response, 'cookies'):
+        cookies = {**cookies, **dict(response.cookies)}
 
     time.sleep(random.randint(3, 6))
 
 
 def scrape_category_listing(categories, num_pages=None, dump=False):
     global my_proxy, session
+    global headers, cookies
     # session = requests.Session()
 
     if num_pages is None:
@@ -241,6 +258,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
 
 def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None):
     global my_proxy, session
+    global headers, cookies
     # session = requests.Session()
     server_url = 'https://amazon.in'
     
