@@ -83,8 +83,8 @@ class Proxy():
             # Now change the IP via the Tor Relay Controller
             with Controller.from_port(port = self.control_port) as controller:
                 controller.authenticate(password = TOR_PASSWORD)
-                socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", self.proxy_port)
-                socket.socket = socks.socksocket
+                # socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", self.proxy_port)
+                # socket.socket = socks.socksocket
                 controller.signal(Signal.NEWNYM)
             
             # Now let's find out the new IP, if this worked correctly
@@ -126,7 +126,12 @@ class Proxy():
             # Provide a random user agent
             if url.startswith('https://amazon'):
                 # Amazon specific headers
-                headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
+                headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"keep-alive", "Upgrade-Insecure-Requests":"1"}
+                headers['TE'] = 'Trailers'
+                headers['Sec-Fetch-User'] = '?1'
+                headers['Sec-Fetch-Site'] = 'none'
+                headers['Sec-Fetch-Mode'] = 'navigate'
+                headers['Sec-Fetch-Dest'] = 'document'
             else:
                 headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate"}
             kwargs['headers'] = headers
@@ -134,6 +139,8 @@ class Proxy():
         if 'referer' in kwargs:
             kwargs['headers']['referer'] = kwargs['referer']
             del kwargs['referer']
+        
+        kwargs['cookies'] = self.cookies
         
         # Now make the request
         if hasattr(requests, request_type):
