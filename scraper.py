@@ -121,7 +121,10 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         else:
             response = session.get(base_url, headers=headers, cookies=cookies)
         
-        assert response.status_code == 200
+        if response.status_code != 200:
+            print(response.content)
+            raise ValueError(f'Error: Got code {response.status_code}')
+        
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
         
