@@ -110,13 +110,13 @@ class Proxy():
             if ip is not None:
                 if self.ip_address is None:
                     self.ip_address = ip
-                    logger.warning(f"IP Address is: {self.ip_address}")
+                    logger.info(f"IP Address is: {self.ip_address}")
                     break
                 else:
                     # Let's compare
                     if ip != self.ip_address:
                         self.ip_address = ip
-                        logger.warning(f"New IP Address is: {self.ip_address}")
+                        logger.info(f"New IP Address is: {self.ip_address}")
                         break
                     else:
                         curr += 1
@@ -194,7 +194,7 @@ class Proxy():
                         self.goto_product_listing(getattr(self, 'category'))
                     else:
                         self.change_identity()
-                        self.reference_count = self.generate_count(2, 6) - self.penalty
+                        self.reference_count = max(2, self.generate_count(2, 6) - self.penalty)
             else:
                 # Keep ref count constant
                 pass
@@ -219,7 +219,7 @@ class Proxy():
         response = self.get(server_url)
         if response.status_code != 200:
             if cooldown == True:
-                raise ValueError(f"Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
+                raise ValueError(f"Base URL: {server_url} - Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
             logger.warning(f"Server is probably blocking requests. Received Code {response.status_code}")
             logger.warning("Switching to cooldown mode")
             self.delay = 3
@@ -235,7 +235,7 @@ class Proxy():
         response = self.get(listing_url, referer=server_url)
         if response.status_code != 200:
             if cooldown == True:
-                raise ValueError(f"Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
+                raise ValueError(f"Listing URL: {listing_url} - Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
             logger.warning(f"Server is probably blocking requests. Received Code {response.status_code}")
             logger.warning("Switching to cooldown mode")
             self.delay = 4

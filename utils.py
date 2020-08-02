@@ -1,6 +1,7 @@
 import logging
 import logging.handlers
 import os
+import sys
 import types
 from string import Template
 
@@ -68,6 +69,9 @@ def create_logger(app_name: str) -> logging.Logger:
 
     # Also add a StreamHandler for printing to stderr
     console_handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", "%Y-%m-%d %H:%M:%S")
+    console_handler.setFormatter(formatter)
+    
     logger.addHandler(console_handler)
 
     return logger
@@ -75,3 +79,16 @@ def create_logger(app_name: str) -> logging.Logger:
 
 # Create the logger for the app
 logger = create_logger('app')
+
+
+# We can log any unhandled exceptions using the logger!
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+    logger.newline()
+
+# This will capture any uncaught exception
+sys.excepthook = handle_exception
