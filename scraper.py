@@ -38,10 +38,6 @@ try:
 except:
     my_proxy = None
 
-# Dump Directory
-#if not os.path.exists(os.path.join(os.getcwd(), 'dumps')):
-#    os.mkdir(os.path.join(os.getcwd(), 'dumps'))
-
 # Database Session setup
 try:
     DB_USER = config('DB_USER')
@@ -53,8 +49,9 @@ try:
 except UndefinedValueError:
     DB_TYPE = 'sqlite'
     engine = db_manager.Database(dbtype=DB_TYPE).db_engine
+    logger.warning("Using the default db.sqlite Database")
+    logger.newline()
 
-# db_manager.create_tables(engine)
 
 Session = sessionmaker(bind=engine)
 
@@ -78,7 +75,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         try:
             response = my_proxy.get(server_url)
         except requests.exceptions.ConnectionError:
-            logger.warning(' No Proxy available via Tor relay. Mode = Normal')
+            logger.warning('No Proxy available via Tor relay. Mode = Normal')
             logger.newline()
             my_proxy = None
             response = session.get(server_url, headers=headers)
@@ -125,9 +122,6 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
             time.sleep(6)
             html = response.content
             soup = BeautifulSoup(html, 'html.parser')
-            
-            #if not os.path.exists(os.path.join(os.getcwd(), 'data', f'{category}')):
-            #    os.mkdir(os.path.join(os.getcwd(), 'data', f'{category}'))
                         
             product_info = parse_data.get_product_info(soup)
 
@@ -185,6 +179,8 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
             # Delete the previous page results
             if category in final_results and curr_page - 1 in final_results[category]:
                 del final_results[category][curr_page - 1]
+            
+            logger.info(f"Finished Scraping Listing Page {curr_page - 1} of {category}")
         
         # Dump the category results
         results = dict()
@@ -199,6 +195,8 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         
         # Insert to the DB
         db_manager.insert_product_listing(db_session, results)
+
+        logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
         time.sleep(4)
     return final_results
@@ -234,9 +232,6 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     time.sleep(3)
     html = response.content
-    
-    #if not os.path.exists(os.path.join(os.getcwd(), 'data', f'{category}')):
-    #    os.mkdir(os.path.join(os.getcwd(), 'data', f'{category}'))
         
     product_id = parse_data.get_product_id(product_url)
     
@@ -281,8 +276,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 qanda_url = server_url + next_url
                 curr += 1
                 if qanda_pages is not None and curr == qanda_pages:
+                    logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
+                    logger.newline()
                     break
             else:
+                logger.info(f"QandA (Current Page = {curr}) - Next Page is None. Going to Reviews now...")
+                logger.newline()
                 break
     
     # Get the customer reviews
@@ -313,10 +312,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     reviews_url = server_url + next_url
                     curr += 1
                     if review_pages is not None and curr == review_pages:
+                        logger.info(f"Reviews (Current Page = {curr}) - Finished last page.")
+                        logger.newline()
                         break
                     logger.info(f"Reviews: Going to Page {curr}")
                 else:
-                    logger.info("Finished Scraping Reviews for this product")
+                    logger.info(f"Reviews (Current Page = {curr}). Next Page is None. Finished Scraping Reviews for this product")
                     break
     
     time.sleep(3)
@@ -347,8 +348,6 @@ if __name__ == '__main__':
     qanda_pages = args.qanda_pages
     dump = args.dump
 
-    MAX_ITEMS = random.randint(3, 7)
-
     if categories is not None:
         if listing == True:
             results = scrape_category_listing(categories, num_pages=num_pages, dump=dump)
@@ -362,13 +361,6 @@ if __name__ == '__main__':
                             for title in results[category][curr_page]:
                                 if results[category][curr_page][title]['product_url'] is not None:
                                     product_url = results[category][curr_page][title]['product_url']
-                                    
-                                    if reference > 0 and reference == MAX_ITEMS:
-                                        # Change Identity
-                                        my_proxy.goto_product_listing(category)
-                                        reference = 0
-                                        MAX_ITEMS = random.randint(2, 8)
-                                    
                                     product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
                                     curr_item += 1
                                     reference += 1
@@ -392,13 +384,6 @@ if __name__ == '__main__':
                         for title in results[category][curr_page]:
                             if results[category][curr_page][title]['product_url'] is not None:
                                 product_url = results[category][curr_page][title]['product_url']
-
-                                if curr_item > 0 and curr_item == MAX_ITEMS:
-                                    # Change Identity
-                                    my_proxy.goto_product_listing(category)
-                                    reference = 0
-                                    MAX_ITEMS = random.randint(2, 8)
-
                                 product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
                                 curr_item += 1
                                 reference += 1
