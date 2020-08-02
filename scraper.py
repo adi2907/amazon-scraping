@@ -64,44 +64,6 @@ Session = sessionmaker(bind=engine)
 db_session = Session()
 
 
-def goto_product_listing(category):
-    global my_proxy
-    global headers, cookies
-    if my_proxy is None:
-        return
-    
-    my_proxy.change_identity()
-    server_url = 'https://amazon.in'
-
-    # Change the User Agent
-    headers["User-Agent"] = my_proxy.user_agent
-    headers = OrderedDict(headers)
-
-    # Reset the cookies
-    cookies = dict()
-    
-    response = my_proxy.get(server_url, headers=headers)
-    assert response.status_code == 200
-
-    time.sleep(random.randint(4, 7))
-
-    if hasattr(response, 'cookies'):
-        cookies = {**cookies, **dict(response.cookies)}
-        # Starting Cookies
-        print(cookies)
-
-    my_proxy.cookies = cookies
-
-    listing_url = url_template.substitute(category=category)
-    response = my_proxy.get(listing_url, headers=headers, cookies=cookies)
-    assert response.status_code == 200
-
-    if hasattr(response, 'cookies'):
-        cookies = {**cookies, **dict(response.cookies)}
-
-    time.sleep(random.randint(3, 6))
-
-
 def scrape_category_listing(categories, num_pages=None, dump=False):
     global my_proxy, session
     global headers, cookies
@@ -136,15 +98,13 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
 
     final_results = dict()
 
-    count = 0
-    MAX_ITEMS = random.randint(2, 6)
-
     for category in categories:
         final_results[category] = dict()
         base_url = url_template.substitute(category=category)
         
         if my_proxy is not None:
-            response = my_proxy.get(base_url, headers=headers, cookies=cookies)
+            response = my_proxy.get(base_url)
+            setattr(my_proxy, 'category', category)
         else:
             response = session.get(base_url, headers=headers, cookies=cookies)
         
@@ -154,14 +114,6 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
-        
-        count += 1
-
-        if count > 0 and count == MAX_ITEMS:
-            # Change Identity
-            goto_product_listing(category)
-            count = 0
-            MAX_ITEMS = random.randint(2, 6)
         
         time.sleep(5)
         curr_page = 1
@@ -185,18 +137,10 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 if my_proxy is None:
                     response = session.get(base_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(base_url, headers=headers, cookies=cookies)
+                    response = my_proxy.get(base_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
-                
-                count += 1
-                
-                if count > 0 and count == MAX_ITEMS:
-                    # Change Identity
-                    goto_product_listing(category)
-                    count = 0
-                    MAX_ITEMS = random.randint(2, 5)
 
                 time.sleep(3)
                 break
@@ -206,17 +150,10 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 if my_proxy is None:
                     response = session.get(base_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(base_url, headers=headers, cookies=cookies)
+                    response = my_proxy.get(base_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
-                
-                count += 1
-                if count > 0 and count == MAX_ITEMS:
-                    # Change Identity
-                    goto_product_listing(category)
-                    count = 0
-                    MAX_ITEMS = random.randint(2, 4)
 
                 time.sleep(3)
                 break
@@ -226,22 +163,22 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
             if my_proxy is None:       
                 response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
             else:
-                response = my_proxy.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
+                response = my_proxy.get(server_url + page_url, referer=curr_url)
             
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
             curr_url = server_url + page_url
 
-            count += 1
-
-            if count > 0 and count == MAX_ITEMS:
-                # Change Identity
-                goto_product_listing(category)
-                count = 0
-                MAX_ITEMS = random.randint(2, 5)
-
             time.sleep(5)
             curr_page += 1
+
+            # Dump the results of this page to the DB
+            page_results = dict()
+            page_results[category] = final_results[category]
+            db_manager.insert_product_listing(db_session, page_results)
+            # Delete the previous page results
+            if category in final_results and curr_page - 1 in final_results[category]:
+                del final_results[category][curr_page - 1]
         
         # Dump the category results
         results = dict()
@@ -270,7 +207,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if my_proxy is None:
         response = session.get(server_url, headers=headers)
     else:
-        response = my_proxy.get(server_url, headers=headers)
+        response = my_proxy.get(server_url)
+        setattr(my_proxy, 'category', category)
     
     assert response.status_code == 200
     cookies = dict(response.cookies)
@@ -279,7 +217,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if my_proxy is None:
         response = session.get(server_url + product_url, headers=headers, cookies=cookies)
     else:
-        response = my_proxy.get(server_url + product_url, headers=headers, cookies=cookies)
+        response = my_proxy.get(server_url + product_url)
     
     if hasattr(response, 'cookies'):
         cookies = {**cookies, **dict(response.cookies)}
@@ -318,7 +256,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             if my_proxy is None:
                 response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
             else:
-                response = my_proxy.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
+                response = my_proxy.get(qanda_url, referer=server_url + product_url)
             
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
@@ -350,7 +288,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 if my_proxy is None:
                     response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
                 else:
-                    response = my_proxy.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
+                    response = my_proxy.get(server_url + reviews_url, referer=server_url + product_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -413,9 +351,6 @@ if __name__ == '__main__':
                     curr_item = 0
                     curr_page = 1
 
-                    # Reference Count for reset
-                    reference = 0
-
                     while curr_item < num_items:
                         if curr_page in results[category]:
                             for title in results[category][curr_page]:
@@ -424,7 +359,7 @@ if __name__ == '__main__':
                                     
                                     if reference > 0 and reference == MAX_ITEMS:
                                         # Change Identity
-                                        goto_product_listing(category)
+                                        my_proxy.goto_product_listing(category)
                                         reference = 0
                                         MAX_ITEMS = random.randint(2, 8)
                                     
@@ -454,7 +389,7 @@ if __name__ == '__main__':
 
                                 if curr_item > 0 and curr_item == MAX_ITEMS:
                                     # Change Identity
-                                    goto_product_listing(category)
+                                    my_proxy.goto_product_listing(category)
                                     reference = 0
                                     MAX_ITEMS = random.randint(2, 8)
 

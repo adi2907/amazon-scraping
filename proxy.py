@@ -2,6 +2,7 @@ import random
 import socket
 import time
 from collections import OrderedDict
+from string import Template
 
 import requests
 import socks
@@ -9,6 +10,10 @@ from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
 from stem import Signal
 from stem.control import Controller
+
+url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
+
+customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
 
 try:
     TOR_PASSWORD = config('TOR_PASSWORD')
@@ -23,6 +28,12 @@ control_port = 9051
 class Proxy():
     """Our own Proxy Class which will use Tor relays to keep shifting between IP addresses
     """
+
+    @staticmethod
+    def generate_count(start=2, end=6):
+        count = random.randint(start, end)
+        return count
+    
 
     def __init__(self, proxy_port=9050, control_port=9051, OS='Windows'):
         self.proxy_port = proxy_port
@@ -46,9 +57,12 @@ class Proxy():
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
             "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15",
         ]
         self.ip_address = None
         self.max_retries = 3
+        self.reference_count = self.generate_count()
     
 
     def reset(self):
@@ -139,14 +153,51 @@ class Proxy():
             kwargs['headers']['referer'] = kwargs['referer']
             del kwargs['referer']
         
-        if 'cookies' not in kwargs:
-            kwargs['cookies'] = self.cookies
+        # Some requests may not need cookies at all (For example, the first request)
+        if 'cookies' not in kwargs and ('no_cookies' not in kwargs or kwargs['no_cookies'] == False):
+            # Don't EVER send empty cookies unless explicitly mentioned
+            if 'empty_cookies' not in kwargs and self.cookies != {}:
+                kwargs['cookies'] = self.cookies
+            else:
+                if 'empty_cookies' in kwargs and kwargs['empty_cookies'] == True:
+                    if self.cookies == {}:
+                        kwargs['cookies'] = self.cookies
+                    del kwargs['empty_cookies']
         
-        # Now make the request
+        if 'no_cookies' in kwargs:
+            del kwargs['no_cookies']
+        
+        if 'ref_count' in kwargs:
+            if kwargs['ref_count'] == 'constant':
+                # We won't change reference_count
+                const = True
+            else:
+                const = False
+            del kwargs['ref_count']
+        else:
+            const = False
+                
+        # Now make the request and decrement the reference count
         if hasattr(requests, request_type):
             response = getattr(self.session, request_type)(url, **kwargs)
             if hasattr(response, 'cookies'):
                 self.cookies = {**(self.cookies), **dict(response.cookies)}
+            
+            if const == False:
+                self.reference_count -= 1
+                if self.reference_count <= 0:
+                    # Change the identity and set it again
+                    time.sleep(random.randint(3, 5))
+
+                    if hasattr(self, 'category') and url.startswith('https://amazon'):
+                        self.goto_product_listing(getattr(self, 'category'))
+                    else:
+                        self.change_identity()
+                        self.reference_count = self.generate_count(2, 6)
+            else:
+                # Keep ref count constant
+                pass
+
             return response
         else:
             raise ValueError(f"Invalid Request Type: {request_type}")
@@ -154,6 +205,29 @@ class Proxy():
 
     def get(self, url, **kwargs):
         return self.make_request('get', url, **kwargs)
+
+    
+    def goto_product_listing(self, category):
+        self.change_identity()
+        self.reference_count = self.generate_count(2, 6)
+
+        server_url = 'https://amazon.in'
+
+        # Increase ref count before request. Don't want to keep looping!
+        self.reference_count += 1
+        response = self.get(server_url)
+        assert response.status_code == 200
+
+        time.sleep(random.randint(4, 7))
+
+        listing_url = url_template.substitute(category=category)
+        
+        # Increase ref count before request. Don't want to keep looping!
+        self.reference_count += 1
+        response = self.get(listing_url, referer=server_url)
+        assert response.status_code == 200
+
+        time.sleep(random.randint(3, 6))
 
 
 def test_proxy(proxy: Proxy, change: bool = False) -> None:
