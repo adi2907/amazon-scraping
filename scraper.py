@@ -16,14 +16,11 @@ from sqlalchemy.orm import sessionmaker
 import db_manager
 import parse_data
 import proxy
+from utils import customer_reviews_template, logger, url_template
 
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 
 cookies = dict()
-
-url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
-
-customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
 
 try:
     OS = config('OS')
@@ -81,7 +78,8 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         try:
             response = my_proxy.get(server_url)
         except requests.exceptions.ConnectionError:
-            print('Warning: No Proxy available via Tor relay. Mode = Normal')
+            logger.warning(' No Proxy available via Tor relay. Mode = Normal')
+            logger.newline()
             my_proxy = None
             response = session.get(server_url, headers=headers)
     else:
@@ -109,7 +107,11 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
             response = session.get(base_url, headers=headers, cookies=cookies)
         
         if response.status_code != 200:
-            print(response.content)
+            logger.newline()
+            logger.newline()
+            logger.error(response.content)
+            logger.newline()
+            logger.newline()
             raise ValueError(f'Error: Got code {response.status_code}')
         
         if hasattr(response, 'cookies'):
@@ -142,7 +144,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
                 
-                print(f"Curr Page = {curr_page}. Pagination Element is None")
+                logger.warning(f"Curr Page = {curr_page}. Pagination Element is None")
 
                 time.sleep(3)
                 break
@@ -157,7 +159,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
                 
-                print(f"Curr Page = {curr_page}. Next Page Element is None")
+                logger.warning(f"Curr Page = {curr_page}. Next Page Element is None")
 
                 time.sleep(3)
                 break
@@ -275,7 +277,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
             
             if next_url is not None:
-                print(f"QandA: Going to Page {curr}")
+                logger.info(f"QandA: Going to Page {curr}")
                 qanda_url = server_url + next_url
                 curr += 1
                 if qanda_pages is not None and curr == qanda_pages:
@@ -312,9 +314,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     curr += 1
                     if review_pages is not None and curr == review_pages:
                         break
-                    print(f"Reviews: Going to Page {curr}")
+                    logger.info(f"Reviews: Going to Page {curr}")
                 else:
-                    print("Finished Scraping Reviews for this product")
+                    logger.info("Finished Scraping Reviews for this product")
                     break
     
     time.sleep(3)

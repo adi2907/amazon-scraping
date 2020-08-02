@@ -11,9 +11,7 @@ from decouple import UndefinedValueError, config
 from stem import Signal
 from stem.control import Controller
 
-url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
-
-customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
+from utils import customer_reviews_template, logger, url_template
 
 try:
     TOR_PASSWORD = config('TOR_PASSWORD')
@@ -104,9 +102,7 @@ class Proxy():
             # Now change the IP via the Tor Relay Controller
             with Controller.from_port(port = self.control_port) as controller:
                 controller.authenticate(password = TOR_PASSWORD)
-                # socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", self.proxy_port)
-                # socket.socket = socks.socksocket
-                controller.signal(Signal.NEWNYM)
+                controller.signal(Signal.NEWNYM) # type: ignore
             
             # Now let's find out the new IP, if this worked correctly
             ip = self.get_ip()
@@ -114,25 +110,25 @@ class Proxy():
             if ip is not None:
                 if self.ip_address is None:
                     self.ip_address = ip
-                    print(f"IP Address is: {self.ip_address}")
+                    logger.warning(f"IP Address is: {self.ip_address}")
                     break
                 else:
                     # Let's compare
                     if ip != self.ip_address:
                         self.ip_address = ip
-                        print(f"New IP Address is: {self.ip_address}")
+                        logger.warning(f"New IP Address is: {self.ip_address}")
                         break
                     else:
                         curr += 1
                         if curr < self.max_retries:
-                            print("Error during changing the IP Address. Retrying...")
+                            logger.warning("Error during changing the IP Address. Retrying...")
                             time.sleep(5)
                         else:
                             raise TimeoutError("Maximum Retries Exceeded. Couldn't change the IP Address")
             else:
                 curr += 1
                 if curr < self.max_retries:
-                    print("Error during changing the IP Address. Retrying...")
+                    logger.warning("Error during changing the IP Address. Retrying...")
                     time.sleep(5)
                 else:
                     raise TimeoutError("Maximum Retries Exceeded. Couldn't change the IP Address")
@@ -224,12 +220,11 @@ class Proxy():
         if response.status_code != 200:
             if cooldown == True:
                 raise ValueError(f"Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
-            print(f"Server is probably blocking requests. Received Code {response.status_code}")
-            print("Switching to cooldown mode")
+            logger.warning(f"Server is probably blocking requests. Received Code {response.status_code}")
+            logger.warning("Switching to cooldown mode")
             self.delay = 3
             self.penalty = 1
-            self.goto_product_listing(category, cooldown=True)
-            time.sleep(5)
+            return self.goto_product_listing(category, cooldown=True)
 
         time.sleep(random.randint(4, 7) + self.delay)
 
@@ -241,12 +236,11 @@ class Proxy():
         if response.status_code != 200:
             if cooldown == True:
                 raise ValueError(f"Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
-            print(f"Server is probably blocking requests. Received Code {response.status_code}")
-            print("Switching to cooldown mode")
+            logger.warning(f"Server is probably blocking requests. Received Code {response.status_code}")
+            logger.warning("Switching to cooldown mode")
             self.delay = 4
             self.penalty = 1
-            self.goto_product_listing(category, cooldown=True)
-            time.sleep(5)
+            return self.goto_product_listing(category, cooldown=True)
 
         time.sleep(random.randint(3, 6) + self.delay)
 
@@ -266,7 +260,7 @@ def test_proxy(proxy: Proxy, change: bool = False) -> None:
     ip_text = soup.find("div", class_ = 'content').p.text.strip()
     old_ip_address = ip_text.split()[-1]
     
-    print(f"Old (Current) IP: {old_ip_address}")
+    logger.warning(f"Old (Current) IP: {old_ip_address}")
 
     if change == True:
         proxy.change_identity()
@@ -283,10 +277,10 @@ def test_proxy(proxy: Proxy, change: bool = False) -> None:
 
         assert old_ip_address != new_ip_address
 
-        print(f"New (Current) IP: {new_ip_address}")
+        logger.warning(f"New (Current) IP: {new_ip_address}")
 
 
 if __name__ == '__main__':
     proxy = Proxy(proxy_port=9050, control_port=9051)
     test_proxy(proxy, change=True)
-    # print(proxy.get_ip())
+    # logger.warning(proxy.get_ip())
