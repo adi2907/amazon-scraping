@@ -120,7 +120,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
         curr_url = base_url
 
         while curr_page <= num_pages:
-            time.sleep(3)
+            time.sleep(6)
             html = response.content
             soup = BeautifulSoup(html, 'html.parser')
             
@@ -141,6 +141,8 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
+                
+                print(f"Curr Page = {curr_page}. Pagination Element is None")
 
                 time.sleep(3)
                 break
@@ -154,6 +156,8 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
+                
+                print(f"Curr Page = {curr_page}. Next Page Element is None")
 
                 time.sleep(3)
                 break

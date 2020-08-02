@@ -63,6 +63,8 @@ class Proxy():
         self.ip_address = None
         self.max_retries = 3
         self.reference_count = self.generate_count()
+        self.delay = 0
+        self.penalty = 0
     
 
     def reset(self):
@@ -93,6 +95,9 @@ class Proxy():
 
         # Reset the cookies
         self.cookies = dict()
+
+        self.delay = 0
+        self.penalty = 0
         
         curr = 0
         while curr <= self.max_retries:
@@ -187,13 +192,13 @@ class Proxy():
                 self.reference_count -= 1
                 if self.reference_count <= 0:
                     # Change the identity and set it again
-                    time.sleep(random.randint(3, 5))
+                    time.sleep(random.randint(3, 5) + self.delay)
 
                     if hasattr(self, 'category') and url.startswith('https://amazon'):
                         self.goto_product_listing(getattr(self, 'category'))
                     else:
                         self.change_identity()
-                        self.reference_count = self.generate_count(2, 6)
+                        self.reference_count = self.generate_count(2, 6) - self.penalty
             else:
                 # Keep ref count constant
                 pass
@@ -207,7 +212,7 @@ class Proxy():
         return self.make_request('get', url, **kwargs)
 
     
-    def goto_product_listing(self, category):
+    def goto_product_listing(self, category, cooldown=False):
         self.change_identity()
         self.reference_count = self.generate_count(2, 6)
 
@@ -216,18 +221,34 @@ class Proxy():
         # Increase ref count before request. Don't want to keep looping!
         self.reference_count += 1
         response = self.get(server_url)
-        assert response.status_code == 200
+        if response.status_code != 200:
+            if cooldown == True:
+                raise ValueError(f"Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
+            print(f"Server is probably blocking requests. Received Code {response.status_code}")
+            print("Switching to cooldown mode")
+            self.delay = 3
+            self.penalty = 1
+            self.goto_product_listing(category, cooldown=True)
+            time.sleep(5)
 
-        time.sleep(random.randint(4, 7))
+        time.sleep(random.randint(4, 7) + self.delay)
 
         listing_url = url_template.substitute(category=category)
         
         # Increase ref count before request. Don't want to keep looping!
         self.reference_count += 1
         response = self.get(listing_url, referer=server_url)
-        assert response.status_code == 200
+        if response.status_code != 200:
+            if cooldown == True:
+                raise ValueError(f"Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
+            print(f"Server is probably blocking requests. Received Code {response.status_code}")
+            print("Switching to cooldown mode")
+            self.delay = 4
+            self.penalty = 1
+            self.goto_product_listing(category, cooldown=True)
+            time.sleep(5)
 
-        time.sleep(random.randint(3, 6))
+        time.sleep(random.randint(3, 6) + self.delay)
 
 
 def test_proxy(proxy: Proxy, change: bool = False) -> None:
