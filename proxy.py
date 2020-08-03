@@ -12,7 +12,9 @@ from decouple import UndefinedValueError, config
 from stem import Signal
 from stem.control import Controller
 
-from utils import customer_reviews_template, logger, url_template
+from utils import create_logger, customer_reviews_template, url_template
+
+logger = create_logger(__name__)
 
 try:
     TOR_PASSWORD = config('TOR_PASSWORD')
@@ -20,15 +22,27 @@ except UndefinedValueError:
     TOR_PASSWORD = None
 
 
-windows_proxy_port = 9150
 control_port = 9051
-
-BACKOFF_DURATION = 70
+BACKOFF_DURATION = 20
 
 
 class Retry():
+    """A class which will ensure that falied requests are send again
+    """
     @classmethod
-    def retry(cls, predicate, deadline):
+    def retry(cls, predicate, deadline:int =None):
+        """This decorator method uses exponential backoff to re-send requests
+
+        Args:
+            predicate: A predicate, which will ensure that backoff is done only after we catch specific exception(s)
+            deadline (int, optional): [description]. Defaults to None. This is the maximum backoff limit.
+
+        Raises:
+            TimeoutError: When the backoff exceeds the limit
+        """
+        if deadline is None:
+            deadline = BACKOFF_DURATION
+        
         @wraps(cls)
         def wrapper1(func):
             @wraps(func)
@@ -46,7 +60,7 @@ class Retry():
                             
                             # Now backoff and try again
                             self.backoff = 2*self.backoff
-                            if self.backoff > self._BACKOFF_DURATION:
+                            if self.backoff > deadline:
                                 raise TimeoutError("Maximum Backoff Exceeded")
                             self.delay = self.backoff
                             self.penalty = max(2, self.penalty+1)
@@ -87,8 +101,6 @@ class Proxy():
             # Linux
             self.user_agent = "Mozilla/5.0 (X11; Linux i686; rv:78.0) Gecko/20100101 Firefox/78.0"
         
-        self.session = requests.Session()
-        self.cookies = dict()
         self.user_agent_choices = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/80.0",
@@ -96,24 +108,42 @@ class Proxy():
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
             "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux i686; rv:78.0) Gecko/20100101 Firefox/78.0",
             "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15",
         ]
+        self.reset()
+    
+
+    def reset(self):
+        """Resets the state of the proxy
+        """
+        self.session = requests.Session()
+        self.cookies = dict()
+        adapter = requests.adapters.HTTPAdapter(max_retries=3)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+        self.user_agent = random.choice(self.user_agent_choices)
+        self.delay = 0
+        self.penalty = 0
         self.ip_address = None
         self.max_retries = 3
         self.reference_count = self.generate_count()
         self.delay = 0
         self.penalty = 0
         self.backoff = 1
-        self._BACKOFF_DURATION = 70
+        self._BACKOFF_DURATION = 20
     
 
-    def reset(self):
-        self.session = requests.Session()
-        self.cookies = dict()
-    
+    def get_ip(self) -> str:
+        """Fetches the IP Address of the machine
 
-    def get_ip(self):
+        Raises:
+            ValueError: If the IP Address couldn't be fetched
+
+        Returns:
+            str: An IP Address
+        """
         urls = ["https://ident.me", "http://myip.dnsomatic.com", "https://checkip.amazonaws.com"]
         for url in urls:
             response = requests.get(url, proxies=self.proxies)
@@ -128,17 +158,8 @@ class Proxy():
     def change_identity(self):
         """Method which will change both the IP address as well as the user agent
         """
-        # Change the user agent
-        self.user_agent = random.choice(self.user_agent_choices)
-
-        # Create a new session object
-        self.session = requests.Session()
-
-        # Reset the cookies
-        self.cookies = dict()
-
-        self.delay = 0
-        self.penalty = 0
+        # Reset the state of the proxy
+        self.reset()
         
         curr = 0
         while curr <= self.max_retries:
@@ -179,8 +200,13 @@ class Proxy():
 
 
     def make_request(self, request_type, url, **kwargs):
+        """Performs a request using a session object. This handles cookies, along with referral urls.
+        """
         if 'proxies' not in kwargs:
-            kwargs['proxies'] = self.proxies
+            if 'no_proxy' not in kwargs or kwargs['no_proxy'] == True:
+                pass
+            else:
+                kwargs['proxies'] = self.proxies
         
         if 'headers' not in kwargs or 'User-Agent' not in kwargs['headers']:
             # Provide a random user agent
@@ -264,15 +290,6 @@ class Proxy():
         self.reference_count += 1
         response = self.get(server_url)
         assert response.status_code == 200
-        
-        if response.status_code != 200:
-            if cooldown == True:
-                raise ValueError(f"Base URL: {server_url} - Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
-            logger.warning(f"Server is probably blocking requests. Received Code {response.status_code}")
-            logger.warning("Switching to cooldown mode")
-            self.delay = 3
-            self.penalty = 1
-            return self.goto_product_listing(category, cooldown=True)
 
         time.sleep(random.randint(4, 7) + self.delay)
 
@@ -282,16 +299,7 @@ class Proxy():
         self.reference_count += 1
         response = self.get(listing_url, referer=server_url)
         assert response.status_code == 200
-
-        if response.status_code != 200:
-            if cooldown == True:
-                raise ValueError(f"Listing URL: {listing_url} - Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
-            logger.warning(f"Server is probably blocking requests. Received Code {response.status_code}")
-            logger.warning("Switching to cooldown mode")
-            self.delay = 4
-            self.penalty = 1
-            return self.goto_product_listing(category, cooldown=True)
-
+        
         time.sleep(random.randint(3, 6) + self.delay)
 
 
@@ -332,5 +340,6 @@ def test_proxy(proxy: Proxy, change: bool = False) -> None:
 
 if __name__ == '__main__':
     proxy = Proxy(proxy_port=9050, control_port=9051)
-    test_proxy(proxy, change=True)
-    # logger.warning(proxy.get_ip())
+    print(proxy.get_ip())
+    #proxy.change_identity()
+    #print(proxy.get_ip())

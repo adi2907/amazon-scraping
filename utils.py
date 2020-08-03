@@ -78,7 +78,7 @@ def create_logger(app_name: str) -> logging.Logger:
 
 
 # Create the logger for the app
-logger = create_logger('app')
+logger = create_logger(__name__)
 
 
 # We can log any unhandled exceptions using the logger!

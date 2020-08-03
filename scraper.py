@@ -16,7 +16,9 @@ from sqlalchemy.orm import sessionmaker
 import db_manager
 import parse_data
 import proxy
-from utils import customer_reviews_template, logger, url_template
+from utils import create_logger, customer_reviews_template, url_template
+
+logger = create_logger(__name__)
 
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 

@@ -13,11 +13,13 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
 
-from utils import logger
+from utils import create_logger
 
 # This is required for integration with MySQL and Python
 pymysql.install_as_MySQLdb()
 
+# Create the logger
+logger = create_logger(__name__)
 
 # Our Database Schema
 tables = {
