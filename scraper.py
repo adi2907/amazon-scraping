@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import pickle
 import random
@@ -12,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 
 import db_manager
 import parse_data
@@ -225,7 +227,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if my_proxy is None:
         response = session.get(server_url + product_url, headers=headers, cookies=cookies)
     else:
-        response = my_proxy.get(server_url + product_url)
+        response = my_proxy.get(server_url + product_url, product_url=product_url)
     
     if hasattr(response, 'cookies'):
         cookies = {**cookies, **dict(response.cookies)}
@@ -261,7 +263,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             if my_proxy is None:
                 response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
             else:
-                response = my_proxy.get(qanda_url, referer=server_url + product_url)
+                response = my_proxy.get(qanda_url, referer=server_url + product_url, product_url=product_url)
             
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
@@ -291,20 +293,32 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     # Get the customer reviews
     if details is not None and 'reviews_url' in details:
         reviews_url = details['reviews_url']
+        prev_url = product_url
         curr = 0
+        first_request = True
         while reviews_url is not None:
             if reviews_url is not None and product_url is not None:
                 if my_proxy is None:
-                    response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
+                    response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + prev_url}, cookies=cookies)
                 else:
-                    response = my_proxy.get(server_url + reviews_url, referer=server_url + product_url)
-                
+                    if curr == 0 and first_request == False:
+                        response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
+                    else:
+                        response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url)
+               
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
+                
+                if response.status_code != 200:
+                    logger.error(f"Review Page - Got code {response.status_code}")
+                    logger.error(f"Content = {response.content}")
+
                 assert response.status_code == 200
                 time.sleep(5)
+                
                 html = response.content
                 soup = BeautifulSoup(html, 'html.parser')
+
                 reviews, next_url = parse_data.get_customer_reviews(soup)
                 
                 # Insert the reviews to the DB
@@ -312,8 +326,25 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 
                 #with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
                 #	pickle.dump(reviews, f)
+                
+                if first_request == True:
+                    # First Request
+                    first_request = False
+                    response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
+                    assert response.status_code == 200
+
+                    time.sleep(random.randint(4, 5) + random.uniform(0, 1))
+
+                    prev_url = reviews_url
+                    reviews_url = reviews_url + f"&sortBy=recent&pageNumber={curr+1}"
+                    
+                    # Now sort by date
+                    logger.info("Now moving into sorting by most recent.")
+                    continue
+                
                 if next_url is not None:
-                    reviews_url = server_url + next_url
+                    prev_url = reviews_url
+                    reviews_url = next_url
                     curr += 1
                     if review_pages is not None and curr == review_pages:
                         logger.info(f"Reviews (Current Page = {curr}) - Finished last page.")
@@ -340,6 +371,7 @@ if __name__ == '__main__':
     parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int)
     parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
+    parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
 
     args = parser.parse_args()
 
@@ -351,6 +383,10 @@ if __name__ == '__main__':
     review_pages = args.review_pages
     qanda_pages = args.qanda_pages
     dump = args.dump
+    product_ids = args.ids
+
+    if categories is not None and product_ids is not None:
+        raise ValueError("Both --categories and --ids cannot be provided")
 
     if categories is not None:
         if listing == True:
@@ -367,7 +403,6 @@ if __name__ == '__main__':
                                     product_url = results[category][curr_page][title]['product_url']
                                     product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
                                     curr_item += 1
-                                    reference += 1
                                     if curr_item == num_items:
                                         break
                         else:
@@ -375,24 +410,46 @@ if __name__ == '__main__':
                         curr_page += 1
         else:
             for category in categories:
-                with open(f'dumps/{category}.pkl', 'rb') as f:
-                    results = pickle.load(f)
-                curr_item = 0
-                curr_page = 1
+                if product_ids is None:
+                    with open(f'dumps/{category}.pkl', 'rb') as f:
+                        results = pickle.load(f)
+                    curr_item = 0
+                    curr_page = 1
 
-                # Reference Count for reset
-                reference = 0
+                    while curr_item < num_items:
+                        if curr_page in results[category]:
+                            for title in results[category][curr_page]:
+                                if results[category][curr_page][title]['product_url'] is not None:
+                                    product_url = results[category][curr_page][title]['product_url']
+                                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
+                                    curr_item += 1
+                                    if curr_item == num_items:
+                                        break
+                        else:
+                            break
+                        curr_page += 1
+    else:
+        # Categories is None
+        # See if the ids are there
+        for product_id in product_ids:
+            try:
+                obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
+            except NoResultFound:
+                logger.warning(f"Product ID {product_id} not found in the Database")
+                logger.newline()
+                continue
 
-                while curr_item < num_items:
-                    if curr_page in results[category]:
-                        for title in results[category][curr_page]:
-                            if results[category][curr_page][title]['product_url'] is not None:
-                                product_url = results[category][curr_page][title]['product_url']
-                                product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
-                                curr_item += 1
-                                reference += 1
-                                if curr_item == num_items:
-                                    break
-                    else:
-                        break
-                    curr_page += 1
+            assert obj.product_id == product_id
+
+            if obj.product_url is None or obj.category is None:
+                if obj.product_url is None:
+                    logger.warning(f"Product ID {product_id} has a NULL product_url")
+                else:
+                    logger.warning(f"Product ID {product_id} has a NULL category")
+                logger.newline()
+                continue
+
+            # Scrape the product
+            product_url = obj.product_url
+            category = obj.category
+            product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)

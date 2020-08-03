@@ -222,6 +222,11 @@ class Proxy():
         if 'referer' in kwargs:
             kwargs['headers']['referer'] = kwargs['referer']
             del kwargs['referer']
+
+        if 'post_headers' in kwargs:
+            if request_type == 'post':
+                kwargs['headers'] = OrderedDict({**(kwargs['headers']), **(kwargs['post_headers'])})
+            del kwargs['post_headers']
         
         # Some requests may not need cookies at all (For example, the first request)
         if 'cookies' not in kwargs and ('no_cookies' not in kwargs or kwargs['no_cookies'] == False):
@@ -246,7 +251,13 @@ class Proxy():
             del kwargs['ref_count']
         else:
             const = False
-                
+        
+        if 'product_url' in kwargs:
+            product_url = kwargs['product_url']
+            del kwargs['product_url']
+        else:
+            product_url = None
+
         # Now make the request and decrement the reference count
         if hasattr(requests, request_type):
             response = getattr(self.session, request_type)(url, **kwargs)
@@ -261,7 +272,7 @@ class Proxy():
 
                     if getattr(requests, request_type) == 'get':
                         if hasattr(self, 'category') and url.startswith('https://amazon'):
-                            self.goto_product_listing(getattr(self, 'category'))
+                            self.goto_product_listing(getattr(self, 'category'), product_url=product_url)
                         else:
                             self.change_identity()
                             self.reference_count = max(2, self.generate_count(2, 6) - self.penalty)
@@ -278,9 +289,13 @@ class Proxy():
     @Retry.retry(predicate=Retry.if_exception_type(AssertionError), deadline=BACKOFF_DURATION)
     def get(self, url, **kwargs):
         return self.make_request('get', url, **kwargs)
+    
+
+    def post(self, url, **kwargs):
+        return self.make_request('post', url, **kwargs)
 
     
-    def goto_product_listing(self, category, cooldown=False):
+    def goto_product_listing(self, category, product_url=None):
         self.change_identity()
         self.reference_count = self.generate_count(2, 6)
 
@@ -301,6 +316,15 @@ class Proxy():
         assert response.status_code == 200
         
         time.sleep(random.randint(3, 6) + self.delay + random.uniform(0, 1))
+
+        if product_url is not None:
+            # Go to the product detail page
+            self.reference_count += 3
+            response = self.get(server_url + product_url, referer=listing_url)
+            assert response.status_code == 200
+
+            time.sleep(random.randint(2, 5) + self.delay + random.uniform(0, 1))
+
 
 
 def test_proxy(proxy: Proxy, change: bool = False) -> None:

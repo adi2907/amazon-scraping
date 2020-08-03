@@ -12,6 +12,7 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
                         MetaData, String, Table, Text, create_engine, exc)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 
 from utils import create_logger
 
@@ -52,6 +53,7 @@ tables = {
         'histogram': 'LONGTEXT',
         'reviews_url': 'LONGTEXT',
         'created_on': 'DATETIME',
+        'categories': 'LONGTEXT',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -70,6 +72,7 @@ tables = {
         'histogram': 'LONGTEXT',
         'reviews_url': 'LONGTEXT',
         'created_on': 'DATETIME',
+        'categories': 'LONGTEXT',
     },
     'QandA': {
         'id': 'INTEGER PRIMARY KEY',
@@ -237,6 +240,15 @@ class Reviews():
     pass
 
 
+table_map = {
+    'ProductListing': ProductListing,
+    'ProductDetails': ProductDetails,
+    'SponsoredProductDetails': SponsoredProductDetails,
+    'QandA': QandA,
+    'Reviews': Reviews,
+}
+
+
 def insert_product_listing(session, data, table='ProductListing'):
     row = dict()
     for category in data:
@@ -367,11 +379,34 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
         logger.newline()
 
 
+def query_table(session, table, query='all', filter_cond=None):
+    if query == 'all':
+        if filter_cond is None:
+            return session.query(table_map[table]).all()
+        else:
+            # Filter Condition MUST be a lambda
+            assert isinstance(filter_cond, dict)
+            return session.query(table_map[table]).filter_by(**filter_cond).all()
+    elif query == 'one':
+        if filter_cond is None:
+            return session.query(table_map[table]).one()
+        else:
+            # Filter Condition MUST be a dict
+            assert isinstance(filter_cond, dict)
+            return session.query(table_map[table]).filter_by(**filter_cond).one()
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
     session = Session()
+
+    #try:
+    #    obj = query_table(session, 'ProductListing', 'one', filter_cond=({'product_id': '8173711461'}))
+    #    print(obj.product_id, obj.title)
+    #except NoResultFound:
+    #    print("Nothing Found")
 
     # with open('dumps/mobile.pkl', 'rb') as f:
     with open('dumps/phones.pkl', 'rb') as f:
