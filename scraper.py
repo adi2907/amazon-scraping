@@ -36,6 +36,8 @@ my_proxy = proxy.Proxy(OS=OS)
 try:
     my_proxy.change_identity()
 except:
+    logger.warning('No Proxy available via Tor relay. Mode = Normal')
+    logger.newline()
     my_proxy = None
 
 # Database Session setup

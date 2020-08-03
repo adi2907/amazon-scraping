@@ -2,6 +2,7 @@ import random
 import socket
 import time
 from collections import OrderedDict
+from functools import wraps
 from string import Template
 
 import requests
@@ -21,6 +22,46 @@ except UndefinedValueError:
 
 windows_proxy_port = 9150
 control_port = 9051
+
+BACKOFF_DURATION = 70
+
+
+class Retry():
+    @classmethod
+    def retry(cls, predicate, deadline):
+        @wraps(cls)
+        def wrapper1(func):
+            @wraps(func)
+            def wrapper2(self, *args, **kwargs):
+                for _ in range(20):
+                    try:
+                        return func(self, *args, **kwargs)
+                    except Exception as ex:
+                        if (predicate(ex) == True):
+                            logger.error(
+                                "Exception: occured in {}. Now trying exponential backoff. Current backoff = {}".format(func.__qualname__, self.backoff),
+                                exc_info=ex,
+                            )
+                            logger.newline()
+                            
+                            # Now backoff and try again
+                            self.backoff = 2*self.backoff
+                            if self.backoff > self._BACKOFF_DURATION:
+                                raise TimeoutError("Maximum Backoff Exceeded")
+                            self.delay = self.backoff
+                            self.penalty = max(2, self.penalty+1)
+                        else:
+                            raise
+                raise TimeoutError("Maximum Loop Limit Exceeded during backoff")
+            return wrapper2
+        return wrapper1
+
+    @classmethod
+    def if_exception_type(cls, *exception_types):
+        def if_exception_type_predicate(exception):
+            """Bound predicate for checking an exception type."""
+            return isinstance(exception, exception_types)
+        return if_exception_type_predicate
 
 
 class Proxy():
@@ -63,6 +104,8 @@ class Proxy():
         self.reference_count = self.generate_count()
         self.delay = 0
         self.penalty = 0
+        self.backoff = 1
+        self._BACKOFF_DURATION = 70
     
 
     def reset(self):
@@ -190,11 +233,12 @@ class Proxy():
                     # Change the identity and set it again
                     time.sleep(random.randint(3, 5) + self.delay)
 
-                    if hasattr(self, 'category') and url.startswith('https://amazon'):
-                        self.goto_product_listing(getattr(self, 'category'))
-                    else:
-                        self.change_identity()
-                        self.reference_count = max(2, self.generate_count(2, 6) - self.penalty)
+                    if getattr(requests, request_type) == 'get':
+                        if hasattr(self, 'category') and url.startswith('https://amazon'):
+                            self.goto_product_listing(getattr(self, 'category'))
+                        else:
+                            self.change_identity()
+                            self.reference_count = max(2, self.generate_count(2, 6) - self.penalty)
             else:
                 # Keep ref count constant
                 pass
@@ -203,7 +247,9 @@ class Proxy():
         else:
             raise ValueError(f"Invalid Request Type: {request_type}")
     
-
+    
+    # Reference Material: https://cloud.google.com/iot/docs/how-tos/exponential-backoff
+    @Retry.retry(predicate=Retry.if_exception_type(AssertionError), deadline=BACKOFF_DURATION)
     def get(self, url, **kwargs):
         return self.make_request('get', url, **kwargs)
 
@@ -217,6 +263,8 @@ class Proxy():
         # Increase ref count before request. Don't want to keep looping!
         self.reference_count += 1
         response = self.get(server_url)
+        assert response.status_code == 200
+        
         if response.status_code != 200:
             if cooldown == True:
                 raise ValueError(f"Base URL: {server_url} - Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
@@ -233,6 +281,8 @@ class Proxy():
         # Increase ref count before request. Don't want to keep looping!
         self.reference_count += 1
         response = self.get(listing_url, referer=server_url)
+        assert response.status_code == 200
+
         if response.status_code != 200:
             if cooldown == True:
                 raise ValueError(f"Listing URL: {listing_url} - Server blocking client even in Cooldown mode - Status: {response.status_code}. Please try again later")
