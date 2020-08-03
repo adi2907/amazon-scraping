@@ -387,8 +387,21 @@ def query_table(session, table, query='all', filter_cond=None):
                 return instance
             except NoResultFound:
                 return None
+        elif isinstance(filter_cond, list):
+            # Filter IN
+            filter_type = filter_cond[0]
+            assert filter_type in ['in']
+            try:
+                if filter_type == 'in':
+                    assert len(filter_cond) == 3
+                    column = filter_cond[1]
+                    choices = filter_cond[2]
+                    instance = session.query(table_map[table]).filter(getattr(table_map[table], column).in_(choices)).all()
+                    return instance
+            except NoResultFound:
+                return None
         else:
-            # Filter Condition MUST be a lambda
+            # Filter Condition MUST be a dict
             assert isinstance(filter_cond, dict)
             try:
                 instance = session.query(table_map[table]).filter_by(**filter_cond).all()
@@ -423,8 +436,11 @@ if __name__ == '__main__':
     session = Session()
     
     #obj = query_table(session, 'ProductListing', 'one', filter_cond=({'product_id': '8173711461'}))
-    #if obj is not None:
-    #    print(obj.product_id, obj.title)
+    #objs = query_table(session, 'ProductListing', 'all', filter_cond=({'category': 'books'}))
+    #objs = query_table(session, 'ProductListing', 'all', filter_cond=['in', 'category', (('books', 'mobile'))])
+    #if objs is not None:
+    #    for obj in objs: 
+    #        print(obj.product_id, obj.title)
     #else:
     #    print("Nothing Found")
 
