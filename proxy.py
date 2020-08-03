@@ -257,7 +257,7 @@ class Proxy():
                 self.reference_count -= 1
                 if self.reference_count <= 0:
                     # Change the identity and set it again
-                    time.sleep(random.randint(3, 5) + self.delay)
+                    time.sleep(random.randint(3, 5) + self.delay + random.uniform(0, 2))
 
                     if getattr(requests, request_type) == 'get':
                         if hasattr(self, 'category') and url.startswith('https://amazon'):
@@ -291,7 +291,7 @@ class Proxy():
         response = self.get(server_url)
         assert response.status_code == 200
 
-        time.sleep(random.randint(4, 7) + self.delay)
+        time.sleep(random.randint(4, 7) + self.delay + random.uniform(0, 1))
 
         listing_url = url_template.substitute(category=category)
         
@@ -300,7 +300,7 @@ class Proxy():
         response = self.get(listing_url, referer=server_url)
         assert response.status_code == 200
         
-        time.sleep(random.randint(3, 6) + self.delay)
+        time.sleep(random.randint(3, 6) + self.delay + random.uniform(0, 1))
 
 
 def test_proxy(proxy: Proxy, change: bool = False) -> None:
