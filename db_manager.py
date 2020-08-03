@@ -442,8 +442,8 @@ if __name__ == '__main__':
     session = Session()
 
     #column = Column('categories', Text())
-    #add_column(engine, table_map['ProductDetails'], column)
-    #add_column(engine, table_map['SponsoredProductDetails'], column)
+    #add_column(engine, 'ProductDetails', column)
+    #add_column(engine, 'SponsoredProductDetails', column)
     
     #obj = query_table(session, 'ProductListing', 'one', filter_cond=({'product_id': '8173711461'}))
     #objs = query_table(session, 'ProductListing', 'all', filter_cond=({'category': 'books'}))
