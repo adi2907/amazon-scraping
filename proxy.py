@@ -113,6 +113,7 @@ class Proxy():
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15",
         ]
         self.reset()
+        self.reference_count = random.randint(2, 4)
     
 
     def reset(self):
@@ -270,12 +271,11 @@ class Proxy():
                     # Change the identity and set it again
                     time.sleep(random.randint(3, 5) + self.delay + random.uniform(0, 2))
 
-                    if getattr(requests, request_type) == 'get':
-                        if hasattr(self, 'category') and url.startswith('https://amazon'):
-                            self.goto_product_listing(getattr(self, 'category'), product_url=product_url)
-                        else:
-                            self.change_identity()
-                            self.reference_count = max(2, self.generate_count(2, 6) - self.penalty)
+                    if hasattr(self, 'category') and url.startswith('https://amazon'):
+                        self.goto_product_listing(getattr(self, 'category'), product_url=product_url)
+                    else:
+                        self.change_identity()
+                        self.reference_count = max(2, self.generate_count(2, 6) - self.penalty)
             else:
                 # Keep ref count constant
                 pass

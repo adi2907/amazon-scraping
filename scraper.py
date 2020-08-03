@@ -167,7 +167,13 @@ def scrape_category_listing(categories, pages=None, dump=False):
                 time.sleep(3)
                 break
             
-            page_url = next_page.find("a").attrs['href']
+            page_url = next_page.find("a")
+            if page_url is None:
+                logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
+                time.sleep(3)
+                break
+            
+            page_url = page_url.attrs['href']
 
             if my_proxy is None:       
                 response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
