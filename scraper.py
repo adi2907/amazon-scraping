@@ -101,12 +101,19 @@ def scrape_category_listing(categories, pages=None, dump=False):
 
     final_results = dict()
 
+    change = False
+
     for category, num_pages in zip(categories, pages):
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
         final_results[category] = dict()
         base_url = url_template.substitute(category=category)
         
         if my_proxy is not None:
+            if change == True:
+                change = False
+                my_proxy.change_identity()
+                time.sleep(random.randint(2, 5))
+            
             response = my_proxy.get(base_url)
             setattr(my_proxy, 'category', category)
         else:
@@ -214,6 +221,8 @@ def scrape_category_listing(categories, pages=None, dump=False):
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
         time.sleep(4)
+
+        change = True
     return final_results
 
 
