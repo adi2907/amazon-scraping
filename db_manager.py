@@ -429,11 +429,21 @@ def query_table(session, table, query='all', filter_cond=None):
         return None
 
 
+def add_column(engine, table_name, column):
+    column_name = column.compile(dialect=engine.dialect)
+    column_type = column.type.compile(engine.dialect)
+    engine.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
     session = Session()
+
+    #column = Column('categories', Text())
+    #add_column(engine, table_map['ProductDetails'], column)
+    #add_column(engine, table_map['SponsoredProductDetails'], column)
     
     #obj = query_table(session, 'ProductListing', 'one', filter_cond=({'product_id': '8173711461'}))
     #objs = query_table(session, 'ProductListing', 'all', filter_cond=({'category': 'books'}))
