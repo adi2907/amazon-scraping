@@ -102,6 +102,7 @@ def scrape_category_listing(categories, pages=None, dump=False):
     final_results = dict()
 
     for category, num_pages in zip(categories, pages):
+        logger.info(f"Now at category {category}, with num_pages {num_pages}")
         final_results[category] = dict()
         base_url = url_template.substitute(category=category)
         
