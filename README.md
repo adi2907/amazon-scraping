@@ -140,4 +140,35 @@ python scraper.py --categories "headphones" --listing --pages 1 --detail --numbe
 
 Here, the scraper will scrape 2 headphone products, and only fetch 1 review page. It will fetch the first 2 QandA pages.
 
+## Scraping using IDs
+
+You can also scrape using product IDs using the `--ids` option
+
+```bash
+python scraper.py --detail --ids "8172234988" --review_pages 3 --qanda_pages 3
+```
+
+## Scraping via a config file
+
+To use a config file for setting up the scraper, using the `--config` option
+
+```bash
+# Listing
+smartphones 50
+refrigerator 20
+earphones 100
+ceiling fan 50
+washing machine 20
+
+# Detail
+8172234988
+8172234989
+```
+
+To run it, use:
+
+```bash
+python scraper.py --config "listing.conf"
+```
+
 ***********

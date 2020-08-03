@@ -20,7 +20,7 @@ import parse_data
 import proxy
 from utils import create_logger, customer_reviews_template, url_template
 
-logger = create_logger(__name__)
+logger = create_logger('scraper')
 
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 
@@ -64,16 +64,18 @@ Session = sessionmaker(bind=engine)
 db_session = Session()
 
 
-def scrape_category_listing(categories, num_pages=None, dump=False):
+def scrape_category_listing(categories, pages=None, dump=False):
     global my_proxy, session
     global headers, cookies
     # session = requests.Session()
 
-    if num_pages is None:
-        num_pages = 10000 # Keeping a big number
+    if pages is None:
+        pages = [10000 for _ in categories] # Keeping a big number
     else:
-        if not isinstance(num_pages, int) or num_pages <= 0:
-            raise ValueError("num_pages must be a positive integer or None (for all pages)")
+        if isinstance(pages, int):
+            if pages <= 0:
+                raise ValueError("pages must be a positive integer")
+            pages = [pages for _ in categories]
 
     server_url = 'https://amazon.in'
     
@@ -99,7 +101,7 @@ def scrape_category_listing(categories, num_pages=None, dump=False):
 
     final_results = dict()
 
-    for category in categories:
+    for category, num_pages in zip(categories, pages):
         final_results[category] = dict()
         base_url = url_template.substitute(category=category)
         
@@ -367,11 +369,12 @@ if __name__ == '__main__':
     parser.add_argument('--listing', help='Scraping the category listing', default=False, action='store_true')
     parser.add_argument('--detail', help='Scraping individual product details', default=False, action='store_true')
     parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
-    parser.add_argument('--pages', help='Number of pages to scrape the listing details per category', type=int, default=1)
+    parser.add_argument('--pages', help='Number of pages to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=1)
     parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int)
     parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
     parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
+    parser.add_argument('--config', help='A config file for the options', type=str)
 
     args = parser.parse_args()
 
@@ -379,18 +382,70 @@ if __name__ == '__main__':
     listing = args.listing
     detail = args.detail
     num_items = args.number
-    num_pages = args.pages
+    pages = args.pages
     review_pages = args.review_pages
     qanda_pages = args.qanda_pages
     dump = args.dump
     product_ids = args.ids
+    config = args.config
 
-    if categories is not None and product_ids is not None:
-        raise ValueError("Both --categories and --ids cannot be provided")
+    if config is not None:
+        # Iterate thru args
+        for arg in vars(args):
+            if arg == 'pages' and getattr(args, arg) == 1:
+                continue
+            if arg not in ('config', 'number',) and getattr(args, arg) not in (None, False):
+                raise ValueError("--config file is already specified")
+        
+        option = None
+        categories = []
+        product_ids = []
+        pages = []
+
+        options = ["Listing", "Details"]
+        with open(f"{config}", "r") as f:
+            for line in f:
+                line = line.strip()
+                if len(line) >= 2:
+                    if line[0] == '#':
+                        # Comment
+                        text = line.split()[1]
+                        if text in options:
+                            option = text
+                if option == 'Listing':
+                    # Product Listing
+                    if len(line) > 0 and line[0] != '#':
+                        listing = True
+                        categories.append(' '.join(line.split()[:-1]))
+                        pages.append(int(line.split()[-1]))
+                elif option == 'Details':
+                    # Product Details
+                    if len(line) > 0 and line[0] != '#':
+                        detail = True
+                        content = line.split()
+                        pid, qanda, review = content[0], int(content[1]), int(content[2])
+                        product_ids.append(line)
+                        pass
+    
+    if isinstance(pages, int):
+        if categories is None:
+            pass
+        else:
+            pages = [pages for _ in categories]
+    elif len(pages) == 1:
+        if categories is None:
+            raise ValueError("--categories cannot be None if --pages is provided")
+        pages = [pages[0] for _ in categories]
+    else:
+        if categories is not None and pages is not None:
+            assert len(pages) == len(categories)
+
+    #if categories is not None and product_ids is not None:
+    #    raise ValueError("Both --categories and --ids cannot be provided")
 
     if categories is not None:
         if listing == True:
-            results = scrape_category_listing(categories, num_pages=num_pages, dump=dump)
+            results = scrape_category_listing(categories, pages=pages, dump=dump)
             if detail == True:
                 for category in categories:
                     curr_item = 0
@@ -428,6 +483,30 @@ if __name__ == '__main__':
                         else:
                             break
                         curr_page += 1
+                else:
+                    # Product ids are also there
+                    for product_id in product_ids:
+                        obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
+                        if obj is None:
+                            logger.warning(f"Product ID {product_id} not found in the Database")
+                            logger.newline()
+                            continue
+
+                        assert obj.product_id == product_id
+
+                        if obj.product_url is None or obj.category is None:
+                            if obj.product_url is None:
+                                logger.warning(f"Product ID {product_id} has a NULL product_url")
+                            else:
+                                logger.warning(f"Product ID {product_id} has a NULL category")
+                            logger.newline()
+                            continue
+
+                        # Scrape the product
+                        product_url = obj.product_url
+                        category = obj.category
+                        product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
+
     else:
         # Categories is None
         # See if the ids are there
