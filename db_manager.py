@@ -382,18 +382,38 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
 def query_table(session, table, query='all', filter_cond=None):
     if query == 'all':
         if filter_cond is None:
-            return session.query(table_map[table]).all()
+            try:
+                instance = session.query(table_map[table]).all()
+                return instance
+            except NoResultFound:
+                return None
         else:
             # Filter Condition MUST be a lambda
             assert isinstance(filter_cond, dict)
-            return session.query(table_map[table]).filter_by(**filter_cond).all()
+            try:
+                instance = session.query(table_map[table]).filter_by(**filter_cond).all()
+                return instance
+            except NoResultFound:
+                return None
+    
     elif query == 'one':
         if filter_cond is None:
-            return session.query(table_map[table]).one()
+            try:
+                instance = session.query(table_map[table]).one()
+                return instance
+            except NoResultFound:
+                return None
         else:
             # Filter Condition MUST be a dict
             assert isinstance(filter_cond, dict)
-            return session.query(table_map[table]).filter_by(**filter_cond).one()
+            try:
+                instance = session.query(table_map[table]).filter_by(**filter_cond).one()
+                return instance
+            except NoResultFound:
+                return None
+    
+    else:
+        return None
 
 
 if __name__ == '__main__':
@@ -401,11 +421,11 @@ if __name__ == '__main__':
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
     session = Session()
-
-    #try:
-    #    obj = query_table(session, 'ProductListing', 'one', filter_cond=({'product_id': '8173711461'}))
+    
+    #obj = query_table(session, 'ProductListing', 'one', filter_cond=({'product_id': '8173711461'}))
+    #if obj is not None:
     #    print(obj.product_id, obj.title)
-    #except NoResultFound:
+    #else:
     #    print("Nothing Found")
 
     # with open('dumps/mobile.pkl', 'rb') as f:

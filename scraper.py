@@ -432,9 +432,8 @@ if __name__ == '__main__':
         # Categories is None
         # See if the ids are there
         for product_id in product_ids:
-            try:
-                obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
-            except NoResultFound:
+            obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
+            if obj is None:
                 logger.warning(f"Product ID {product_id} not found in the Database")
                 logger.newline()
                 continue
