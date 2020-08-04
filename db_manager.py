@@ -53,7 +53,8 @@ tables = {
         'histogram': 'LONGTEXT',
         'reviews_url': 'LONGTEXT',
         'created_on': 'DATETIME',
-        'categories': 'LONGTEXT',
+        'subcategories': 'LONGTEXT',
+        'is_sponsored': 'BOOLEAN',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -72,7 +73,8 @@ tables = {
         'histogram': 'LONGTEXT',
         'reviews_url': 'LONGTEXT',
         'created_on': 'DATETIME',
-        'categories': 'LONGTEXT',
+        'subcategories': 'LONGTEXT',
+        'is_sponsored': 'BOOLEAN',
     },
     'QandA': {
         'id': 'INTEGER PRIMARY KEY',
@@ -429,10 +431,14 @@ def query_table(session, table, query='all', filter_cond=None):
         return None
 
 
-def add_column(engine, table_name, column):
+def add_column(engine, table_name: str, column: Column):
     column_name = column.compile(dialect=engine.dialect)
     column_type = column.type.compile(engine.dialect)
     engine.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
+
+
+def alter_column(engine, table_name: str, column_name: str, new_name: str):
+    engine.execute('ALTER TABLE %s CHANGE COLUMN %s TO %s' % (table_name, column_name, new_name))
 
 
 if __name__ == '__main__':
@@ -445,6 +451,12 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductDetails', column)
     #add_column(engine, 'SponsoredProductDetails', column)
     
+    #alter_column(engine, 'ProductDetails', 'categories', 'subcategories')
+    #alter_column(engine, 'SponsoredProductDetails', 'categories', 'subcategories')
+    #column = Column('is_sponsored', Boolean())
+    #add_column(engine, 'ProductDetails', column)
+    #add_column(engine, 'SponsoredProductDetails', column)
+
     #obj = query_table(session, 'ProductListing', 'one', filter_cond=({'product_id': '8173711461'}))
     #objs = query_table(session, 'ProductListing', 'all', filter_cond=({'category': 'books'}))
     #objs = query_table(session, 'ProductListing', 'all', filter_cond=['in', 'category', (('books', 'mobile'))])

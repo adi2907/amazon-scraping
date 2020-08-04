@@ -439,6 +439,9 @@ if __name__ == '__main__':
                     if len(line) > 0 and line[0] != '#':
                         detail = True
                         content = line.split()
+                        if content == 'all':
+                            # Get all details of the categories
+                            break
                         pid, qanda, review = content[0], int(content[1]), int(content[2])
                         product_ids.append(line)
                         pass
