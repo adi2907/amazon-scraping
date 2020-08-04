@@ -152,6 +152,14 @@ python scraper.py --detail --ids "8172234988" --review_pages 3 --qanda_pages 3
 
 To use a config file for setting up the scraper, using the `--config` option
 
+To run it, use:
+
+```bash
+python scraper.py --config "listing.conf"
+```
+
+A sample config file is shown at `listing.conf`
+
 ```bash
 # Listing
 smartphones 50
@@ -179,10 +187,24 @@ washing machine 20
 all 2020-01-01
 ```
 
-To run it, use:
+There is one more option to NOT scrape the category listing, but only the detail. The `NO_SCRAPE` option is useful here.
 
 ```bash
-python scraper.py --config "listing.conf"
+# Listing
+#smartphones 50
+#refrigerator 20
+#earphones 100
+#ceiling fan 50
+#washing machine 20
+books 4
+headphones 5
+
+NO_SCRAPE
+
+# Details
+all 2020-01-01
 ```
+
+Here, I will be scraping all product details for books and headphones, but not scrape the listing pages themselves.
 
 ***********

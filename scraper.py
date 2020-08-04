@@ -443,6 +443,7 @@ if __name__ == '__main__':
         categories = []
         product_ids = []
         pages = []
+        no_scrape = False # For scraping Listing
 
         options = ["Listing", "Details"]
         with open(f"{config}", "r") as f:
@@ -457,9 +458,13 @@ if __name__ == '__main__':
                 if option == 'Listing':
                     # Product Listing
                     if len(line) > 0 and line[0] != '#':
-                        listing = True
-                        categories.append(' '.join(line.split()[:-1]))
-                        pages.append(int(line.split()[-1]))
+                        if line == 'NO_SCRAPE':
+                            listing = False
+                            no_scrape = True
+                        else:
+                            listing = True
+                            categories.append(' '.join(line.split()[:-1]))
+                            pages.append(int(line.split()[-1]))
                 elif option == 'Details':
                     # Product Details
                     if len(line) > 0 and line[0] != '#':
@@ -490,6 +495,10 @@ if __name__ == '__main__':
 
     #if categories is not None and product_ids is not None:
     #    raise ValueError("Both --categories and --ids cannot be provided")
+
+    if no_scrape == True:
+        categories = None
+        pages = None
 
     if categories is not None:
         if listing == True:
