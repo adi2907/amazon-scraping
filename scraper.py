@@ -515,8 +515,9 @@ if __name__ == '__main__':
                                     product_url = results[category][curr_page][title]['product_url']
                                     try:
                                         product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                                    except:
-                                        logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
+                                    except Exception as ex:
+                                        logger.critical(f"{ex}")
+                                        logger.warning(f"Could not scrape details of Product - URL = {product_url}")
                                         logger.newline()
                                     curr_item += 1
                                     if curr_item == num_items:
@@ -539,7 +540,8 @@ if __name__ == '__main__':
                                     product_url = results[category][curr_page][title]['product_url']
                                     try:
                                         product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                                    except:
+                                    except Exception as ex:
+                                        logger.critical(f"{ex}")
                                         logger.warning(f"Could not scrape details of Product - URL = {product_url}")
                                         logger.newline()
                                     curr_item += 1
@@ -572,7 +574,8 @@ if __name__ == '__main__':
                         category = obj.category
                         try: 
                             product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                        except:
+                        except Exception as ex:
+                            logger.critical(f"{ex}")
                             logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
                             logger.newline()
 
@@ -601,6 +604,7 @@ if __name__ == '__main__':
             category = obj.category
             try:
                 product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-            except:
+            except Exception as ex:
+                logger.critical(f"{ex}")
                 logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
                 logger.newline()
