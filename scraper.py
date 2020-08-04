@@ -65,7 +65,7 @@ Session = sessionmaker(bind=engine)
 db_session = Session()
 
 
-def scrape_category_listing(categories, pages=None, dump=False):
+def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None):
     global my_proxy, session
     global headers, cookies
     # session = requests.Session()
@@ -143,6 +143,15 @@ def scrape_category_listing(categories, pages=None, dump=False):
             product_info = parse_data.get_product_info(soup)
 
             final_results[category][curr_page] = product_info
+
+            if detail == True:
+                for title in final_results[category][curr_page]:
+                    producut_url = final_results[category][curr_page][title]['product_url']
+                    if product_url is not None:
+                        product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
+                        if my_proxy is not None:
+                            response = my_proxy.get(curr_url, referer=server_url + product_url)
+                            time.sleep(random.randint(3, 5))
             
             page_element = soup.find("ul", class_="a-pagination")
             
@@ -150,7 +159,7 @@ def scrape_category_listing(categories, pages=None, dump=False):
                 if my_proxy is None:
                     response = session.get(base_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(base_url)
+                    response = my_proxy.get(base_url, referer=curr_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -227,7 +236,7 @@ def scrape_category_listing(categories, pages=None, dump=False):
     return final_results
 
 
-def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None):
+def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None):
     global my_proxy, session
     global headers, cookies
     # session = requests.Session()
@@ -252,7 +261,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if my_proxy is None:
         response = session.get(server_url + product_url, headers=headers, cookies=cookies)
     else:
-        response = my_proxy.get(server_url + product_url, product_url=product_url)
+        if listing_url is not None:
+            response = my_proxy.get(server_url + product_url, referer=listing_url, product_url=product_url)
+        else:
+            response = my_proxy.get(server_url + product_url, product_url=product_url)
     
     if hasattr(response, 'cookies'):
         cookies = {**cookies, **dict(response.cookies)}
@@ -502,7 +514,8 @@ if __name__ == '__main__':
 
     if categories is not None:
         if listing == True:
-            results = scrape_category_listing(categories, pages=pages, dump=dump)
+            results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date)
+            """
             if detail == True:
                 for category in categories:
                     curr_item = 0
@@ -525,6 +538,7 @@ if __name__ == '__main__':
                         else:
                             break
                         curr_page += 1
+            """
         else:
             for category in categories:
                 if product_ids is None:
