@@ -513,7 +513,11 @@ if __name__ == '__main__':
                             for title in results[category][curr_page]:
                                 if results[category][curr_page][title]['product_url'] is not None:
                                     product_url = results[category][curr_page][title]['product_url']
-                                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                                    try:
+                                        product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                                    except:
+                                        logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
+                                        logger.newline()
                                     curr_item += 1
                                     if curr_item == num_items:
                                         break
