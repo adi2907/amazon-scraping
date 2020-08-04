@@ -299,9 +299,6 @@ def insert_product_listing(session, data, table='ProductListing'):
 
 
 def insert_product_details(session, data, table='ProductDetails', is_sponsored=False):
-    if is_sponsored == True:
-        table = 'SponsoredProductDetails'
-
     row = {key: (data[key] if not (isinstance(data[key], list) or isinstance(data[key], dict)) else json.dumps(data[key])) for key in data}
     for field in row:
         if row[field] is not None:
@@ -310,15 +307,11 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
             elif field in ('curr_price'):
                 row[field] = float(row[field].replace(',', ''))
     row['created_on'] = datetime.now()
+    row['is_sponsored'] = is_sponsored
     try:
-        if is_sponsored == True:
-            obj = SponsoredProductDetails()
-            [setattr(obj, key, value) for key, value in row.items()]
-            session.add(obj)
-        else:
-            obj = ProductDetails()
-            [setattr(obj, key, value) for key, value in row.items()]
-            session.add(obj)
+        obj = ProductDetails()
+        [setattr(obj, key, value) for key, value in row.items()]
+        session.add(obj)
         session.commit()
     except exc.IntegrityError:
         session.rollback()
