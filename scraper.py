@@ -146,7 +146,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
 
             if detail == True:
                 for title in final_results[category][curr_page]:
-                    producut_url = final_results[category][curr_page][title]['product_url']
+                    product_url = final_results[category][curr_page][title]['product_url']
                     if product_url is not None:
                         product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
                         if my_proxy is not None:
