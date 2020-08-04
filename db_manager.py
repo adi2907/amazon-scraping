@@ -437,8 +437,8 @@ def add_column(engine, table_name: str, column: Column):
     engine.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
 
 
-def alter_column(engine, table_name: str, column_name: str, new_name: str):
-    engine.execute('ALTER TABLE %s CHANGE COLUMN %s TO %s' % (table_name, column_name, new_name))
+def alter_column(engine, table_name: str, column_name: str, new_name: str, data_type: str):
+    engine.execute('ALTER TABLE %s CHANGE COLUMN %s %s %s' % (table_name, column_name, new_name, data_type))
 
 
 if __name__ == '__main__':
@@ -451,9 +451,9 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductDetails', column)
     #add_column(engine, 'SponsoredProductDetails', column)
     
-    #alter_column(engine, 'ProductDetails', 'categories', 'subcategories')
-    #alter_column(engine, 'SponsoredProductDetails', 'categories', 'subcategories')
-    #column = Column('is_sponsored', Boolean())
+    #alter_column(engine, 'ProductDetails', 'categories', 'subcategories', 'Text')
+    #alter_column(engine, 'SponsoredProductDetails', 'categories', 'subcategories', 'Text')
+    #column = Column('is_sponsored', Boolean(), unique=False, default=False)
     #add_column(engine, 'ProductDetails', column)
     #add_column(engine, 'SponsoredProductDetails', column)
 
