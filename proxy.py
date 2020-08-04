@@ -288,7 +288,9 @@ class Proxy():
     # Reference Material: https://cloud.google.com/iot/docs/how-tos/exponential-backoff
     @Retry.retry(predicate=Retry.if_exception_type(AssertionError), deadline=BACKOFF_DURATION)
     def get(self, url, **kwargs):
-        return self.make_request('get', url, **kwargs)
+        response = self.make_request('get', url, **kwargs)
+        assert response.status_code in (200, 201)
+        return response
     
 
     def post(self, url, **kwargs):
