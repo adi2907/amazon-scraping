@@ -5,6 +5,10 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
+from utils import create_logger
+
+logger = create_logger(__name__)
+
 
 def init_parser(category: str):
     if not os.path.exists(os.path.join(os.getcwd(), 'data', f'{category}.html')):
@@ -145,12 +149,15 @@ def get_reviews(soup):
     return results
 
 
-def get_product_data(soup):
+def get_product_data(soup, html=None):
     """Scrapes the Individual product detail page for a particular product
     """
     results = dict()
     center_col_node = soup.find("div", id="centerCol")
     if center_col_node is None:
+        if html is not None:
+            logger.error(f"HTML -> {html}")
+            logger.newline()
         raise ValueError("Product Detail Not Found")
     
     # Product Title

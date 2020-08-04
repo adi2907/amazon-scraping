@@ -269,7 +269,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     soup = BeautifulSoup(html, 'html.parser')
 
     # Get the product details
-    details = parse_data.get_product_data(soup)
+    details = parse_data.get_product_data(soup, html=html)
     details['product_id'] = product_id # Add the product ID
     
     # Check if the product is sponsored
