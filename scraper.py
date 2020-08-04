@@ -1,5 +1,4 @@
 import argparse
-from datetime import datetime
 import json
 import os
 import pickle
@@ -8,6 +7,7 @@ import sqlite3
 import sys
 import time
 from collections import OrderedDict
+from datetime import datetime
 from string import Template
 
 import requests
@@ -465,12 +465,15 @@ if __name__ == '__main__':
                     if len(line) > 0 and line[0] != '#':
                         detail = True
                         content = line.split()
-                        if content == 'all':
+                        if content[0] == 'all':
                             # Get all details of the categories
+                            product_ids = db_manager.fetch_product_ids(db_session, 'ProductListing', categories)
+                            if len(content) == 2:
+                                # Threshold date is the second option
+                                threshold_date = datetime.strptime(content[1], '%Y-%m-%d')
                             break
                         pid, qanda, review = content[0], int(content[1]), int(content[2])
                         product_ids.append(line)
-                        pass
     
     if isinstance(pages, int):
         if categories is None:

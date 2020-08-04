@@ -160,9 +160,23 @@ earphones 100
 ceiling fan 50
 washing machine 20
 
-# Detail
+# Details
 8172234988
 8172234989
+```
+
+You can also specify the `all` option in Details
+
+```
+# Listing
+smartphones 50
+refrigerator 20
+earphones 100
+ceiling fan 50
+washing machine 20
+
+# Details
+all 2020-01-01
 ```
 
 To run it, use:

@@ -424,6 +424,19 @@ def query_table(session, table, query='all', filter_cond=None):
         return None
 
 
+def fetch_product_ids(session, table, categories):
+    result = []
+    if not isinstance(categories, list):
+        categories = [categories]
+    for category in categories:
+        try:
+            instances = session.query(table_map[table]).filter_by(category=category).all()
+            result.extend([getattr(instance, 'product_id') for instance in instances])
+        except NoResultFound:
+            result.extend([])
+    return result
+
+
 def add_column(engine, table_name: str, column: Column):
     column_name = column.compile(dialect=engine.dialect)
     column_type = column.type.compile(engine.dialect)
@@ -439,6 +452,8 @@ if __name__ == '__main__':
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
     session = Session()
+
+    #print(fetch_product_ids(session, 'ProductListing', 'books'))
 
     #column = Column('categories', Text())
     #add_column(engine, 'ProductDetails', column)
@@ -459,18 +474,17 @@ if __name__ == '__main__':
     #else:
     #    print("Nothing Found")
 
-    # with open('dumps/mobile.pkl', 'rb') as f:
-    with open('dumps/phones.pkl', 'rb') as f:
-        product_listing = pickle.load(f)
+    #with open('dumps/phones.pkl', 'rb') as f:
+    #    product_listing = pickle.load(f)
 
-    insert_product_listing(session, product_listing)
+    #insert_product_listing(session, product_listing)
 
-    with open('dumps/dump_B07DJLVJ5M.pkl', 'rb') as f:
-        product_details = pickle.load(f)
+    #with open('dumps/dump_B07DJLVJ5M.pkl', 'rb') as f:
+    #    product_details = pickle.load(f)
 
-    insert_product_details(session, product_details, is_sponsored=False)
+    #insert_product_details(session, product_details, is_sponsored=False)
 
-    with open('dumps/dump_B07DJLVJ5M_qanda.pkl', 'rb') as f:
-        qanda = pickle.load(f)
+    #with open('dumps/dump_B07DJLVJ5M_qanda.pkl', 'rb') as f:
+    #    qanda = pickle.load(f)
 
-    insert_product_qanda(session, qanda, product_id='B07DJLVJ5M')
+    #insert_product_qanda(session, qanda, product_id='B07DJLVJ5M')
