@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import json
 import os
 import pickle
@@ -226,11 +227,17 @@ def scrape_category_listing(categories, pages=None, dump=False):
     return final_results
 
 
-def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None):
+def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None):
     global my_proxy, session
     global headers, cookies
     # session = requests.Session()
     server_url = 'https://amazon.in'
+
+    if review_pages is None:
+        review_pages = 1000
+    
+    if qanda_pages is None:
+        qanda_pages = 1000
     
     if my_proxy is None:
         response = session.get(server_url, headers=headers)
@@ -359,6 +366,23 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     # Now sort by date
                     logger.info("Now moving into sorting by most recent.")
                     continue
+                else:
+                    # We're sorting by most recent
+                    if threshold_date is None:
+                        pass
+                    else:
+                        limit = False
+                        for review in reviews['reviews']:
+                            review_date = review['review_date']
+                            if review_date is not None:
+                                # Review Date must be greater than threshold
+                                if review_date < threshold_date:
+                                    logger.info(f"Reviews (Current Page = {curr}) - Date Limit Exceeded.")
+                                    logger.newline()
+                                    limit = True
+                                    break
+                        if limit == True:
+                            break
                 
                 if next_url is not None:
                     prev_url = reviews_url
@@ -390,6 +414,7 @@ if __name__ == '__main__':
     parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
     parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
+    parser.add_argument('--date', help='Threshold Limit for scraping Product Reviews', type=lambda s: datetime.strptime(s, '%Y-%m-%d'))
     parser.add_argument('--config', help='A config file for the options', type=str)
 
     args = parser.parse_args()
@@ -404,6 +429,7 @@ if __name__ == '__main__':
     dump = args.dump
     product_ids = args.ids
     config = args.config
+    threshold_date = args.date
 
     if config is not None:
         # Iterate thru args
@@ -475,7 +501,7 @@ if __name__ == '__main__':
                             for title in results[category][curr_page]:
                                 if results[category][curr_page][title]['product_url'] is not None:
                                     product_url = results[category][curr_page][title]['product_url']
-                                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
+                                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
                                     curr_item += 1
                                     if curr_item == num_items:
                                         break
@@ -495,7 +521,7 @@ if __name__ == '__main__':
                             for title in results[category][curr_page]:
                                 if results[category][curr_page][title]['product_url'] is not None:
                                     product_url = results[category][curr_page][title]['product_url']
-                                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
+                                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
                                     curr_item += 1
                                     if curr_item == num_items:
                                         break
@@ -524,7 +550,7 @@ if __name__ == '__main__':
                         # Scrape the product
                         product_url = obj.product_url
                         category = obj.category
-                        product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
+                        product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
 
     else:
         # Categories is None
@@ -549,4 +575,4 @@ if __name__ == '__main__':
             # Scrape the product
             product_url = obj.product_url
             category = obj.category
-            product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages)
+            product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
