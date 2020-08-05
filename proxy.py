@@ -146,12 +146,12 @@ class Proxy():
     def get_proxy_list(self) -> list:
         """Fetches the list of active socks proxies
         """
-        response = self.get(to_http('https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt'))
+        response = self.get(to_http('https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt'), ref_count='constant')
         proxy_set = set(response.content.decode().split('\r\n'))
         proxy_set.discard('')
         proxy_list = list(proxy_set)
         
-        response = self.get('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt')
+        response = self.get(to_http('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt'), ref_count='constant')
         proxy_set = set(response.content.decode().split('\n')[2:])
         proxy_set.discard('')
         proxy_list.extend(list(proxy_set))
