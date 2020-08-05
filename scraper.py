@@ -280,30 +280,40 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     cookies = dict(response.cookies)
     time.sleep(3)
 
-    if my_proxy is None:
-        response = session.get(server_url + product_url, headers=headers, cookies=cookies)
-    else:
-        if listing_url is not None:
-            response = my_proxy.get(server_url + product_url, referer=listing_url, product_url=product_url)
+    while True:
+        if my_proxy is None:
+            response = session.get(server_url + product_url, headers=headers, cookies=cookies)
         else:
-            response = my_proxy.get(server_url + product_url, product_url=product_url)
-    
-    if hasattr(response, 'cookies'):
-        cookies = {**cookies, **dict(response.cookies)}
-    
-    time.sleep(10)
-
-    final_results = dict()
-
-    time.sleep(3)
-    html = response.content
+            if listing_url is not None:
+                response = my_proxy.get(server_url + product_url, referer=listing_url, product_url=product_url)
+            else:
+                response = my_proxy.get(server_url + product_url, product_url=product_url)
         
-    product_id = parse_data.get_product_id(product_url)
-    
-    soup = BeautifulSoup(html, 'html.parser')
+        if hasattr(response, 'cookies'):
+            cookies = {**cookies, **dict(response.cookies)}
+        
+        time.sleep(10)
 
-    # Get the product details
-    details = parse_data.get_product_data(soup, html=html)
+        final_results = dict()
+
+        time.sleep(3)
+        html = response.content
+            
+        product_id = parse_data.get_product_id(product_url)
+        
+        soup = BeautifulSoup(html, 'html.parser')
+
+        # Get the product details
+        try:
+            details = parse_data.get_product_data(soup, html=html)
+            break
+        except ValueError:
+            logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
+            logger.warning("Trying again...")
+            time.sleep(random.randint(3, 10) + random.uniform(0, 4))
+            if my_proxy is not None:
+                my_proxy.goto_product_listing(category)
+
     details['product_id'] = product_id # Add the product ID
     
     # Check if the product is sponsored
