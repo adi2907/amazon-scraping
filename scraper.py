@@ -95,14 +95,19 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     
     print(cookies)
 
-    while cookies != {}:
+    if cookies == {}:
         # Change identity and try again
-        if my_proxy is not None:
-            logging.warning(f"Cookies is Empty. Changing identity and trying again...")
-            time.sleep(random.randint(4, 14) + random.uniform(0, 2))
-            my_proxy.change_identity()
-            response = my_proxy.get(server_url)
-            cookies = response.cookies
+        while True:
+            if my_proxy is not None:
+                logger.warning(f"Cookies is Empty. Changing identity and trying again...")
+                time.sleep(random.randint(4, 16) + random.uniform(0, 2))
+                my_proxy.change_identity()
+                response = my_proxy.get(server_url)
+                cookies = response.cookies
+                if cookies != {}:
+                    break
+            else:
+                break
 
     if my_proxy is not None:
         my_proxy.cookies = cookies
