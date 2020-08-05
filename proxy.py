@@ -276,6 +276,9 @@ class Proxy():
                     else:
                         self.change_identity()
                         self.reference_count = max(2, self.generate_count(2, 6) - self.penalty)
+                else:
+                    # Sleep
+                    time.sleep(random.randint(3, 5) + self.delay + random.uniform(0, 2))
             else:
                 # Keep ref count constant
                 pass
