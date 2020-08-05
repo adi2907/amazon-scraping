@@ -148,6 +148,14 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                 for title in final_results[category][curr_page]:
                     product_url = final_results[category][curr_page][title]['product_url']
                     if product_url is not None:
+                        product_id = parse_data.get_product_id(product_url)
+                        if product_id is not None:
+                            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                            if obj is not None:
+                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                continue
+                            else:
+                                logger.info(f"Product with ID {product_id} not in DB. Scraping Details...")
                         product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
                         if my_proxy is not None:
                             response = my_proxy.get(curr_url, referer=server_url + product_url)
