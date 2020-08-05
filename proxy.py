@@ -23,7 +23,7 @@ except UndefinedValueError:
 
 
 control_port = 9051
-BACKOFF_DURATION = 20
+BACKOFF_DURATION = 70
 
 
 class Retry():
