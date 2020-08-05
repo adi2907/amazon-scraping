@@ -90,6 +90,20 @@ This will mean that the Tor exit nodes will be an address in India.
 
 You have now setup the necessary requirements for running the scraper.
 
+To use tor along with the scraper, use the `--tor` option:
+
+```bash
+python scraper.py --categories "oneplus" --pages 1 --listing --tor
+```
+
+If you don't specify _tor_, then the scraper will fall back to using public proxies.
+
+```bash
+python scraper.py --categories "oneplus" --pages 1 --listing
+```
+
+This will keep rotating the IPs using public proxy addresses.
+
 ************
 
 ## Running the Scraper

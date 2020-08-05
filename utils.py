@@ -10,6 +10,12 @@ url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
 customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
 
 
+def to_http(url):
+    if url.startswith("https://"):
+        url = url.replace("https://", "http://")
+    return url
+
+
 def add_newlines(self: logging.Logger, num_newlines=1) -> None:
     """Add newlines to a logger object
 

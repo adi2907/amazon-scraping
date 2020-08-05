@@ -12,7 +12,8 @@ from decouple import UndefinedValueError, config
 from stem import Signal
 from stem.control import Controller
 
-from utils import create_logger, customer_reviews_template, url_template
+from utils import (create_logger, customer_reviews_template, to_http,
+                   url_template)
 
 logger = create_logger(__name__)
 
@@ -88,7 +89,7 @@ class Proxy():
         return count
     
 
-    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows'):
+    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True):
         self.proxy_port = proxy_port
         self.control_port = control_port
         self.proxies = {
@@ -112,8 +113,14 @@ class Proxy():
             "Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15",
         ]
-        self.reset()
         self.reference_count = random.randint(2, 4)
+        self.use_tor = use_tor
+        self.reset()
+        if self.use_tor == False:
+            self.proxy_list = self.get_proxy_list()
+            self.switch_proxy()
+        else:
+            self.proxy_list = []
     
 
     def reset(self):
@@ -136,6 +143,41 @@ class Proxy():
         self._BACKOFF_DURATION = 20
     
 
+    def get_proxy_list(self) -> list:
+        """Fetches the list of active socks proxies
+        """
+        response = self.get(to_http('https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt'))
+        proxy_set = set(response.content.decode().split('\r\n'))
+        proxy_set.discard('')
+        proxy_list = list(proxy_set)
+        
+        response = self.get('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt')
+        proxy_set = set(response.content.decode().split('\n')[2:])
+        proxy_set.discard('')
+        proxy_list.extend(list(proxy_set))
+
+        proxy_list = [f"socks5h://{ip}" for ip in proxy_list]
+        return proxy_list
+    
+
+    def switch_proxy(self):
+        if len(self.proxy_list) < 10:
+            raise ValueError(f"Proxy List must have atleast 10 elements")
+        
+        proxy = self.proxies['https']
+        new_proxy = random.choice(self.proxy_list)
+        
+        while proxy == new_proxy:
+            new_proxy = random.choice(self.proxy_list)
+        
+        self.proxies = {
+            'http': f'{new_proxy}',
+            'https': f'{new_proxy}',
+        }
+
+        logger.info(f"Switch to proxy {new_proxy}")
+    
+
     def get_ip(self) -> str:
         """Fetches the IP Address of the machine
 
@@ -145,7 +187,7 @@ class Proxy():
         Returns:
             str: An IP Address
         """
-        urls = ["https://ident.me", "http://myip.dnsomatic.com", "https://checkip.amazonaws.com"]
+        urls = [to_http("https://ident.me"), to_http("http://myip.dnsomatic.com"), to_http("https://checkip.amazonaws.com")]
         for url in urls:
             response = requests.get(url, proxies=self.proxies)
             if response.status_code == 200:
@@ -161,6 +203,10 @@ class Proxy():
         """
         # Reset the state of the proxy
         self.reset()
+
+        if self.use_tor == False:
+            self.switch_proxy()
+            return
         
         curr = 0
         while curr <= self.max_retries:
@@ -211,7 +257,7 @@ class Proxy():
         
         if 'headers' not in kwargs or 'User-Agent' not in kwargs['headers']:
             # Provide a random user agent
-            if url.startswith('https://amazon'):
+            if url.startswith(to_http('https://amazon')):
                 # Amazon specific headers
                 headers = {"Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Connection":"close", "DNT": "1", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
                 headers = OrderedDict(headers)
@@ -271,7 +317,7 @@ class Proxy():
                     # Change the identity and set it again
                     time.sleep(random.randint(3, 5) + self.delay + random.uniform(0, 2))
 
-                    if hasattr(self, 'category') and url.startswith('https://amazon'):
+                    if hasattr(self, 'category') and url.startswith(to_http('https://amazon')):
                         self.goto_product_listing(getattr(self, 'category'), product_url=product_url)
                     else:
                         self.change_identity()
@@ -291,6 +337,7 @@ class Proxy():
     # Reference Material: https://cloud.google.com/iot/docs/how-tos/exponential-backoff
     @Retry.retry(predicate=Retry.if_exception_type(AssertionError), deadline=BACKOFF_DURATION)
     def get(self, url, **kwargs):
+        url = to_http(url)
         response = self.make_request('get', url, **kwargs)
         assert response.status_code in (200, 201)
         return response
@@ -304,7 +351,7 @@ class Proxy():
         self.change_identity()
         self.reference_count = self.generate_count(2, 6)
 
-        server_url = 'https://amazon.in'
+        server_url = to_http('https://amazon.in')
 
         # Increase ref count before request. Don't want to keep looping!
         self.reference_count += 1
@@ -368,7 +415,8 @@ def test_proxy(proxy: Proxy, change: bool = False) -> None:
 
 
 if __name__ == '__main__':
-    proxy = Proxy(proxy_port=9050, control_port=9051)
+    proxy = Proxy(proxy_port=9050, control_port=9051, use_tor=False)
+    #print(proxy.proxy_list)
     print(proxy.get_ip())
     #proxy.change_identity()
     #print(proxy.get_ip())

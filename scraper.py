@@ -460,6 +460,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
     parser.add_argument('--date', help='Threshold Limit for scraping Product Reviews', type=lambda s: datetime.strptime(s, '%Y-%m-%d'))
     parser.add_argument('--config', help='A config file for the options', type=str)
+    parser.add_argument('--tor', help='To use Tor vs Public Proxies', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -474,11 +475,25 @@ if __name__ == '__main__':
     product_ids = args.ids
     config = args.config
     threshold_date = args.date
+    use_tor = args.tor
+
+    # Set the attribute for my_proxy
+    if my_proxy is not None:
+        setattr(my_proxy, 'use_tor', use_tor)
+    else:
+        if use_tor == True:
+            raise ValueError("Tor service is not available. Please start it")
+        else:
+            my_proxy = my_proxy = proxy.Proxy(OS=OS, use_tor=use_tor)
+
+    no_scrape = False
 
     if config is not None:
         # Iterate thru args
         for arg in vars(args):
             if arg == 'pages' and getattr(args, arg) == 1:
+                continue
+            if args == 'tor':
                 continue
             if arg not in ('config', 'number',) and getattr(args, arg) not in (None, False):
                 raise ValueError("--config file is already specified")
