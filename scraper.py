@@ -19,7 +19,8 @@ from sqlalchemy.orm.exc import NoResultFound
 import db_manager
 import parse_data
 import proxy
-from utils import create_logger, customer_reviews_template, url_template
+from utils import (create_logger, customer_reviews_template, qanda_template,
+                   url_template)
 
 logger = create_logger('scraper')
 
@@ -328,11 +329,20 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if 'customer_lazy' in details and details['customer_lazy'] == True:
         qanda_url = details['customer_qa']
         curr = 0
+        first_request = True
+        prev_url = product_url
+        
+        qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + '?isAnswered=true'
+        
         while qanda_url is not None:
             if my_proxy is None:
                 response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
             else:
-                response = my_proxy.get(qanda_url, referer=server_url + product_url, product_url=product_url)
+                if curr == 0 and first_request == True:
+                    response = my_proxy.get(qanda_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
+                else:
+                    # prev_url has the full path
+                    response = my_proxy.get(qanda_url, referer=prev_url, product_url=product_url)
             
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
@@ -348,12 +358,44 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             
             if next_url is not None:
                 logger.info(f"QandA: Going to Page {curr}")
+                prev_url = qanda_url
                 qanda_url = server_url + next_url
                 curr += 1
                 if qanda_pages is not None and curr == qanda_pages:
                     logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
                     logger.newline()
                     break
+                
+                if first_request == True:
+                    # First Request
+                    first_request = False
+                    qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + f"?sort=SUBMIT_DATE&isAnswered=true"
+                    response = my_proxy.get(qanda_url, referer=prev_url, product_url=product_url, ref_count='constant')
+                    assert response.status_code == 200
+
+                    time.sleep(random.randint(4, 5) + random.uniform(0, 1))
+                    
+                    # Now sort by date
+                    logger.info("Now moving into sorting by most recent.")
+                    continue
+                else:
+                    # We're sorting by most recent
+                    qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + f"?sort=SUBMIT_DATE&isAnswered=true"
+                    if threshold_date is None:
+                        pass
+                    else:
+                        limit = False
+                        for pair in qanda:
+                            qanda_date = pair['date']
+                            if qanda_date is not None:
+                                # Review Date must be greater than threshold
+                                if qanda_date < threshold_date:
+                                    logger.info(f"QandA (Current Page = {curr}) - Date Limit Exceeded.")
+                                    logger.newline()
+                                    limit = True
+                                    break
+                        if limit == True:
+                            break
             else:
                 logger.info(f"QandA (Current Page = {curr}) - Next Page is None. Going to Reviews now...")
                 logger.newline()
