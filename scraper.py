@@ -345,7 +345,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         pass
                 else:
                     # prev_url has the full path
-                    response = my_proxy.get(qanda_url, referer=prev_url, product_url=product_url)
+                    response = my_proxy.get(qanda_url, referer=prev_url, product_url=product_url, ref_count='constant')
             
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
@@ -422,7 +422,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     if curr == 0 and first_request == False:
                         response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
                     else:
-                        response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url)
+                        response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
                
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
