@@ -6,6 +6,7 @@ configparser>=5.0.0
 fake-useragent>=0.1.11
 idna>=2.10
 mysql-connector-python>=2.0.4
+proxyscrape>=0.3.0
 PyMySQL>=0.10.0
 PySocks>=1.7.1
 python-decouple>=3.3

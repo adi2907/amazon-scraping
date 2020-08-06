@@ -10,6 +10,7 @@ import requests
 import socks
 from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
+from proxyscrape import create_collector
 from stem import Signal
 from stem.control import Controller
 
@@ -98,7 +99,7 @@ class Proxy():
         return count
     
 
-    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True):
+    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True, country='in'):
         self.proxy_port = proxy_port
         self.control_port = control_port
         self.proxies = {
@@ -126,7 +127,7 @@ class Proxy():
         self.use_tor = use_tor
         self.reset()
         if self.use_tor == False:
-            self.proxy_list = self.get_proxy_list()
+            self.proxy_list = self.get_proxy_list(country=country)
             self.switch_proxy()
         else:
             self.proxy_list = []
@@ -152,20 +153,26 @@ class Proxy():
         self._BACKOFF_DURATION = 20
     
 
-    def get_proxy_list(self) -> list:
+    def get_proxy_list(self, country=None) -> list:
         """Fetches the list of active socks proxies
         """
-        response = self.get(to_http('https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt', use_tor=self.use_tor), ref_count='constant')
-        proxy_set = set(response.content.decode().split('\r\n'))
-        proxy_set.discard('')
-        proxy_list = list(proxy_set)
-        
-        response = self.get(to_http('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt', use_tor=self.use_tor), ref_count='constant')
-        proxy_set = set(response.content.decode().split('\n')[2:])
-        proxy_set.discard('')
-        proxy_list.extend(list(proxy_set))
+        if country is None or country == 'all':
+            # Fetch global proxies
+            response = self.get(to_http('https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt', use_tor=self.use_tor), ref_count='constant')
+            proxy_set = set(response.content.decode().split('\r\n'))
+            proxy_set.discard('')
+            proxy_list = list(proxy_set)
+            
+            response = self.get(to_http('https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt', use_tor=self.use_tor), ref_count='constant')
+            proxy_set = set(response.content.decode().split('\n')[2:])
+            proxy_set.discard('')
+            proxy_list.extend(list(proxy_set))
 
-        proxy_list = [f"socks5h://{ip}" for ip in proxy_list]
+            proxy_list = [f"socks5h://{ip}" for ip in proxy_list]
+        else:
+            collector = create_collector('my-collector', 'socks5')
+            proxy_list = collector.get_proxies({'code': country})
+            proxy_list = ['socks5h://' + str(proxy.host) + ':' + str(proxy.port) for proxy in proxy_list]
         return proxy_list
     
 
