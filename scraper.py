@@ -158,23 +158,6 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             product_info = parse_data.get_product_info(soup)
 
             final_results[category][curr_page] = product_info
-
-            if detail == True:
-                for title in final_results[category][curr_page]:
-                    product_url = final_results[category][curr_page][title]['product_url']
-                    if product_url is not None:
-                        product_id = parse_data.get_product_id(product_url)
-                        if product_id is not None:
-                            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                            if obj is not None:
-                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                continue
-                            else:
-                                logger.info(f"Product with ID {product_id} not in DB. Scraping Details...")
-                        product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
-                        if my_proxy is not None:
-                            response = my_proxy.get(curr_url, referer=server_url + product_url)
-                            time.sleep(random.randint(3, 5))
             
             page_element = soup.find("ul", class_="a-pagination")
             
@@ -225,17 +208,36 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             curr_url = server_url + page_url
 
             time.sleep(5)
-            curr_page += 1
 
             # Dump the results of this page to the DB
             page_results = dict()
             page_results[category] = final_results[category]
             db_manager.insert_product_listing(db_session, page_results)
+
+            if detail == True:
+                for title in final_results[category][curr_page]:
+                    product_url = final_results[category][curr_page][title]['product_url']
+                    if product_url is not None:
+                        product_id = parse_data.get_product_id(product_url)
+                        if product_id is not None:
+                            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                            if obj is not None:
+                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                continue
+                            else:
+                                logger.info(f"Product with ID {product_id} not in DB. Scraping Details...")
+                        product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
+                        if my_proxy is not None:
+                            response = my_proxy.get(curr_url, referer=server_url + product_url)
+                            time.sleep(random.randint(3, 5))
+
             # Delete the previous page results
-            if category in final_results and curr_page - 1 in final_results[category]:
-                del final_results[category][curr_page - 1]
+            if category in final_results and curr_page in final_results[category]:
+                del final_results[category][curr_page]
             
-            logger.info(f"Finished Scraping Listing Page {curr_page - 1} of {category}")
+            logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
+
+            curr_page += 1
         
         # Dump the category results
         results = dict()
