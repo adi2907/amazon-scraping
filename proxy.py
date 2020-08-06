@@ -68,7 +68,7 @@ class Retry():
                                     logger.error("Maximum Backoff Exceeded")
                                     logger.info("Going into a cooldown period")
                                     setattr(self, 'cooldown', True)
-                                    self.delay += 5
+                                    time.sleep(random.randint(120, 300))
                                     self.change_identity()
                             else:
                                 raise TimeoutError("Maximum Backoff Exceeded even during cooldown period")
