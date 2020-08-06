@@ -317,7 +317,7 @@ class Proxy():
                     # Change the identity and set it again
                     time.sleep(random.randint(3, 5) + self.delay + random.uniform(0, 2))
 
-                    if hasattr(self, 'category') and (if url.startswith(to_http('https://www.amazon', use_tor=self.use_tor)) or url.startswith(to_http('https://amazon', use_tor=self.use_tor))):
+                    if hasattr(self, 'category') and (url.startswith(to_http('https://www.amazon', use_tor=self.use_tor)) or url.startswith(to_http('https://amazon', use_tor=self.use_tor))):
                         self.goto_product_listing(getattr(self, 'category'), product_url=product_url)
                     else:
                         self.change_identity()
