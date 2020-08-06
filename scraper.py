@@ -519,15 +519,6 @@ if __name__ == '__main__':
     threshold_date = args.date
     use_tor = args.tor
 
-    # Set the attribute for my_proxy
-    if my_proxy is not None:
-        setattr(my_proxy, 'use_tor', use_tor)
-    else:
-        if use_tor == True:
-            raise ValueError("Tor service is not available. Please start it")
-        else:
-            my_proxy = my_proxy = proxy.Proxy(OS=OS, use_tor=use_tor)
-
     no_scrape = False
 
     if config is not None:
@@ -602,6 +593,15 @@ if __name__ == '__main__':
     if no_scrape == True:
         categories = None
         pages = None
+
+    # Set the attribute for my_proxy
+    if my_proxy is not None:
+        setattr(my_proxy, 'use_tor', use_tor)
+    else:
+        if use_tor == True:
+            raise ValueError("Tor service is not available. Please start it")
+        else:
+            my_proxy = my_proxy = proxy.Proxy(OS=OS, use_tor=use_tor)
 
     if categories is not None:
         if listing == True:
