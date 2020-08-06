@@ -597,6 +597,9 @@ if __name__ == '__main__':
     # Set the attribute for my_proxy
     if my_proxy is not None:
         setattr(my_proxy, 'use_tor', use_tor)
+        if use_tor == False:
+            my_proxy.proxy_list = my_proxy.get_proxy_list()
+            my_proxy.switch_proxy()
     else:
         if use_tor == True:
             raise ValueError("Tor service is not available. Please start it")
