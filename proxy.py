@@ -250,7 +250,7 @@ class Proxy():
         """Performs a request using a session object. This handles cookies, along with referral urls.
         """
         if 'proxies' not in kwargs:
-            if 'no_proxy' not in kwargs or kwargs['no_proxy'] == True:
+            if 'no_proxy' in kwargs and kwargs['no_proxy'] == True:
                 pass
             else:
                 kwargs['proxies'] = self.proxies
