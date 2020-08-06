@@ -338,8 +338,11 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             if my_proxy is None:
                 response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
             else:
-                if curr == 0 and first_request == True:
-                    response = my_proxy.get(qanda_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
+                if curr == 0:
+                    if first_request == True:
+                        response = my_proxy.get(qanda_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
+                    else:
+                        pass
                 else:
                     # prev_url has the full path
                     response = my_proxy.get(qanda_url, referer=prev_url, product_url=product_url)
