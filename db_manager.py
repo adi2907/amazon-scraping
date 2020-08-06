@@ -339,12 +339,13 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
         obj = QandA()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
-    try:
-        session.commit()
-    except:
-        session.rollback()
-        logger.warning(f" For Product {product_id}, there is an error with the data.")
-        logger.newline()
+        # TODO: Change this later outisde the loop
+        try:
+            session.commit()
+        except:
+            session.rollback()
+            logger.warning(f" For Product {product_id}, there is an error with the data.")
+            logger.newline()
 
 
 def insert_product_reviews(session, reviews, product_id, table='Reviews'):
@@ -366,12 +367,13 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
         obj = Reviews()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
-    try:
-        session.commit()
-    except:
-        session.rollback()
-        logger.warning(f"For Product {product_id}, there is an error with the data.")
-        logger.newline()
+        # TODO: Change this later outisde the loop
+        try:
+            session.commit()
+        except:
+            session.rollback()
+            logger.warning(f"For Product {product_id}, there is an error with the data.")
+            logger.newline()
 
 
 def query_table(session, table, query='all', filter_cond=None):
