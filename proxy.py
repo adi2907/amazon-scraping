@@ -257,7 +257,7 @@ class Proxy():
         
         if 'headers' not in kwargs or 'User-Agent' not in kwargs['headers']:
             # Provide a random user agent
-            if url.startswith(to_http('https://amazon', use_tor=self.use_tor)):
+            if url.startswith(to_http('https://www.amazon', use_tor=self.use_tor)) or url.startswith(to_http('https://amazon', use_tor=self.use_tor)):
                 # Amazon specific headers
                 headers = {"Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Connection":"close", "DNT": "1", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
                 headers = OrderedDict(headers)
@@ -317,7 +317,7 @@ class Proxy():
                     # Change the identity and set it again
                     time.sleep(random.randint(3, 5) + self.delay + random.uniform(0, 2))
 
-                    if hasattr(self, 'category') and url.startswith(to_http('https://amazon', use_tor=self.use_tor)):
+                    if hasattr(self, 'category') and (if url.startswith(to_http('https://www.amazon', use_tor=self.use_tor)) or url.startswith(to_http('https://amazon', use_tor=self.use_tor))):
                         self.goto_product_listing(getattr(self, 'category'), product_url=product_url)
                     else:
                         self.change_identity()
