@@ -263,9 +263,13 @@ class Proxy():
                 headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": f"www.amazon.{country_code}", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
                 headers['Sec-Fetch-Dest'] = 'document'
                 headers['Sec-Fetch-Mode'] = 'navigate'
-                headers['Sec-Fetch-Site'] = 'same-origin'
                 headers['Sec-Fetch-User'] = '?1'
-                headers['TE'] = 'Trailers'
+                if url not in (to_http('https://www.amazon', use_tor=self.use_tor), to_http('https://amazon', use_tor=self.use_tor)):
+                    # Same origin request
+                    headers['Sec-Fetch-Site'] = 'same-origin'
+                else:
+                    # Front page
+                    headers['Sec-Fetch-Site'] = 'none'
                 headers = OrderedDict(headers)
             else:
                 headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate"}
