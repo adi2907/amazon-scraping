@@ -261,6 +261,11 @@ class Proxy():
                 # Amazon specific headers
                 country_code = 'in'
                 headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": f"www.amazon.{country_code}", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
+                headers['Sec-Fetch-Dest'] = 'document'
+                headers['Sec-Fetch-Mode'] = 'navigate'
+                headers['Sec-Fetch-Site'] = 'same-origin'
+                headers['Sec-Fetch-User'] = '?1'
+                headers['TE'] = 'Trailers'
                 headers = OrderedDict(headers)
             else:
                 headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate"}
