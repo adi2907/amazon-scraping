@@ -71,15 +71,26 @@ class Retry():
                                     setattr(self, 'cooldown', True)
                                     time.sleep(random.randint(120, 300))
                                     self.change_identity()
+                                    # We'll go to the url later
+                                    #self.stack.append({'func': func, 'args': [self] + list(args), 'kwargs': kwargs})
+                                    #if len(args) > 0:
+                                    #    logger.warning(f"Appending URL {args[0]} to stack. We'll go to it later")
+                                    #break
                                 else:
                                     logger.error("Maximum Backoff Exceeded even during cooldown")
                                     logger.info("Sleeping for a bit")
                                     setattr(self, 'cooldown', False)
                                     time.sleep(random.randint(240, 400))
                                     self.change_identity()
+                                    # We'll go to the url later
+                                    #self.stack.append({'func': func, 'args': [self] + list(args), 'kwargs': kwargs})
+                                    #if len(args) > 0:
+                                    #    logger.warning(f"Appending URL {args[0]} to stack. We'll go to it later")
+                                    #break
                             
                             self.delay = self.backoff
                             self.penalty = max(2, self.penalty+1)
+                            time.sleep(random.randint(self.delay, self.delay + 5))
                         else:
                             raise
                 raise TimeoutError("Maximum Loop Limit Exceeded during backoff")
@@ -136,6 +147,7 @@ class Proxy():
             self.switch_proxy()
         else:
             self.proxy_list = []
+        self.stack = [] # List of URLs which are possibly blocked when scraping
     
 
     def reset(self):
@@ -366,7 +378,7 @@ class Proxy():
     
     
     # Reference Material: https://cloud.google.com/iot/docs/how-tos/exponential-backoff
-    @Retry.retry(predicate=Retry.if_exception_type(AssertionError), deadline=BACKOFF_DURATION)
+    @Retry.retry(predicate=Retry.if_exception_type(AssertionError), deadline=None)
     def get(self, url, **kwargs):
         url = to_http(url, use_tor=self.use_tor)
         response = self.make_request('get', url, **kwargs)
