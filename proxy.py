@@ -259,7 +259,8 @@ class Proxy():
             # Provide a random user agent
             if url.startswith(to_http('https://www.amazon', use_tor=self.use_tor)) or url.startswith(to_http('https://amazon', use_tor=self.use_tor)):
                 # Amazon specific headers
-                headers = {"Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Connection":"close", "DNT": "1", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
+                country_code = 'in'
+                headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": f"www.amazon.{country_code}", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
                 headers = OrderedDict(headers)
             else:
                 headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate"}
