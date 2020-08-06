@@ -54,7 +54,7 @@ def get_product_mapping(soup) -> dict:
     return product_map
 
 
-def get_product_info(soup, base_url="https://amazon.in"):
+def get_product_info(soup, base_url="https://www.amazon.in"):
     """Fetches the product details for all the products for a single page
     """
     product_bars = soup.find_all("div", class_="sg-col-inner")

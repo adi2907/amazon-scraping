@@ -351,7 +351,7 @@ class Proxy():
         self.change_identity()
         self.reference_count = self.generate_count(2, 6)
 
-        server_url = to_http('https://amazon.in', use_tor=self.use_tor)
+        server_url = to_http('https://www.amazon.in', use_tor=self.use_tor)
 
         # Increase ref count before request. Don't want to keep looping!
         self.reference_count += 1

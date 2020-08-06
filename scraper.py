@@ -79,7 +79,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                 raise ValueError("pages must be a positive integer")
             pages = [pages for _ in categories]
 
-    server_url = 'https://amazon.in'
+    server_url = 'https://www.amazon.in'
     
     if my_proxy is not None:
         try:
@@ -263,7 +263,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     global my_proxy, session
     global headers, cookies
     # session = requests.Session()
-    server_url = 'https://amazon.in'
+    server_url = 'https://www.amazon.in'
 
     if review_pages is None:
         review_pages = 1000
