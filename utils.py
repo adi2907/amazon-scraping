@@ -12,7 +12,9 @@ customer_reviews_template = Template('https://www.amazon.in/review/widgets/avera
 qanda_template = Template('https://www.amazon.in/ask/questions/asin/$PID/$PAGE/ref=ask_dp_iaw_ql_hza')
 
 
-def to_http(url):
+def to_http(url, use_tor=False):
+    if use_tor == True:
+        return url
     if url.startswith("https://"):
         url = url.replace("https://", "http://")
     return url
