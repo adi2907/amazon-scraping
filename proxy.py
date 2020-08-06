@@ -72,7 +72,12 @@ class Retry():
                                     time.sleep(random.randint(120, 300))
                                     self.change_identity()
                                 else:
-                                    raise TimeoutError("Maximum Backoff Exceeded even during cooldown period")
+                                    logger.error("Maximum Backoff Exceeded even during cooldown")
+                                    logger.info("Sleeping for a bit")
+                                    setattr(self, 'cooldown', False)
+                                    time.sleep(random.randint(240, 400))
+                                    self.change_identity()
+                            
                             self.delay = self.backoff
                             self.penalty = max(2, self.penalty+1)
                         else:
