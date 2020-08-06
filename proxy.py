@@ -1,3 +1,4 @@
+import math
 import random
 import socket
 import time
@@ -24,7 +25,7 @@ except UndefinedValueError:
 
 
 control_port = 9051
-BACKOFF_DURATION = 70
+BACKOFF_DURATION = 20
 
 
 class Retry():
@@ -42,7 +43,8 @@ class Retry():
             TimeoutError: When the backoff exceeds the limit
         """
         if deadline is None:
-            deadline = BACKOFF_DURATION
+            choices = [int(math.pow(2, j)) for j in range(1, int(math.log(BACKOFF_DURATION, 2) + 1))]
+            deadline = random.choice(choices)
         
         @wraps(cls)
         def wrapper1(func):
@@ -62,7 +64,14 @@ class Retry():
                             # Now backoff and try again
                             self.backoff = 2*self.backoff
                             if self.backoff > deadline:
-                                raise TimeoutError("Maximum Backoff Exceeded")
+                                if not hasattr(self, 'cooldown') or self.cooldown != True:
+                                    logger.error("Maximum Backoff Exceeded")
+                                    logger.info("Going into a cooldown period")
+                                    setattr(self, 'cooldown', True)
+                                    self.delay += 5
+                                    self.change_identity()
+                            else:
+                                raise TimeoutError("Maximum Backoff Exceeded even during cooldown period")
                             self.delay = self.backoff
                             self.penalty = max(2, self.penalty+1)
                         else:
