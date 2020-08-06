@@ -205,7 +205,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             
             if hasattr(response, 'cookies'):
                 cookies = {**cookies, **dict(response.cookies)}
-            curr_url = server_url + page_url
+            next_url = server_url + page_url
 
             time.sleep(5)
 
@@ -236,7 +236,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                 del final_results[category][curr_page]
             
             logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
-
+            curr_url = next_url
             curr_page += 1
         
         # Dump the category results
