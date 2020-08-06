@@ -550,6 +550,8 @@ if __name__ == '__main__':
         with open(f"{config}", "r") as f:
             for line in f:
                 line = line.strip()
+                if line == 'USE_TOR':
+                    use_tor = True
                 if len(line) >= 2:
                     if line[0] == '#':
                         # Comment
