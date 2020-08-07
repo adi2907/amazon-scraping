@@ -1,4 +1,5 @@
 import argparse
+import itertools
 import json
 import os
 import pickle
@@ -66,7 +67,7 @@ Session = sessionmaker(bind=engine)
 db_session = Session()
 
 
-def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None):
+def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None):
     global my_proxy, session
     global headers, cookies
     # session = requests.Session()
@@ -119,8 +120,17 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
 
     change = False
 
-    for category, num_pages in zip(categories, pages):
+    if products is None:
+        products = itertools.repeat(None)
+
+    for category, num_pages, num_products in zip(categories, pages, products):
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
+        
+        idx = 1
+        overflow = False
+        if num_products is not None and idx > num_products:
+            continue
+
         final_results[category] = dict()
         base_url = url_template.substitute(category=category)
         
@@ -225,11 +235,20 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                                 logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
                                 continue
                             else:
-                                logger.info(f"Product with ID {product_id} not in DB. Scraping Details...")
+                                logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
+                        
                         product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
+                        idx += 1
+
                         if my_proxy is not None:
-                            response = my_proxy.get(curr_url, referer=server_url + product_url)
-                            time.sleep(random.randint(3, 5))
+                            if num_products is None or idx <= num_products:
+                                response = my_proxy.get(curr_url, referer=server_url + product_url)
+                                time.sleep(random.randint(3, 5))
+                            elif num_products is not None and idx > num_products:
+                                # We're done for this product
+                                logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
+                                overflow = True
+                                break
 
             # Delete the previous page results
             if category in final_results and curr_page in final_results[category]:
@@ -238,6 +257,10 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
             curr_url = next_url
             curr_page += 1
+
+            if overflow == True:
+                overflow = False
+                break
         
         # Dump the category results
         results = dict()
@@ -530,6 +553,7 @@ if __name__ == '__main__':
     parser.add_argument('--detail', help='Scraping individual product details', default=False, action='store_true')
     parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
     parser.add_argument('--pages', help='Number of pages to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=1)
+    parser.add_argument('--num_products', help='Number of products per category to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
     parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int)
     parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
@@ -552,6 +576,7 @@ if __name__ == '__main__':
     config = args.config
     threshold_date = args.date
     use_tor = args.tor
+    num_products = args.num_products
 
     no_scrape = False
 
@@ -559,6 +584,8 @@ if __name__ == '__main__':
         # Iterate thru args
         for arg in vars(args):
             if arg == 'pages' and getattr(args, arg) == 1:
+                continue
+            if arg == 'num_products' and getattr(args, arg) == None:
                 continue
             if args == 'tor':
                 continue
@@ -642,7 +669,10 @@ if __name__ == '__main__':
 
     if categories is not None:
         if listing == True:
-            results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date)
+            if num_products is not None and isinstance(num_products, list):
+                assert len(num_products) == len(categories)
+            
+            results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products)
             """
             if detail == True:
                 for category in categories:
