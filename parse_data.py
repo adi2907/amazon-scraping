@@ -500,7 +500,9 @@ def get_customer_reviews(soup, content={}):
     if next_url is not None:
         next_url = next_url.find("li", class_="a-last")
         if next_url is not None:
-            next_url = next_url.find("a").attrs['href']
+            next_url = next_url.find("a")
+            if next_url is not None:
+                next_url = next_url.attrs['href']
     return content, next_url
 
 
