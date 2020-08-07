@@ -374,10 +374,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 
                 if rand <= 15:
                     logger.info("Going back randomly")
-                    response = my_proxy.get(server_url + t_prev, referer=server_url + t_curr, product_url=product_url, ref_count='constant')
-                    time.sleep(random.randint(4, 10))
-                    response = my_proxy.get(server_url + t_curr, referer=server_url + t_prev, product_url=product_url, ref_count='constant')
-                    time.sleep(random.randint(4, 12))
+                    response = my_proxy.get(t_prev, referer=t_curr, product_url=product_url, ref_count='constant')
+                    time.sleep(random.randint(6, 12))
+                    response = my_proxy.get(t_curr, referer=t_prev, product_url=product_url, ref_count='constant')
+                    time.sleep(random.randint(6, 12))
 
                 if qanda_pages is not None and curr == qanda_pages:
                     logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
@@ -500,10 +500,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     
                     if rand <= 15:
                         logger.info("Going back randomly")
-                        response = my_proxy.get(server_url + t_prev, referer=server_url + t_curr, product_url=product_url, ref_count='constant')
-                        time.sleep(random.randint(4, 10))
-                        response = my_proxy.get(server_url + t_curr, referer=server_url + t_prev, product_url=product_url, ref_count='constant')
-                        time.sleep(random.randint(4, 12))
+                        response = my_proxy.get(t_prev, referer=t_curr, product_url=product_url, ref_count='constant')
+                        time.sleep(random.randint(6, 12))
+                        response = my_proxy.get(t_curr, referer=t_prev, product_url=product_url, ref_count='constant')
+                        time.sleep(random.randint(6, 12))
                     
                     if review_pages is not None and curr == review_pages:
                         logger.info(f"Reviews (Current Page = {curr}) - Finished last page.")
