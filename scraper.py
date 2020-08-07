@@ -374,6 +374,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 
                 if rand <= 15:
                     logger.info("Going back randomly")
+                    if curr == 1:
+                        # Prev URL doesnt have full path
+                        t_prev = server_url + t_prev
                     response = my_proxy.get(t_prev, referer=t_curr, product_url=product_url, ref_count='constant')
                     time.sleep(random.randint(6, 12))
                     response = my_proxy.get(t_curr, referer=t_prev, product_url=product_url, ref_count='constant')
@@ -498,11 +501,11 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     time.sleep(rand)
                     rand = random.randint(0, 100)
                     
-                    if rand <= 15:
+                    if rand <= 15 and curr > 1:
                         logger.info("Going back randomly")
-                        response = my_proxy.get(t_prev, referer=t_curr, product_url=product_url, ref_count='constant')
+                        response = my_proxy.get(server_url + t_prev, referer=server_url + t_curr, product_url=product_url, ref_count='constant')
                         time.sleep(random.randint(6, 12))
-                        response = my_proxy.get(t_curr, referer=t_prev, product_url=product_url, ref_count='constant')
+                        response = my_proxy.get(server_url + t_curr, referer=server_url + t_prev, product_url=product_url, ref_count='constant')
                         time.sleep(random.randint(6, 12))
                     
                     if review_pages is not None and curr == review_pages:
