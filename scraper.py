@@ -368,8 +368,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 curr += 1
                 rand = random.randint(4, 17)
                 time.sleep(rand)
-                if rand % 4 == 0:
-                    my_proxy.goto_product_listing(category, product_url=product_url)
+                #if rand % 4 == 0:
+                #    my_proxy.goto_product_listing(category, product_url=product_url)
                 if qanda_pages is not None and curr == qanda_pages:
                     logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
                     logger.newline()
