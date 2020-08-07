@@ -363,13 +363,22 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             
             if next_url is not None:
                 logger.info(f"QandA: Going to Page {curr}")
+                t_curr = qanda_url
+                t_prev = prev_url
                 prev_url = qanda_url
                 qanda_url = server_url + next_url
                 curr += 1
                 rand = random.randint(4, 17)
                 time.sleep(rand)
-                #if rand % 4 == 0:
-                #    my_proxy.goto_product_listing(category, product_url=product_url)
+                rand = random.randint(0, 100)
+                
+                if rand <= 15:
+                    logger.info("Going back randomly")
+                    response = my_proxy.get(server_url + t_prev, referer=server_url + t_curr, product_url=product_url, ref_count='constant')
+                    time.sleep(random.randint(4, 10))
+                    response = my_proxy.get(server_url + t_curr, referer=server_url + t_prev, product_url=product_url, ref_count='constant')
+                    time.sleep(random.randint(4, 12))
+
                 if qanda_pages is not None and curr == qanda_pages:
                     logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
                     logger.newline()
@@ -480,13 +489,22 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             break
                 
                 if next_url is not None:
+                    t_curr = reviews_url
+                    t_prev = prev_url
                     prev_url = reviews_url
                     reviews_url = next_url
                     curr += 1
                     rand = random.randint(4, 17)
                     time.sleep(rand)
-                    #if rand % 4 == 0:
-                    #    my_proxy.goto_product_listing(category, product_url=product_url)
+                    rand = random.randint(0, 100)
+                    
+                    if rand <= 15:
+                        logger.info("Going back randomly")
+                        response = my_proxy.get(server_url + t_prev, referer=server_url + t_curr, product_url=product_url, ref_count='constant')
+                        time.sleep(random.randint(4, 10))
+                        response = my_proxy.get(server_url + t_curr, referer=server_url + t_prev, product_url=product_url, ref_count='constant')
+                        time.sleep(random.randint(4, 12))
+                    
                     if review_pages is not None and curr == review_pages:
                         logger.info(f"Reviews (Current Page = {curr}) - Finished last page.")
                         logger.newline()
