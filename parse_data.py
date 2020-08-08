@@ -54,12 +54,14 @@ def get_product_mapping(soup) -> dict:
     return product_map
 
 
-def get_product_info(soup, base_url="https://www.amazon.in"):
+def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
     """Fetches the product details for all the products for a single page
     """
     product_bars = soup.find_all("div", class_="sg-col-inner")
     
     product_info = dict()
+
+    serial_no = curr_serial_no
     
     for product_bar in product_bars:
         title_node = product_bar.find("a", class_="a-link-normal a-text-normal")
@@ -72,6 +74,7 @@ def get_product_info(soup, base_url="https://www.amazon.in"):
         
         if title in product_info:
             # We've already covered this product
+            serial_no += 1
             continue
         
         product_info[title] = dict()
@@ -130,7 +133,10 @@ def get_product_info(soup, base_url="https://www.amazon.in"):
         else:
             product_info[title]['image'] = None
         
-    return product_info
+        product_info[title]['serial_no'] = serial_no
+        serial_no += 1
+        
+    return product_info, serial_no
 
 
 def get_review_elements(soup):
@@ -512,7 +518,7 @@ if __name__ == '__main__':
     #print(results)
     
     #soup = init_parser('headphones/page_2')
-    #results = get_product_info(soup)
+    #results, _ = get_product_info(soup)
     #print(results)
     #print(len(results.keys()))
 

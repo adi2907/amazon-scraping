@@ -8,6 +8,7 @@ from datetime import datetime
 
 import pymysql
 from decouple import UndefinedValueError, config
+from pytz import timezone
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
                         MetaData, String, Table, Text, create_engine, exc)
 from sqlalchemy.ext.declarative import declarative_base
@@ -96,7 +97,18 @@ tables = {
         'verified_purchase': 'INTEGER',
         'helpful_votes': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
-    }
+    },
+    'DailyProductListing': {
+        'id': 'INTEGER PRIMARY KEY',
+        'product_id': 'TEXT(16)',
+        'serial_no': 'INTEGER',
+        'avg_rating': 'FLOAT',
+        'total_ratings': 'INTEGER',
+        'price': 'INTEGER',
+        'old_price': 'INTEGER',
+        'date': 'DATETIME',
+        '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
+    },
 }
 
 field_map = {
@@ -242,12 +254,18 @@ class Reviews():
     pass
 
 
+@apply_schema
+class DailyProductListing():
+    pass
+
+
 table_map = {
     'ProductListing': ProductListing,
     'ProductDetails': ProductDetails,
     'SponsoredProductDetails': SponsoredProductDetails,
     'QandA': QandA,
     'Reviews': Reviews,
+    'DailyProductListing': DailyProductListing,
 }
 
 
@@ -274,7 +292,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                 try:
                     if row['product_id'] is not None:
                         obj = ProductListing()
-                        [setattr(obj, key, value) for key, value in row.items()]
+                        [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
                 except exc.IntegrityError:
@@ -286,6 +304,55 @@ def insert_product_listing(session, data, table='ProductListing'):
                         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
                         for field in update_fields:
                             setattr(result, field, row[field])
+                        try:
+                            session.commit()
+                        except:
+                            session.rollback()
+                            logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
+                            logger.newline()
+                except Exception:
+                    session.rollback()
+                    logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
+                    logger.newline()
+
+
+def insert_daily_product_listing(session, data, table='DailyProductListing'):
+    row = dict()
+    for category in data:
+        for page_num in data[category]:
+            for title in data[category][page_num]:
+                value = data[category][page_num][title]
+                for key in value:
+                    if value[key] is not None:
+                        if key == 'avg_rating':
+                            row[key] = float(value[key].split()[0])
+                        elif key == 'total_ratings':
+                            row[key] = int(value[key].replace(',', '').replace('.', ''))
+                        elif key in ('price', 'old_price'):
+                            row[key] = int(value[key][1:].replace(',', '').replace('.', ''))
+                        else:
+                            row[key] = value[key]
+                    else:
+                        row[key] = value[key]
+                try:
+                    if row['product_id'] is not None:
+                        row['date'] = datetime.now(timezone('Asia/Kolkata'))#.date()
+                        obj = DailyProductListing()
+                        [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
+                        session.add(obj)
+                        session.commit()
+                except exc.IntegrityError:
+                    session.rollback()
+                    result = session.query(DailyProductListing).filter_by(product_id=row['product_id']).first()
+                    if result is None:
+                        pass
+                    else:
+                        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
+                        for field in update_fields:
+                            setattr(result, field, row[field])
+                        # Update the date
+                        date = datetime.now(timezone('Asia/Kolkata'))#.date()
+                        setattr(result, 'date', date)
                         try:
                             session.commit()
                         except:
@@ -457,6 +524,8 @@ if __name__ == '__main__':
 
     #print(fetch_product_ids(session, 'ProductListing', 'books'))
 
+    #column = Column('serial_no', Integer())
+    #add_column(engine, 'DailyProductListing', column)
     #column = Column('categories', Text())
     #add_column(engine, 'ProductDetails', column)
     #add_column(engine, 'SponsoredProductDetails', column)
@@ -476,9 +545,10 @@ if __name__ == '__main__':
     #else:
     #    print("Nothing Found")
 
-    #with open('dumps/phones.pkl', 'rb') as f:
+    #with open('dumps/headphones.pkl', 'rb') as f:
     #    product_listing = pickle.load(f)
 
+    #insert_daily_product_listing(session, product_listing)
     #insert_product_listing(session, product_listing)
 
     #with open('dumps/dump_B07DJLVJ5M.pkl', 'rb') as f:

@@ -126,7 +126,8 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     for category, num_pages, num_products in zip(categories, pages, products):
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
         
-        idx = 1
+        idx = 1 # Total number of scraped product details
+        curr_serial_no = 1 # Serial Number from the top
         overflow = False
         if num_products is not None and idx > num_products:
             continue
@@ -165,7 +166,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             html = response.content
             soup = BeautifulSoup(html, 'html.parser')
                         
-            product_info = parse_data.get_product_info(soup)
+            product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
 
             final_results[category][curr_page] = product_info
             
@@ -223,6 +224,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             page_results = dict()
             page_results[category] = final_results[category]
             db_manager.insert_product_listing(db_session, page_results)
+            db_manager.insert_daily_product_listing(db_session, page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
