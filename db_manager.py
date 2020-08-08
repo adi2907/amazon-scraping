@@ -297,7 +297,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                         session.commit()
                 except exc.IntegrityError:
                     session.rollback()
-                    result = session.query(table_map[table].filter_by(product_id=row['product_id']).first()
+                    result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
                     if result is None:
                         pass
                     else:
@@ -545,10 +545,10 @@ if __name__ == '__main__':
     #else:
     #    print("Nothing Found")
 
-    #with open('dumps/headphones.pkl', 'rb') as f:
-    #    product_listing = pickle.load(f)
+    with open('dumps/headphones.pkl', 'rb') as f:
+        product_listing = pickle.load(f)
 
-    #insert_daily_product_listing(session, product_listing)
+    insert_daily_product_listing(session, product_listing)
     #insert_product_listing(session, product_listing)
 
     #with open('dumps/dump_B07DJLVJ5M.pkl', 'rb') as f:
