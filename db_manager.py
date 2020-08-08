@@ -291,13 +291,13 @@ def insert_product_listing(session, data, table='ProductListing'):
                         row[key] = value[key]
                 try:
                     if row['product_id'] is not None:
-                        obj = ProductListing()
+                        obj = table_map[table]()
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
                 except exc.IntegrityError:
                     session.rollback()
-                    result = session.query(ProductListing).filter_by(product_id=row['product_id']).first()
+                    result = session.query(table_map[table].filter_by(product_id=row['product_id']).first()
                     if result is None:
                         pass
                     else:
@@ -337,13 +337,13 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                 try:
                     if row['product_id'] is not None:
                         row['date'] = datetime.now(timezone('Asia/Kolkata'))#.date()
-                        obj = DailyProductListing()
+                        obj = table_map[table]()
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
                 except exc.IntegrityError:
                     session.rollback()
-                    result = session.query(DailyProductListing).filter_by(product_id=row['product_id']).first()
+                    result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
                     if result is None:
                         pass
                     else:
@@ -376,13 +376,13 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
     row['created_on'] = datetime.now()
     row['is_sponsored'] = is_sponsored
     try:
-        obj = ProductDetails()
+        obj = table_map[table]()
         [setattr(obj, key, value) for key, value in row.items()]
         session.add(obj)
         session.commit()
     except exc.IntegrityError:
         session.rollback()
-        result = session.query(ProductListing).filter_by(product_id=row['product_id']).first()
+        result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
         for field in update_fields:
             setattr(result, field, row[field])
@@ -403,7 +403,7 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
         row = {key: (value if not isinstance(value, list) and not isinstance(value, dict) else json.dumps(value)) for key, value in pair.items()}
         # Add product id
         row['product_id'] = product_id
-        obj = QandA()
+        obj = table_map[table]()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
     # TODO: Change this later outisde the loop
@@ -431,7 +431,7 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
             row['product_info'] = json.dumps(review['product_info'])
         row['verified_purchase'] = review['verified_purchase']
         row['helpful_votes'] = review['helpful_votes']
-        obj = Reviews()
+        obj = table_map[table]()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
     # TODO: Change this later outisde the loop
