@@ -98,17 +98,17 @@ tables = {
         'helpful_votes': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
-    'DailyProductListing': {
-        'id': 'INTEGER PRIMARY KEY',
-        'product_id': 'TEXT(16)',
-        'serial_no': 'INTEGER',
-        'avg_rating': 'FLOAT',
-        'total_ratings': 'INTEGER',
-        'price': 'INTEGER',
-        'old_price': 'INTEGER',
-        'date': 'DATETIME',
-        '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
-    },
+    #'DailyProductListing': {
+    #    'id': 'INTEGER PRIMARY KEY',
+    #    'product_id': 'TEXT(16)',
+    #    'serial_no': 'INTEGER',
+    #    'avg_rating': 'FLOAT',
+    #    'total_ratings': 'INTEGER',
+    #    'price': 'INTEGER',
+    #    'old_price': 'INTEGER',
+    #    'date': 'DATETIME',
+    #    '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
+    #},
 }
 
 field_map = {
@@ -254,9 +254,9 @@ class Reviews():
     pass
 
 
-@apply_schema
-class DailyProductListing():
-    pass
+#@apply_schema
+#class DailyProductListing():
+#    pass
 
 
 table_map = {
@@ -265,7 +265,7 @@ table_map = {
     'SponsoredProductDetails': SponsoredProductDetails,
     'QandA': QandA,
     'Reviews': Reviews,
-    'DailyProductListing': DailyProductListing,
+    #'DailyProductListing': DailyProductListing,
 }
 
 

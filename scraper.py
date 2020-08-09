@@ -133,7 +133,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             continue
 
         final_results[category] = dict()
-        base_url = url_template.substitute(category=category)
+        base_url = url_template.substitute(category=category.replace(' ', '+'))
         
         if my_proxy is not None:
             if change == True:
@@ -224,7 +224,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             page_results = dict()
             page_results[category] = final_results[category]
             db_manager.insert_product_listing(db_session, page_results)
-            db_manager.insert_daily_product_listing(db_session, page_results)
+            #db_manager.insert_daily_product_listing(db_session, page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
