@@ -4,6 +4,7 @@ import json
 import os
 import pickle
 import random
+import signal
 import sqlite3
 import sys
 import time
@@ -66,10 +67,32 @@ Session = sessionmaker(bind=engine)
 
 db_session = Session()
 
+last_product_detail = False
+
+
+def exit_gracefully(signum, frame):
+    # restore the original signal handler as otherwise evil things will happen
+    # in raw_input when CTRL+C is pressed, and our signal handler is not re-entrant
+    global last_product_detail
+    signal.signal(signal.SIGINT, original_sigint)
+
+    try:
+        if input("\nReally quit? (y/n)> ").lower().startswith('y'):
+            logger.info("Terminating after finishing pending product Details...")
+            last_product_detail = True
+
+    except KeyboardInterrupt:
+        logger.info("Exiting Immediately...")
+        sys.exit(1)
+
+    # restore the exit gracefully handler here    
+    signal.signal(signal.SIGINT, exit_gracefully)
+
 
 def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None):
     global my_proxy, session
     global headers, cookies
+    global last_product_detail
     # session = requests.Session()
 
     if pages is None:
@@ -244,6 +267,10 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                         
                         product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
                         idx += 1
+
+                        if last_product_detail == True:
+                            logger.info("Completed pending products. Exiting...")
+                            return final_results
 
                         if my_proxy is not None:
                             if num_products is None or idx <= num_products:
@@ -584,6 +611,10 @@ if __name__ == '__main__':
     num_products = args.num_products
 
     no_scrape = False
+
+    # store the original SIGINT handler
+    original_sigint = signal.getsignal(signal.SIGINT)
+    signal.signal(signal.SIGINT, exit_gracefully)
 
     if config is not None:
         # Iterate thru args
