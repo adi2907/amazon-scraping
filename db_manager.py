@@ -98,17 +98,18 @@ tables = {
         'helpful_votes': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
-    #'DailyProductListing': {
-    #    'id': 'INTEGER PRIMARY KEY',
-    #    'product_id': 'TEXT(16)',
-    #    'serial_no': 'INTEGER',
-    #    'avg_rating': 'FLOAT',
-    #    'total_ratings': 'INTEGER',
-    #    'price': 'INTEGER',
-    #    'old_price': 'INTEGER',
-    #    'date': 'DATETIME',
-    #    '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
-    #},
+    'DailyProductListing': {
+        'id': 'INTEGER PRIMARY KEY',
+        'product_id': 'TEXT(16)',
+        'category': 'TEXT(100)',
+        'serial_no': 'INTEGER',
+        'avg_rating': 'FLOAT',
+        'total_ratings': 'INTEGER',
+        'price': 'INTEGER',
+        'old_price': 'INTEGER',
+        'date': 'DATETIME',
+        #'_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
+    },
 }
 
 field_map = {
@@ -254,9 +255,9 @@ class Reviews():
     pass
 
 
-#@apply_schema
-#class DailyProductListing():
-#    pass
+@apply_schema
+class DailyProductListing():
+    pass
 
 
 table_map = {
@@ -265,7 +266,7 @@ table_map = {
     'SponsoredProductDetails': SponsoredProductDetails,
     'QandA': QandA,
     'Reviews': Reviews,
-    #'DailyProductListing': DailyProductListing,
+    'DailyProductListing': DailyProductListing,
 }
 
 
@@ -337,6 +338,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                 try:
                     if row['product_id'] is not None:
                         row['date'] = datetime.now(timezone('Asia/Kolkata'))#.date()
+                        row['category'] = category
                         obj = table_map[table]()
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
@@ -524,7 +526,7 @@ if __name__ == '__main__':
 
     #print(fetch_product_ids(session, 'ProductListing', 'books'))
 
-    #column = Column('serial_no', Integer())
+    #column = Column('category', String(100))
     #add_column(engine, 'DailyProductListing', column)
     #column = Column('categories', Text())
     #add_column(engine, 'ProductDetails', column)

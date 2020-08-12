@@ -96,6 +96,8 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     cookies = dict(response.cookies)
     
     print(cookies)
+    if my_proxy is not None:
+        logger.info(f"Proxy Cookies = {my_proxy.cookies}")
 
     if cookies == {}:
         # Change identity and try again
@@ -140,7 +142,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                 change = False
                 my_proxy.change_identity()
                 time.sleep(random.randint(2, 5))
-            
+            logger.info(f"Proxy Cookies = {my_proxy.cookies}")
             response = my_proxy.get(base_url)
             setattr(my_proxy, 'category', category)
         else:
@@ -182,6 +184,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                     cookies = {**cookies, **dict(response.cookies)}
                 
                 logger.warning(f"Curr Page = {curr_page}. Pagination Element is None")
+                logger.warning(f"Content is {html}")
 
                 time.sleep(3)
                 break
@@ -224,7 +227,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             page_results = dict()
             page_results[category] = final_results[category]
             db_manager.insert_product_listing(db_session, page_results)
-            #db_manager.insert_daily_product_listing(db_session, page_results)
+            db_manager.insert_daily_product_listing(db_session, page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:

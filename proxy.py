@@ -297,12 +297,12 @@ class Proxy():
                 headers['Sec-Fetch-Dest'] = 'document'
                 headers['Sec-Fetch-Mode'] = 'navigate'
                 headers['Sec-Fetch-User'] = '?1'
-                if url not in (to_http('https://www.amazon', use_tor=self.use_tor), to_http('https://amazon', use_tor=self.use_tor)):
+                #if url not in (to_http('https://www.amazon', use_tor=self.use_tor), to_http('https://amazon', use_tor=self.use_tor)):
                     # Same origin request
-                    headers['Sec-Fetch-Site'] = 'same-origin'
-                else:
+                    #headers['Sec-Fetch-Site'] = 'same-origin'
+                #else:
                     # Front page
-                    headers['Sec-Fetch-Site'] = 'none'
+                    #headers['Sec-Fetch-Site'] = 'none'
                 headers = OrderedDict(headers)
             else:
                 headers = {"User-Agent": self.user_agent, "Accept-Encoding":"gzip, deflate"}
