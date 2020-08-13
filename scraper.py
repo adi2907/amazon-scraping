@@ -186,6 +186,9 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
         curr_page = 1
         curr_url = base_url
 
+        factor = 0
+        cooldown = False
+
         while curr_page <= num_pages:
             time.sleep(6)
             html = response.content
@@ -207,10 +210,34 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                     cookies = {**cookies, **dict(response.cookies)}
                 
                 logger.warning(f"Curr Page = {curr_page}. Pagination Element is None")
-                logger.warning(f"Content is {html}")
 
-                time.sleep(3)
-                break
+                # Check if this is a CAPTCHA page
+                captcha_id = "captchacharacters"
+                captcha_node = soup.find("input", id=captcha_id)
+                if captcha_node is not None:
+                    # We need to retry
+                    if factor >= 4:
+                        if cooldown == False:
+                            logger.critical(f"Time limit exceeded during backoff. Cooling down for sometime before trying...")
+                            factor = 0
+                            time.sleep(random.randint(200, 350))
+                            my_proxy.change_identity()
+                            cooldown = True
+                            continue
+                        else:
+                            cooldown = False
+                            logger.critical("Time limit exceeded during backoff even after cooldown. Shutting down...")
+                            time.sleep(3)
+                            break
+
+                    logger.warning(f"Encountered a CAPTCHA page. Using exponential backoff. Current Delay = {my_proxy.delay}")
+                    factor += 1
+                    my_proxy.delay *= 2
+                    continue
+                else:
+                    # This is probably the last page
+                    time.sleep(3)
+                    break
             
             next_page = page_element.find("li", class_="a-last")
             if next_page is None:
@@ -289,6 +316,8 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
             curr_url = next_url
             curr_page += 1
+
+            cooldown = False
 
             if overflow == True:
                 overflow = False
