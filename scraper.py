@@ -675,7 +675,6 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         overflow = False
 
         final_results[category] = dict()
-        base_url = category_template.substitute(PAGE_NUM=1) # First Page
         
         if my_proxy is not None:
             if change == True:
@@ -683,10 +682,10 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 my_proxy.change_identity()
                 time.sleep(random.randint(2, 5))
             logger.info(f"Proxy Cookies = {my_proxy.cookies}")
-            response = my_proxy.get(base_url, referer=prev_url)
+            response = my_proxy.get(server_url)
             setattr(my_proxy, 'category', category)
         else:
-            response = session.get(base_url, headers=headers, cookies=cookies, referer=prev_url)
+            response = session.get(server_url, headers=headers, cookies=cookies)
         
         if response.status_code != 200:
             logger.newline()
@@ -701,12 +700,12 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         
         time.sleep(5)
         curr_page = 1
-        curr_url = base_url
+        curr_url = server_url
 
         factor = 0
         cooldown = False
 
-        referer_url = base_url
+        referer_url = server_url
 
         for page_num in range(1, num_pages+1):
             time.sleep(3)
@@ -730,9 +729,9 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             
             if page_element is None:
                 if my_proxy is None:
-                    response = session.get(base_url, headers=headers, cookies=cookies)
+                    response = session.get(server_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(base_url, referer=curr_url)
+                    response = my_proxy.get(server_url, referer=curr_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -770,9 +769,9 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             next_page = page_element.find("li", class_="a-last")
             if next_page is None:
                 if my_proxy is None:
-                    response = session.get(base_url, headers=headers, cookies=cookies)
+                    response = session.get(server_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(base_url)
+                    response = my_proxy.get(server_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -787,17 +786,6 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
                 time.sleep(3)
                 break
-            
-            page_url = page_url.attrs['href']
-
-            if my_proxy is None:       
-                response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
-            else:
-                response = my_proxy.get(server_url + page_url, referer=curr_url)
-            
-            if hasattr(response, 'cookies'):
-                cookies = {**cookies, **dict(response.cookies)}
-            next_url = server_url + page_url
 
             time.sleep(5)
 
