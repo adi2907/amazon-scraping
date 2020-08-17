@@ -667,7 +667,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     
     prev_url = server_url
     
-    for category, category_template, num_pages in zip(listing_categories, listing_templates, num_pages):
+    for category, category_template, num_pages in zip(listing_categories, listing_templates, pages):
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
         
         idx = 1 # Total number of scraped product details
