@@ -12,6 +12,18 @@ customer_reviews_template = Template('https://www.amazon.in/review/widgets/avera
 qanda_template = Template('https://www.amazon.in/ask/questions/asin/$PID/$PAGE/ref=ask_dp_iaw_ql_hza')
 
 
+# List of all the necessary listing page URLS (after applying filters)
+listing_templates = [
+    Template('https://www.amazon.in/s?k=smartphones&i=electronics&rh=n%3A1805560031%2Cp_89%3AApple%7CNokia%7COnePlus%7COppo%7CPanasonic%7CRedmi%7CSamsung%7CVivo%2Cp_6%3AA14CZOWI0VEHLG&dc&page=$PAGE_NUM&qid=1597662424&rnid=1318474031&ref=sr_pg_$PAGE_NUM'),
+    Template('https://www.amazon.in/s?k=headphones&i=electronics&rh=n%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_72%3A1318478031&dc&page=$PAGE_NUM&qid=1597664105&rnid=1318475031&ref=sr_pg_$PAGE_NUM'),
+    Template('https://www.amazon.in/s?k=ceiling+fan&i=kitchen&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318478031&dc&page=$PAGE_NUM&crid=1TGIH58I2LW9I&qid=1597664762&rnid=1318475031&sprefix=ceili%2Caps%2C380&ref=sr_pg_$PAGE_NUM'),
+    Template('https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S&dc&page=$PAGE_NUM&qid=1597665403&rnid=1318474031&ref=sr_pg_$PAGE_NUM'),
+    Template('https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S&dc&page=$PAGE_NUM&qid=1597665517&rnid=1318474031&ref=sr_pg_$PAGE_NUM'),
+]
+
+listing_categories = ['smartphones', 'headphones', 'ceiling fan', 'refrigerator', 'washing machine']
+
+
 def to_http(url, use_tor=False):
     if use_tor == True:
         return url
