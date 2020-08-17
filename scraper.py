@@ -706,10 +706,21 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         factor = 0
         cooldown = False
 
-        while curr_page <= num_pages:
-            time.sleep(6)
+        referer_url = base_url
+
+        for page_num in range(1, num_pages+1):
+            time.sleep(3)
+
+            url = category_template.substitute(PAGE_NUM=page_num)
+            response = my_proxy.get(url, referer=referer_url)
             html = response.content
+            
+            time.sleep(random.randint(4, 7))
+            
+            # Parse the contents
             soup = BeautifulSoup(html, 'html.parser')
+
+            referer_url = url
                         
             product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
 
@@ -1001,7 +1012,7 @@ if __name__ == '__main__':
                 results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products)
             else:
                 # Override
-                results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products)
+                results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products)
             """
             if detail == True:
                 for category in categories:
