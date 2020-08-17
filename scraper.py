@@ -618,7 +618,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         if isinstance(pages, int):
             if pages <= 0:
                 raise ValueError("pages must be a positive integer")
-            pages = [pages for _ in listing_templates]
+            pages = [10000 for _ in listing_templates]
 
     server_url = 'https://www.amazon.in'
     
