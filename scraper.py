@@ -293,7 +293,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                             else:
                                 logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
                         
-                        product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
+                        _ = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
                         idx += 1
 
                         if last_product_detail == True:
@@ -665,16 +665,15 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     if products is None:
         products = itertools.repeat(None)
     
-    prev_url = server_url
-    
     for category, category_template, num_pages in zip(listing_categories, listing_templates, pages):
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
-        
+
         idx = 1 # Total number of scraped product details
         curr_serial_no = 1 # Serial Number from the top
         overflow = False
 
         final_results[category] = dict()
+        base_url = category_template.substitute(PAGE_NUM=1)
         
         if my_proxy is not None:
             if change == True:
@@ -682,10 +681,10 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 my_proxy.change_identity()
                 time.sleep(random.randint(2, 5))
             logger.info(f"Proxy Cookies = {my_proxy.cookies}")
-            response = my_proxy.get(server_url)
+            response = my_proxy.get(base_url)
             setattr(my_proxy, 'category', category)
         else:
-            response = session.get(server_url, headers=headers, cookies=cookies)
+            response = session.get(base_url, headers=headers, cookies=cookies)
         
         if response.status_code != 200:
             logger.newline()
@@ -700,26 +699,15 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         
         time.sleep(5)
         curr_page = 1
-        curr_url = server_url
+        curr_url = base_url
 
         factor = 0
         cooldown = False
 
-        referer_url = server_url
-
-        for page_num in range(1, num_pages+1):
-            time.sleep(3)
-
-            url = category_template.substitute(PAGE_NUM=page_num)
-            response = my_proxy.get(url, referer=referer_url)
+        while curr_page <= num_pages:
+            time.sleep(6)
             html = response.content
-            
-            time.sleep(random.randint(4, 7))
-            
-            # Parse the contents
-            soup = BeautifulSoup(html, 'html.parser')
-
-            referer_url = url
+            soup = BeautifulSoup(html, 'lxml')
                         
             product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
 
@@ -729,9 +717,9 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             
             if page_element is None:
                 if my_proxy is None:
-                    response = session.get(server_url, headers=headers, cookies=cookies)
+                    response = session.get(base_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(server_url, referer=url)
+                    response = my_proxy.get(base_url, referer=curr_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -769,9 +757,9 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             next_page = page_element.find("li", class_="a-last")
             if next_page is None:
                 if my_proxy is None:
-                    response = session.get(server_url, headers=headers, cookies=cookies)
+                    response = session.get(base_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(server_url)
+                    response = my_proxy.get(base_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -786,6 +774,17 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
                 time.sleep(3)
                 break
+            
+            page_url = page_url.attrs['href']
+
+            if my_proxy is None:       
+                response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
+            else:
+                response = my_proxy.get(server_url + page_url, referer=curr_url)
+            
+            if hasattr(response, 'cookies'):
+                cookies = {**cookies, **dict(response.cookies)}
+            next_url = server_url + page_url
 
             time.sleep(5)
 
@@ -808,7 +807,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                             else:
                                 logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
                         
-                        product_detail_results = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
+                        _ = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
                         idx += 1
 
                         if last_product_detail == True:
@@ -830,6 +829,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 del final_results[category][curr_page]
             
             logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
+            curr_url = next_url
             curr_page += 1
 
             cooldown = False
