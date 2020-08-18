@@ -731,7 +731,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 if my_proxy is None:
                     response = session.get(server_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(server_url, referer=curr_url)
+                    response = my_proxy.get(server_url, referer=url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -830,7 +830,6 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 del final_results[category][curr_page]
             
             logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
-            curr_url = next_url
             curr_page += 1
 
             cooldown = False
