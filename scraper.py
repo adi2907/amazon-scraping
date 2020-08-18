@@ -681,7 +681,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 my_proxy.change_identity()
                 time.sleep(random.randint(2, 5))
             logger.info(f"Proxy Cookies = {my_proxy.cookies}")
-            response = my_proxy.get(base_url)
+            response = my_proxy.get(base_url, referer=server_url)
             setattr(my_proxy, 'category', category)
         else:
             response = session.get(base_url, headers=headers, cookies=cookies)
