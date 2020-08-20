@@ -116,6 +116,52 @@ class Cache():
             if key in self.shared_state:
                 del self.shared_state[key]
 
+    @is_connected
+    def lpush(self, key, value):
+        if self.use_redis == False:
+            if key in self.cache:
+                if isinstance(self.cache.get(key), list):
+                    self.cache[key].append(value)
+                else:
+                    raise ValueError(f"Non-List key already exists for {key}")
+            else:
+                self.cache[key] = [value]
+        else:
+            if isinstance(value, dict) or isinstance(value, uuid.UUID) or isinstance(value, list):
+                value = json.dumps(value)
+                self.shared_state[key] = ""
+            
+            self.cache.lpush(key, value)
+    
+    @is_connected
+    def lrange(self, key, start=0, end=None):
+        if end is None:
+            end = 0
+        if start is None:
+            start = 0
+        
+        if not isinstance(start, int) or start < 0:
+            raise ValueError("start must be a positive integer")
+        elif not isinstance(end, int) or end < 0: 
+            raise ValueError("end must be a positive integer")
+
+        if self.use_redis == True:
+            range_bytes = self.cache.lrange(key, start, end-1)
+            
+            history = []
+            for value in range_bytes:
+                value = value.decode()
+                if isinstance(value, dict) or isinstance(value, list) or isinstance(value, uuid.UUID):
+                    value = json.loads(value)
+                else:
+                    pass
+                history.append(value)
+            
+            history = history[::-1]
+            return history
+        else:
+            return self.cache.get(key)[start : end]
+
 
 if __name__ == '__main__':
     print("Testing Cache")
@@ -123,6 +169,8 @@ if __name__ == '__main__':
     cache = Cache()
     
     cache.connect('master', use_redis=True)
+
+    cache.delete('foo')
     
     print(cache.get('foo'))
     
@@ -133,4 +181,15 @@ if __name__ == '__main__':
     cache.delete('foo')
     
     print(cache.get('foo'))
+
+    cache.lpush('foo', 'sampl')
+    cache.lpush('foo', 'hello')
+    cache.lpush('foo', {'a': 1})
+
+    print(cache.lrange('foo'))
+
+    cache.delete('foo')
+
+    print(cache.get('foo'))
+
     print("Completed!")
