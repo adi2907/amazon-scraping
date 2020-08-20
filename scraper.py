@@ -193,7 +193,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
         while curr_page <= num_pages:
             time.sleep(6)
             html = response.content
-            soup = BeautifulSoup(html, 'html.parser')
+            soup = BeautifulSoup(html, 'lxml')
                         
             product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
 
@@ -386,11 +386,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
         time.sleep(3)
         html = response.content
+
+        with open('data/detail.html', 'wb') as f:
+            f.write(html)
             
         product_id = parse_data.get_product_id(product_url)
         
-        soup = BeautifulSoup(html, 'html.parser')
-
+        soup = BeautifulSoup(html, 'lxml')
+        
         # Get the product details
         try:
             details = parse_data.get_product_data(soup, html=html)
@@ -440,7 +443,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             
             time.sleep(5)
             html = response.content
-            soup = BeautifulSoup(html, 'html.parser')
+            soup = BeautifulSoup(html, 'lxml')
             qanda, next_url = parse_data.get_qanda(soup)
             
             # Insert to the DB
@@ -534,7 +537,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 time.sleep(5)
                 
                 html = response.content
-                soup = BeautifulSoup(html, 'html.parser')
+                soup = BeautifulSoup(html, 'lxml')
 
                 reviews, next_url = parse_data.get_customer_reviews(soup)
                 
@@ -708,11 +711,11 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             time.sleep(6)
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
-                        
+
             product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
 
             final_results[category][curr_page] = product_info
-            
+
             page_element = soup.find("ul", class_="a-pagination")
             
             if page_element is None:
@@ -767,26 +770,26 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 logger.warning(f"Curr Page = {curr_page}. Next Page Element is None")
 
                 time.sleep(3)
-                break
             
-            page_url = next_page.find("a")
-            if page_url is None:
-                logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
-                time.sleep(3)
-                break
-            
-            page_url = page_url.attrs['href']
+            if next_page is not None:
+                page_url = next_page.find("a")
+                if page_url is None:
+                    logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
+                    time.sleep(3)
+                    break
+                
+                page_url = page_url.attrs['href']
 
-            if my_proxy is None:       
-                response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
-            else:
-                response = my_proxy.get(server_url + page_url, referer=curr_url)
-            
-            if hasattr(response, 'cookies'):
-                cookies = {**cookies, **dict(response.cookies)}
-            next_url = server_url + page_url
+                if my_proxy is None:       
+                    response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
+                else:
+                    response = my_proxy.get(server_url + page_url, referer=curr_url)
+                
+                if hasattr(response, 'cookies'):
+                    cookies = {**cookies, **dict(response.cookies)}
+                next_url = server_url + page_url
 
-            time.sleep(5)
+                time.sleep(5)
 
             # Dump the results of this page to the DB
             page_results = dict()
@@ -798,6 +801,12 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 for title in final_results[category][curr_page]:
                     product_url = final_results[category][curr_page][title]['product_url']
                     if product_url is not None:
+                        if product_url.startswith(f"/s?k={category}"):
+                            # Probably the heading. SKip this
+                            logger.info(f"Encountered the heading -> Tiel = {title}")
+                            logger.newline()
+                            continue
+
                         product_id = parse_data.get_product_id(product_url)
                         if product_id is not None:
                             obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
@@ -806,7 +815,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                                 continue
                             else:
                                 logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
-                        
+
                         _ = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
                         idx += 1
 
@@ -823,6 +832,11 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                                 logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
                                 overflow = True
                                 break
+
+            if next_page is None:
+                logger.info("Next Page is None. Exiting catgory...")
+                break
+
 
             # Delete the previous page results
             if category in final_results and curr_page in final_results[category]:

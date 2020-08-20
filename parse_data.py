@@ -16,7 +16,7 @@ def init_parser(category: str):
 
     with open(os.path.join('data', f'{category}.html'), 'rb') as f:
         html_text = f.read()
-        soup = BeautifulSoup(html_text, 'html.parser')
+        soup = BeautifulSoup(html_text, 'lxml')
     
     return soup
 
@@ -528,13 +528,21 @@ if __name__ == '__main__':
     #print(results)
 
     # Get the customer reviews alone (https://www.amazon.in/Sony-WH-1000XM3-Wireless-Cancellation-Headphones/product-reviews/B07HZ8JWCL/ref=cm_cr_getr_d_paging_btm_prev_1?ie=UTF8&pageNumber=1&reviewerType=all_reviews)
-    soup = init_parser('headphones/reviews_B07HZ8JWCL')
-    results, next_url = get_customer_reviews(soup)
+    #soup = init_parser('headphones/reviews_B07HZ8JWCL')
+    #results, next_url = get_customer_reviews(soup)
     #with open('dump_B07HZ8JWCL_reviews.pkl', 'wb') as f:
     #    pickle.dump(results, f)
-    print(results, next_url)
+    #print(results, next_url)
 
     # Get the QandA for this product alone (https://www.amazon.in/ask/questions/asin/B07HZ8JWCL/ref=cm_cd_dp_lla_ql_ll#nav-top)
     #soup = init_parser('headphones/qanda_B07HZ8JWCL')
     #results, next_url = get_qanda(soup)
     #print(results, next_url)
+
+    soup = init_parser('listing')
+    #soup = init_parser('detail')
+    #results = get_product_data(soup)
+    results, _ = get_product_info(soup)
+    for title in results:
+        product_url = results[title]['product_url']
+        print(product_url)
