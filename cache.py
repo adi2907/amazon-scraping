@@ -46,7 +46,7 @@ def is_connected(func):
 
 class Cache():
     shared_state = {}
-    timeout = 600
+    timeout = 12 * 60 * 60
 
     def __init__(self):
         self.__dict__ = self.shared_state
