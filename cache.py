@@ -34,12 +34,19 @@ def is_connected(func):
         if hasattr(args[0], 'cache'):
             if getattr(args[0], 'cache') is None:
                 raise ValueError("You must connect to the cache!")
+            if hasattr(args[0], 'timeout') and 'timeout' in kwargs:
+                timeout = kwargs['timeout']
+                if timeout is not None and not isinstance(timeout, int):
+                    raise ValueError("Timeout must be an integer")
+                if timeout == -1:
+                    kwargs['timeout'] = getattr(args[0], 'timeout')
         return func(*args, **kwargs)  
     return wrapper 
 
 
 class Cache():
     shared_state = {}
+    timeout = 600
 
     def __init__(self):
         self.__dict__ = self.shared_state
@@ -75,14 +82,18 @@ class Cache():
             value = self.cache.get(key)
             
             if key in self.shared_state:
-                value = json.loads(value)
+                if value is None:
+                    # Timeout - Remove this link
+                    del self.shared_state[key]
+                else:
+                    value = json.loads(value)
             elif value is not None:
                 value = value.decode()
             
             return value
     
     @is_connected
-    def set(self, key, value):
+    def set(self, key, value, timeout=-1):
         if self.use_redis == False:
             self.cache[key] = value
         else:
@@ -91,6 +102,9 @@ class Cache():
                 self.shared_state[key] = ""
             
             self.cache.set(key, value)
+
+            if timeout is not None:
+                self.cache.expire(key, timeout)
     
     @is_connected
     def delete(self, key):
