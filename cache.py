@@ -88,7 +88,7 @@ class Cache():
         else:
             if isinstance(value, dict) or isinstance(value, uuid.UUID) or isinstance(value, list):
                 value = json.dumps(value)
-                self.shared_state[key] = value
+                self.shared_state[key] = ""
             
             self.cache.set(key, value)
     
