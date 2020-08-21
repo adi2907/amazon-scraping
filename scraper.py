@@ -386,9 +386,6 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
         time.sleep(3)
         html = response.content
-
-        with open('data/detail.html', 'wb') as f:
-            f.write(html)
             
         product_id = parse_data.get_product_id(product_url)
         
