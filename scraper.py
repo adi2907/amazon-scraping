@@ -39,6 +39,10 @@ except UndefinedValueError:
 
 try:
     speedup = config('speedup')
+    if speedup == 'True':
+        speedup = True
+    else:
+        speedup = False
 except UndefinedValueError:
     speedup = False
 
