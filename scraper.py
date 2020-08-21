@@ -90,7 +90,7 @@ def exit_gracefully(signum, frame):
     signal.signal(signal.SIGINT, exit_gracefully)
 
 
-def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None):
+def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -293,7 +293,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                             else:
                                 logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
                         
-                        _ = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
+                        _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
                         idx += 1
 
                         if last_product_detail == True:
@@ -610,7 +610,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     return final_results
 
 
-def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None):
+def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -816,7 +816,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                             else:
                                 logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
 
-                        _ = scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=threshold_date, listing_url=curr_url)
+                        _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
                         idx += 1
 
                         if last_product_detail == True:
@@ -883,8 +883,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
     parser.add_argument('--pages', help='Number of pages to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=1)
     parser.add_argument('--num_products', help='Number of products per category to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
-    parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int)
-    parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int)
+    parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int, default=100) # 100 pages Reviews (1000 reviews)
+    parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int, default=10) # 10 pages QandA (100 QandAs)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
     parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
     parser.add_argument('--date', help='Threshold Limit for scraping Product Reviews', type=lambda s: datetime.strptime(s, '%Y-%m-%d'))
@@ -1010,10 +1010,10 @@ if __name__ == '__main__':
                 assert len(num_products) == len(categories)
             
             if override == False:
-                results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products)
+                results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages)
             else:
                 # Override
-                results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products)
+                results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages)
             """
             if detail == True:
                 for category in categories:
