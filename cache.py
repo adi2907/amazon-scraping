@@ -29,6 +29,10 @@ except UndefinedValueError:
     REDIS_SERVER_CONF = None
 
 
+KEY_EXPIRED = -2
+KEY_NON_VOLATILE = -1
+
+
 def is_connected(func): 
     def wrapper(*args, **kwargs):
         if hasattr(args[0], 'cache'):
@@ -72,6 +76,19 @@ class Cache():
             self.use_redis = False
             self.cache = self.local_cache
             logger.info("Not using redis. Defaulting to local cache")
+
+    @is_connected
+    def ttl(self, key):
+        if self.use_redis == True:
+            ttl = self.cache.ttl(key)
+            if ttl == KEY_NON_VOLATILE:
+                return None
+            elif ttl == KEY_EXPIRED:
+                return 0
+            else:
+                return ttl
+        else:
+            return None
     
     @is_connected
     def get(self, key):
@@ -174,9 +191,11 @@ if __name__ == '__main__':
     
     print(cache.get('foo'))
     
-    cache.set('foo', {'a': {1: 2}})
+    cache.set('foo', {'a': {1: 2}}, timeout=10)
     
     print(cache.get('foo'))
+
+    print(cache.ttl('foo'))
     
     cache.delete('foo')
     
