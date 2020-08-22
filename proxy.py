@@ -115,13 +115,24 @@ class Proxy():
         return count
     
 
-    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True, country='in'):
+    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True, country='in', stream_isolation=False):
         self.proxy_port = proxy_port
         self.control_port = control_port
-        self.proxies = {
-            'http': f'socks5h://127.0.0.1:{self.proxy_port}',
-            'https': f'socks5h://127.0.0.1:{self.proxy_port}',
-        }
+        self.stream_isolation = stream_isolation
+        
+        if self.stream_isolation == False:
+            self.proxies = {
+                'http': f'socks5h://127.0.0.1:{self.proxy_port}',
+                'https': f'socks5h://127.0.0.1:{self.proxy_port}',
+            }
+        else:
+            username = str(random.randint(10000, 0x7fffffff))
+            password = "sample" # Random Creds
+            self.proxies = {
+                'http': f'socks5h://{username}:{password}@127.0.0.1:{self.proxy_port}',
+                'https': f'socks5h://{username}:{password}@127.0.0.1:{self.proxy_port}',
+            }
+        
         if OS == 'Windows':
             self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0"
         else:

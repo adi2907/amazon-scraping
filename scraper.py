@@ -124,12 +124,24 @@ def exit_gracefully(signum, frame):
 
 
 def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in'):
-    global my_proxy, session
+    # global my_proxy, session
     global headers, cookies
     global last_product_detail
     global cache
     global speedup
     global use_multithreading
+
+    my_proxy = proxy.Proxy(OS=OS, stream_isolation=use_multithreading) # Separate Proxy per thread
+
+    try:
+        my_proxy.change_identity()
+    except:
+        logger.warning('No Proxy available via Tor relay. Mode = Normal')
+        logger.newline()
+        my_proxy = None
+
+    if my_proxy is None:
+        session = requests.Session()
 
     db_session = Session()
 
@@ -996,6 +1008,8 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             fetch_category(category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url=server_url)
     else:
         num_workers = max(1, min(32, len(listing_categories)))
+        # TODO: https://stackoverflow.com/questions/56733397/how-i-can-get-new-ip-from-tor-every-requests-in-threads
+        # Separate proxy object per thread
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
             future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
