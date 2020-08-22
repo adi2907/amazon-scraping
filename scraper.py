@@ -9,6 +9,7 @@ import sqlite3
 import sys
 import time
 from collections import OrderedDict
+from copy import deepcopy
 from datetime import datetime
 from string import Template
 
@@ -816,7 +817,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
 
             listing = []
 
-            temp = {k: page_results[k] for k in page_results}
+            temp = deepcopy(page_results)
 
             for title in temp[category][curr_page]:
                 value = temp[category][curr_page][title]
