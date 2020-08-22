@@ -846,6 +846,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             
             # Reset it
             listing = []
+            del temp
 
             if detail == True:
                 for title in final_results[category][curr_page]:
