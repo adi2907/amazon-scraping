@@ -811,6 +811,9 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
 
             listing = []
 
+            page_results = dict()
+            page_results[category] = final_results[category]
+            
             temp = deepcopy(page_results)
 
             for title in temp[category][curr_page]:
@@ -843,8 +846,6 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             del temp
             
             # Dump the results of this page to the DB
-            page_results = dict()
-            page_results[category] = final_results[category]
             db_manager.insert_product_listing(db_session, page_results)
             db_manager.insert_daily_product_listing(db_session, page_results)
 
