@@ -1259,5 +1259,5 @@ if __name__ == '__main__':
                     logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
                     logger.newline()
     finally:
-        Session.close()
+        Session.remove()
         logger.info("Closed DB connections!")
