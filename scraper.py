@@ -809,12 +809,6 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
 
                 time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
 
-            # Dump the results of this page to the DB
-            page_results = dict()
-            page_results[category] = final_results[category]
-            db_manager.insert_product_listing(db_session, page_results)
-            db_manager.insert_daily_product_listing(db_session, page_results)
-
             listing = []
 
             temp = deepcopy(page_results)
@@ -847,6 +841,12 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             # Reset it
             listing = []
             del temp
+            
+            # Dump the results of this page to the DB
+            page_results = dict()
+            page_results[category] = final_results[category]
+            db_manager.insert_product_listing(db_session, page_results)
+            db_manager.insert_daily_product_listing(db_session, page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
