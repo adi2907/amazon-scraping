@@ -130,14 +130,14 @@ class Database():
 
     # Main DB Connection Ref Obj
     db_engine = None
-    def __init__(self, dbtype='sqlite', username='', password='', dbname='', server=''):
+    def __init__(self, dbtype='sqlite', username='', password='', port=3306, dbname='', server=''):
         dbtype = dbtype.lower()
         if dbtype in self.DB_ENGINE.keys():
             engine_url = self.DB_ENGINE[dbtype].format(DB=dbname)
             self.db_engine = create_engine(engine_url)
         elif dbtype.startswith('mysql'):
             # mysql+pymysql also supported
-            engine_url = f'{dbtype}://{username}:{password}@{server}'
+            engine_url = f'{dbtype}://{username}:{password}@{server}:{port}/{dbname}'
             self.db_engine = create_engine(engine_url)
             self.db_engine.connect()
             self.db_engine.execute(f"CREATE DATABASE IF NOT EXISTS {dbname}")
