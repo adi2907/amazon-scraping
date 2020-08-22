@@ -18,6 +18,7 @@ from decouple import UndefinedValueError, config
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
+import cache
 import db_manager
 import parse_data
 import proxy
@@ -30,6 +31,10 @@ logger = create_logger('scraper')
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 
 cookies = dict()
+
+cache = cache.Cache()
+
+cache.connect('master', use_redis=False)
 
 try:
     OS = config('OS')
@@ -106,6 +111,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     global my_proxy, session
     global headers, cookies
     global last_product_detail
+    global cache
     # session = requests.Session()
 
     if pages is None:
@@ -361,6 +367,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
 def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None):
     global my_proxy, session
     global headers, cookies
+    global cache
     # session = requests.Session()
     server_url = 'https://www.amazon.in'
 
@@ -623,6 +630,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     global my_proxy, session
     global headers, cookies
     global last_product_detail
+    global cache
 
     if pages is None:
         pages = [10000 for _ in listing_templates] # Keeping a big number
@@ -805,6 +813,38 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             page_results[category] = final_results[category]
             db_manager.insert_product_listing(db_session, page_results)
             db_manager.insert_daily_product_listing(db_session, page_results)
+
+            listing = []
+
+            temp = {k: page_results[k] for k in page_results}
+
+            for title in temp[category][curr_page]:
+                value = temp[category][curr_page][title]
+                
+                if 'total_ratings' not in value or 'price' not in value or value['total_ratings'] is None or value['price'] is None:
+                    continue
+                
+                total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
+                price = int(value['price'][1:].replace(',', '').replace('.', ''))
+
+                small_title = title.split()[0].strip()
+
+                duplicate = False
+
+                for item in listing:
+                    if item['small_title'] == small_title and item['total_ratings'] == total_ratings and item['price'] == price:
+                        logger.info(f"Found duplicate match! For title - {small_title}")
+                        logger.info(f"Existing product is {title}, but old one is {item['title']}")
+                        duplicate = True
+                        break
+                
+                if duplicate == True:
+                    del final_results[category][curr_page][title]
+                else:
+                    listing.append({'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
+            
+            # Reset it
+            listing = []
 
             if detail == True:
                 for title in final_results[category][curr_page]:
