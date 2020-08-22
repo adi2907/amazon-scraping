@@ -131,18 +131,20 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
     global speedup
     global use_multithreading
 
-    my_proxy = proxy.Proxy(OS=OS, stream_isolation=use_multithreading) # Separate Proxy per thread
+    if use_multithreading == True:
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=True) # Separate Proxy per thread
+        try:
+            my_proxy.change_identity()
+        except:
+            logger.warning('No Proxy available via Tor relay. Mode = Normal')
+            logger.newline()
+            my_proxy = None
 
-    try:
-        my_proxy.change_identity()
-    except:
-        logger.warning('No Proxy available via Tor relay. Mode = Normal')
-        logger.newline()
-        my_proxy = None
-
-    if my_proxy is None:
-        session = requests.Session()
-
+        if my_proxy is None:
+            session = requests.Session()
+    else:
+        pass
+    
     db_session = Session()
 
     try:
