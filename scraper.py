@@ -1,4 +1,5 @@
 import argparse
+import concurrent.futures
 import itertools
 import json
 import os
@@ -16,7 +17,7 @@ from string import Template
 import requests
 from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
 import cache
@@ -54,6 +55,18 @@ except UndefinedValueError:
 
 logger.info(f"Speedup is {speedup}")
 
+
+try:
+    use_multithreading = config('MULTITHREADING')
+    if use_multithreading == 'True':
+        use_multithreading = True
+    else:
+        use_multithreading = False
+except UndefinedValueError:
+    use_multithreading = False
+
+logger.info(f"Multithreading is - {use_multithreading}")
+
 # Start the session
 session = requests.Session()
 
@@ -82,7 +95,8 @@ except UndefinedValueError:
     logger.newline()
 
 
-Session = sessionmaker(bind=engine)
+session_factory = sessionmaker(bind=engine)
+Session = scoped_session(session_factory)
 
 db_session = Session()
 
@@ -108,11 +122,264 @@ def exit_gracefully(signum, frame):
     signal.signal(signal.SIGINT, exit_gracefully)
 
 
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in'):
+    global my_proxy, session
+    global headers, cookies
+    global last_product_detail
+    global cache
+    global speedup
+    global use_multithreading
+
+    db_session = Session()
+
+    try:
+        logger.info(f"Now at category {category}, with num_pages {num_pages}")
+
+        final_results = dict()
+
+        idx = 1 # Total number of scraped product details
+        curr_serial_no = 1 # Serial Number from the top
+        overflow = False
+
+        final_results[category] = dict()
+        
+        if my_proxy is not None:
+            if change == True:
+                change = False
+                my_proxy.change_identity()
+                time.sleep(random.randint(2, 5))
+            logger.info(f"Proxy Cookies = {my_proxy.cookies}")
+            response = my_proxy.get(base_url, referer=server_url)
+            setattr(my_proxy, 'category', category)
+        else:
+            response = session.get(base_url, headers=headers, cookies=cookies)
+        
+        if response.status_code != 200:
+            logger.newline()
+            logger.newline()
+            logger.error(response.content)
+            logger.newline()
+            logger.newline()
+            raise ValueError(f'Error: Got code {response.status_code}')
+        
+        if hasattr(response, 'cookies'):
+            cookies = {**cookies, **dict(response.cookies)}
+        
+        time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
+        curr_page = 1
+        curr_url = base_url
+
+        factor = 0
+        cooldown = False
+
+        while curr_page <= num_pages:
+            time.sleep(6) if not speedup else time.sleep(random.randint(2, 5))
+            html = response.content
+            soup = BeautifulSoup(html, 'lxml')
+
+            product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
+
+            final_results[category][curr_page] = product_info
+
+            page_element = soup.find("ul", class_="a-pagination")
+            
+            if page_element is None:
+                if my_proxy is None:
+                    response = session.get(base_url, headers=headers, cookies=cookies)
+                else:
+                    response = my_proxy.get(base_url, referer=curr_url)
+                
+                if hasattr(response, 'cookies'):
+                    cookies = {**cookies, **dict(response.cookies)}
+                
+                logger.warning(f"Curr Page = {curr_page}. Pagination Element is None")
+
+                # Check if this is a CAPTCHA page
+                captcha_id = "captchacharacters"
+                captcha_node = soup.find("input", id=captcha_id)
+                if captcha_node is not None:
+                    # We need to retry
+                    if factor >= 4:
+                        if cooldown == False:
+                            logger.critical(f"Time limit exceeded during backoff. Cooling down for sometime before trying...")
+                            factor = 0
+                            time.sleep(random.randint(200, 350))
+                            my_proxy.change_identity()
+                            cooldown = True
+                            continue
+                        else:
+                            cooldown = False
+                            logger.critical("Time limit exceeded during backoff even after cooldown. Shutting down...")
+                            time.sleep(3)
+                            break
+
+                    logger.warning(f"Encountered a CAPTCHA page. Using exponential backoff. Current Delay = {my_proxy.delay}")
+                    factor += 1
+                    my_proxy.delay *= 2
+                    continue
+                else:
+                    # This is probably the last page
+                    time.sleep(3)
+                    break
+            
+            next_page = page_element.find("li", class_="a-last")
+            if next_page is None:
+                if my_proxy is None:
+                    response = session.get(base_url, headers=headers, cookies=cookies)
+                else:
+                    response = my_proxy.get(base_url)
+                
+                if hasattr(response, 'cookies'):
+                    cookies = {**cookies, **dict(response.cookies)}
+                
+                logger.warning(f"Curr Page = {curr_page}. Next Page Element is None")
+
+                time.sleep(3)
+            
+            if next_page is not None:
+                page_url = next_page.find("a")
+                if page_url is None:
+                    logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
+                    time.sleep(3)
+                    break
+                
+                page_url = page_url.attrs['href']
+
+                if my_proxy is None:       
+                    response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
+                else:
+                    response = my_proxy.get(server_url + page_url, referer=curr_url)
+                
+                if hasattr(response, 'cookies'):
+                    cookies = {**cookies, **dict(response.cookies)}
+                next_url = server_url + page_url
+
+                time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
+
+            listing = []
+
+            page_results = dict()
+            page_results[category] = final_results[category]
+
+            temp = deepcopy(page_results)
+
+            for title in temp[category][curr_page]:
+                value = temp[category][curr_page][title]
+                
+                if 'total_ratings' not in value or 'price' not in value or value['total_ratings'] is None or value['price'] is None:
+                    continue
+                
+                total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
+                price = int(value['price'][1:].replace(',', '').replace('.', ''))
+
+                small_title = title.split()[0].strip()
+
+                duplicate = False
+
+                for item in listing:
+                    if item['small_title'] == small_title and item['total_ratings'] == total_ratings and item['price'] == price:
+                        logger.info(f"Found duplicate match! For title - {small_title}")
+                        logger.info(f"Existing product is {title}, but old one is {item['title']}")
+                        duplicate = True
+                        break
+                
+                if duplicate == True:
+                    del final_results[category][curr_page][title]
+                else:
+                    listing.append({'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
+            
+            # Reset it
+            listing = []
+            del temp
+            
+            # Dump the results of this page to the DB
+            db_manager.insert_product_listing(db_session, page_results)
+            db_manager.insert_daily_product_listing(db_session, page_results)
+
+            if detail == True:
+                for title in final_results[category][curr_page]:
+                    product_url = final_results[category][curr_page][title]['product_url']
+                    if product_url is not None:
+                        if product_url.startswith(f"/s?k={category}"):
+                            # Probably the heading. SKip this
+                            logger.info(f"Encountered the heading -> Tiel = {title}")
+                            logger.newline()
+                            continue
+
+                        product_id = parse_data.get_product_id(product_url)
+                        if product_id is not None:
+                            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                            if obj is not None:
+                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                continue
+                            else:
+                                logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
+
+                        _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
+                        idx += 1
+
+                        if last_product_detail == True:
+                            logger.info("Completed pending products. Exiting...")
+                            return final_results
+
+                        if my_proxy is not None:
+                            if num_products is None or idx <= num_products:
+                                response = my_proxy.get(curr_url, referer=server_url + product_url)
+                                time.sleep(random.randint(3, 5)) if not speedup else time.sleep(random.randint(2, 5))
+                            elif num_products is not None and idx > num_products:
+                                # We're done for this product
+                                logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
+                                overflow = True
+                                break
+
+            if next_page is None:
+                logger.info("Next Page is None. Exiting catgory...")
+                break
+
+
+            # Delete the previous page results
+            if category in final_results and curr_page in final_results[category]:
+                del final_results[category][curr_page]
+            
+            logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
+            curr_url = next_url
+            curr_page += 1
+
+            cooldown = False
+
+            if overflow == True:
+                overflow = False
+                break
+        
+        # Dump the category results
+        results = dict()
+        results[category] = final_results[category]
+        
+        if dump == True:
+            if not os.path.exists(os.path.join(os.getcwd(), 'dumps')):
+                os.mkdir(os.path.join(os.getcwd(), 'dumps'))
+            
+            with open(f'dumps/{category}.pkl', 'wb') as f:
+                pickle.dump(results, f)
+        
+        # Insert to the DB
+        db_manager.insert_product_listing(db_session, results)
+
+        logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
+
+        time.sleep(4)
+
+        change = True
+    finally:
+        Session.remove()
+
+
 def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
     global cache
+    global use_multithreading
     # session = requests.Session()
 
     if pages is None:
@@ -293,9 +560,44 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
 
             time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
 
-            # Dump the results of this page to the DB
             page_results = dict()
             page_results[category] = final_results[category]
+
+            listing = []
+
+            temp = deepcopy(page_results)
+
+            # Identify Duplicates
+            for title in temp[category][curr_page]:
+                value = temp[category][curr_page][title]
+                
+                if 'total_ratings' not in value or 'price' not in value or value['total_ratings'] is None or value['price'] is None:
+                    continue
+                
+                total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
+                price = int(value['price'][1:].replace(',', '').replace('.', ''))
+
+                small_title = title.split()[0].strip()
+
+                duplicate = False
+
+                for item in listing:
+                    if item['small_title'] == small_title and item['total_ratings'] == total_ratings and item['price'] == price:
+                        logger.info(f"Found duplicate match! For title - {small_title}")
+                        logger.info(f"Existing product is {title}, but old one is {item['title']}")
+                        duplicate = True
+                        break
+                
+                if duplicate == True:
+                    del final_results[category][curr_page][title]
+                else:
+                    listing.append({'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
+            
+            # Reset it
+            listing = []
+            del temp
+            
+            # Dump the results of this page to the DB
             db_manager.insert_product_listing(db_session, page_results)
             db_manager.insert_daily_product_listing(db_session, page_results)
 
@@ -369,6 +671,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     global my_proxy, session
     global headers, cookies
     global cache
+    global use_multithreading
     # session = requests.Session()
     server_url = 'https://www.amazon.in'
 
@@ -632,6 +935,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     global headers, cookies
     global last_product_detail
     global cache
+    global use_multithreading
 
     if pages is None:
         pages = [10000 for _ in listing_templates] # Keeping a big number
@@ -686,242 +990,23 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     if products is None:
         products = itertools.repeat(None)
     
-    for category, category_template, num_pages in zip(listing_categories, listing_templates, pages):
-        logger.info(f"Now at category {category}, with num_pages {num_pages}")
-
-        idx = 1 # Total number of scraped product details
-        curr_serial_no = 1 # Serial Number from the top
-        overflow = False
-
-        final_results[category] = dict()
-        base_url = category_template.substitute(PAGE_NUM=1)
-        
-        if my_proxy is not None:
-            if change == True:
-                change = False
-                my_proxy.change_identity()
-                time.sleep(random.randint(2, 5))
-            logger.info(f"Proxy Cookies = {my_proxy.cookies}")
-            response = my_proxy.get(base_url, referer=server_url)
-            setattr(my_proxy, 'category', category)
-        else:
-            response = session.get(base_url, headers=headers, cookies=cookies)
-        
-        if response.status_code != 200:
-            logger.newline()
-            logger.newline()
-            logger.error(response.content)
-            logger.newline()
-            logger.newline()
-            raise ValueError(f'Error: Got code {response.status_code}')
-        
-        if hasattr(response, 'cookies'):
-            cookies = {**cookies, **dict(response.cookies)}
-        
-        time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
-        curr_page = 1
-        curr_url = base_url
-
-        factor = 0
-        cooldown = False
-
-        while curr_page <= num_pages:
-            time.sleep(6) if not speedup else time.sleep(random.randint(2, 5))
-            html = response.content
-            soup = BeautifulSoup(html, 'lxml')
-
-            product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
-
-            final_results[category][curr_page] = product_info
-
-            page_element = soup.find("ul", class_="a-pagination")
-            
-            if page_element is None:
-                if my_proxy is None:
-                    response = session.get(base_url, headers=headers, cookies=cookies)
+    if use_multithreading == False:
+        for category, category_template, num_pages in zip(listing_categories, listing_templates, pages):
+            fetch_category(category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url=server_url)
+    else:
+        num_workers = max(1, min(32, len(listing_categories)))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
+            for future in concurrent.futures.as_completed(future_to_category):
+                category = future_to_category[future]
+                try:
+                    _ = future.result()
+                except Exception as exc:
+                    logger.critical('%r generated an exception: %s' % (category, exc))
                 else:
-                    response = my_proxy.get(base_url, referer=curr_url)
-                
-                if hasattr(response, 'cookies'):
-                    cookies = {**cookies, **dict(response.cookies)}
-                
-                logger.warning(f"Curr Page = {curr_page}. Pagination Element is None")
+                    logger.info(f"Category {category} is done!")
 
-                # Check if this is a CAPTCHA page
-                captcha_id = "captchacharacters"
-                captcha_node = soup.find("input", id=captcha_id)
-                if captcha_node is not None:
-                    # We need to retry
-                    if factor >= 4:
-                        if cooldown == False:
-                            logger.critical(f"Time limit exceeded during backoff. Cooling down for sometime before trying...")
-                            factor = 0
-                            time.sleep(random.randint(200, 350))
-                            my_proxy.change_identity()
-                            cooldown = True
-                            continue
-                        else:
-                            cooldown = False
-                            logger.critical("Time limit exceeded during backoff even after cooldown. Shutting down...")
-                            time.sleep(3)
-                            break
-
-                    logger.warning(f"Encountered a CAPTCHA page. Using exponential backoff. Current Delay = {my_proxy.delay}")
-                    factor += 1
-                    my_proxy.delay *= 2
-                    continue
-                else:
-                    # This is probably the last page
-                    time.sleep(3)
-                    break
-            
-            next_page = page_element.find("li", class_="a-last")
-            if next_page is None:
-                if my_proxy is None:
-                    response = session.get(base_url, headers=headers, cookies=cookies)
-                else:
-                    response = my_proxy.get(base_url)
-                
-                if hasattr(response, 'cookies'):
-                    cookies = {**cookies, **dict(response.cookies)}
-                
-                logger.warning(f"Curr Page = {curr_page}. Next Page Element is None")
-
-                time.sleep(3)
-            
-            if next_page is not None:
-                page_url = next_page.find("a")
-                if page_url is None:
-                    logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
-                    time.sleep(3)
-                    break
-                
-                page_url = page_url.attrs['href']
-
-                if my_proxy is None:       
-                    response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
-                else:
-                    response = my_proxy.get(server_url + page_url, referer=curr_url)
-                
-                if hasattr(response, 'cookies'):
-                    cookies = {**cookies, **dict(response.cookies)}
-                next_url = server_url + page_url
-
-                time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
-
-            listing = []
-
-            temp = deepcopy(page_results)
-
-            for title in temp[category][curr_page]:
-                value = temp[category][curr_page][title]
-                
-                if 'total_ratings' not in value or 'price' not in value or value['total_ratings'] is None or value['price'] is None:
-                    continue
-                
-                total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
-                price = int(value['price'][1:].replace(',', '').replace('.', ''))
-
-                small_title = title.split()[0].strip()
-
-                duplicate = False
-
-                for item in listing:
-                    if item['small_title'] == small_title and item['total_ratings'] == total_ratings and item['price'] == price:
-                        logger.info(f"Found duplicate match! For title - {small_title}")
-                        logger.info(f"Existing product is {title}, but old one is {item['title']}")
-                        duplicate = True
-                        break
-                
-                if duplicate == True:
-                    del final_results[category][curr_page][title]
-                else:
-                    listing.append({'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
-            
-            # Reset it
-            listing = []
-            del temp
-            
-            # Dump the results of this page to the DB
-            page_results = dict()
-            page_results[category] = final_results[category]
-            db_manager.insert_product_listing(db_session, page_results)
-            db_manager.insert_daily_product_listing(db_session, page_results)
-
-            if detail == True:
-                for title in final_results[category][curr_page]:
-                    product_url = final_results[category][curr_page][title]['product_url']
-                    if product_url is not None:
-                        if product_url.startswith(f"/s?k={category}"):
-                            # Probably the heading. SKip this
-                            logger.info(f"Encountered the heading -> Tiel = {title}")
-                            logger.newline()
-                            continue
-
-                        product_id = parse_data.get_product_id(product_url)
-                        if product_id is not None:
-                            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                            if obj is not None:
-                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                continue
-                            else:
-                                logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
-
-                        _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
-                        idx += 1
-
-                        if last_product_detail == True:
-                            logger.info("Completed pending products. Exiting...")
-                            return final_results
-
-                        if my_proxy is not None:
-                            if num_products is None or idx <= num_products:
-                                response = my_proxy.get(curr_url, referer=server_url + product_url)
-                                time.sleep(random.randint(3, 5)) if not speedup else time.sleep(random.randint(2, 5))
-                            elif num_products is not None and idx > num_products:
-                                # We're done for this product
-                                logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
-                                overflow = True
-                                break
-
-            if next_page is None:
-                logger.info("Next Page is None. Exiting catgory...")
-                break
-
-
-            # Delete the previous page results
-            if category in final_results and curr_page in final_results[category]:
-                del final_results[category][curr_page]
-            
-            logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
-            curr_url = next_url
-            curr_page += 1
-
-            cooldown = False
-
-            if overflow == True:
-                overflow = False
-                break
-        
-        # Dump the category results
-        results = dict()
-        results[category] = final_results[category]
-        
-        if dump == True:
-            if not os.path.exists(os.path.join(os.getcwd(), 'dumps')):
-                os.mkdir(os.path.join(os.getcwd(), 'dumps'))
-            
-            with open(f'dumps/{category}.pkl', 'wb') as f:
-                pickle.dump(results, f)
-        
-        # Insert to the DB
-        db_manager.insert_product_listing(db_session, results)
-
-        logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
-
-        time.sleep(4)
-
-        change = True
     return final_results
 
 
@@ -966,209 +1051,213 @@ if __name__ == '__main__':
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
 
-    if config is not None:
-        # Iterate thru args
-        for arg in vars(args):
-            if arg == 'pages' and getattr(args, arg) == 1:
-                continue
-            if arg == 'num_products' and getattr(args, arg) == None:
-                continue
-            if args == 'tor':
-                continue
-            if args == 'override':
-                continue
-            if arg not in ('config', 'number',) and getattr(args, arg) not in (None, False):
-                raise ValueError("--config file is already specified")
-        
-        option = None
-        categories = []
-        product_ids = []
-        pages = []
-        no_scrape = False # For scraping Listing
-
-        options = ["Listing", "Details"]
-        with open(f"{config}", "r") as f:
-            for line in f:
-                line = line.strip()
-                if line == 'USE_TOR':
-                    use_tor = True
-                if len(line) >= 2:
-                    if line[0] == '#':
-                        # Comment
-                        text = line.split()[1]
-                        if text in options:
-                            option = text
-                if option == 'Listing':
-                    # Product Listing
-                    if len(line) > 0 and line[0] != '#':
-                        if line == 'NO_SCRAPE':
-                            listing = False
-                            no_scrape = True
-                        else:
-                            listing = True
-                            categories.append(' '.join(line.split()[:-1]))
-                            pages.append(int(line.split()[-1]))
-                elif option == 'Details':
-                    # Product Details
-                    if len(line) > 0 and line[0] != '#':
-                        detail = True
-                        content = line.split()
-                        if content[0] == 'all':
-                            # Get all details of the categories
-                            product_ids = db_manager.fetch_product_ids(db_session, 'ProductListing', categories)
-                            if len(content) == 2:
-                                # Threshold date is the second option
-                                threshold_date = datetime.strptime(content[1], '%Y-%m-%d')
-                            break
-                        pid, qanda, review = content[0], int(content[1]), int(content[2])
-                        product_ids.append(line)
-    
-    if isinstance(pages, int):
-        if categories is None:
-            pass
-        else:
-            pages = [pages for _ in categories]
-    elif len(pages) == 1:
-        if categories is None:
-            raise ValueError("--categories cannot be None if --pages is provided")
-        pages = [pages[0] for _ in categories]
-    else:
-        if categories is not None and pages is not None:
-            assert len(pages) == len(categories)
-
-    #if categories is not None and product_ids is not None:
-    #    raise ValueError("Both --categories and --ids cannot be provided")
-
-    if no_scrape == True:
-        categories = None
-        pages = None
-
-    # Set the attribute for my_proxy
-    if my_proxy is not None:
-        setattr(my_proxy, 'use_tor', use_tor)
-        if use_tor == False:
-            my_proxy.proxy_list = my_proxy.get_proxy_list()
-            my_proxy.switch_proxy()
-    else:
-        if use_tor == True:
-            raise ValueError("Tor service is not available. Please start it")
-        else:
-            my_proxy = my_proxy = proxy.Proxy(OS=OS, use_tor=use_tor)
-
-    if categories is not None:
-        if listing == True:
-            if num_products is not None and isinstance(num_products, list):
-                assert len(num_products) == len(categories)
+    try:
+        if config is not None:
+            # Iterate thru args
+            for arg in vars(args):
+                if arg == 'pages' and getattr(args, arg) == 1:
+                    continue
+                if arg == 'num_products' and getattr(args, arg) == None:
+                    continue
+                if args == 'tor':
+                    continue
+                if args == 'override':
+                    continue
+                if arg not in ('config', 'number',) and getattr(args, arg) not in (None, False):
+                    raise ValueError("--config file is already specified")
             
-            if override == False:
-                results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages)
-            else:
-                # Override
-                results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages)
-            """
-            if detail == True:
-                for category in categories:
-                    curr_item = 0
-                    curr_page = 1
+            option = None
+            categories = []
+            product_ids = []
+            pages = []
+            no_scrape = False # For scraping Listing
 
-                    while curr_item < num_items:
-                        if curr_page in results[category]:
-                            for title in results[category][curr_page]:
-                                if results[category][curr_page][title]['product_url'] is not None:
-                                    product_url = results[category][curr_page][title]['product_url']
-                                    try:
-                                        product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                                    except Exception as ex:
-                                        logger.critical(f"{ex}")
-                                        logger.warning(f"Could not scrape details of Product - URL = {product_url}")
-                                        logger.newline()
-                                    curr_item += 1
-                                    if curr_item == num_items:
-                                        break
-                        else:
-                            break
-                        curr_page += 1
-            """
-        else:
-            for category in categories:
-                if product_ids is None:
-                    with open(f'dumps/{category}.pkl', 'rb') as f:
-                        results = pickle.load(f)
-                    curr_item = 0
-                    curr_page = 1
-
-                    while curr_item < num_items:
-                        if curr_page in results[category]:
-                            for title in results[category][curr_page]:
-                                if results[category][curr_page][title]['product_url'] is not None:
-                                    product_url = results[category][curr_page][title]['product_url']
-                                    try:
-                                        product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                                    except Exception as ex:
-                                        logger.critical(f"{ex}")
-                                        logger.warning(f"Could not scrape details of Product - URL = {product_url}")
-                                        logger.newline()
-                                    curr_item += 1
-                                    if curr_item == num_items:
-                                        break
-                        else:
-                            break
-                        curr_page += 1
-                else:
-                    # Product ids are also there
-                    for product_id in product_ids:
-                        obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
-                        if obj is None:
-                            logger.warning(f"Product ID {product_id} not found in the Database")
-                            logger.newline()
-                            continue
-
-                        assert obj.product_id == product_id
-
-                        if obj.product_url is None or obj.category is None:
-                            if obj.product_url is None:
-                                logger.warning(f"Product ID {product_id} has a NULL product_url")
+            options = ["Listing", "Details"]
+            with open(f"{config}", "r") as f:
+                for line in f:
+                    line = line.strip()
+                    if line == 'USE_TOR':
+                        use_tor = True
+                    if len(line) >= 2:
+                        if line[0] == '#':
+                            # Comment
+                            text = line.split()[1]
+                            if text in options:
+                                option = text
+                    if option == 'Listing':
+                        # Product Listing
+                        if len(line) > 0 and line[0] != '#':
+                            if line == 'NO_SCRAPE':
+                                listing = False
+                                no_scrape = True
                             else:
-                                logger.warning(f"Product ID {product_id} has a NULL category")
-                            logger.newline()
-                            continue
+                                listing = True
+                                categories.append(' '.join(line.split()[:-1]))
+                                pages.append(int(line.split()[-1]))
+                    elif option == 'Details':
+                        # Product Details
+                        if len(line) > 0 and line[0] != '#':
+                            detail = True
+                            content = line.split()
+                            if content[0] == 'all':
+                                # Get all details of the categories
+                                product_ids = db_manager.fetch_product_ids(db_session, 'ProductListing', categories)
+                                if len(content) == 2:
+                                    # Threshold date is the second option
+                                    threshold_date = datetime.strptime(content[1], '%Y-%m-%d')
+                                break
+                            pid, qanda, review = content[0], int(content[1]), int(content[2])
+                            product_ids.append(line)
+        
+        if isinstance(pages, int):
+            if categories is None:
+                pass
+            else:
+                pages = [pages for _ in categories]
+        elif len(pages) == 1:
+            if categories is None:
+                raise ValueError("--categories cannot be None if --pages is provided")
+            pages = [pages[0] for _ in categories]
+        else:
+            if categories is not None and pages is not None:
+                assert len(pages) == len(categories)
 
-                        # Scrape the product
-                        product_url = obj.product_url
-                        category = obj.category
-                        try: 
-                            product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                        except Exception as ex:
-                            logger.critical(f"{ex}")
-                            logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
-                            logger.newline()
+        #if categories is not None and product_ids is not None:
+        #    raise ValueError("Both --categories and --ids cannot be provided")
 
-    else:
-        # Categories is None
-        # See if the ids are there
-        for product_id in product_ids:
-            obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
-            if obj is None:
-                logger.warning(f"Product ID {product_id} not found in the Database")
-                logger.newline()
-                continue
+        if no_scrape == True:
+            categories = None
+            pages = None
 
-            assert obj.product_id == product_id
+        # Set the attribute for my_proxy
+        if my_proxy is not None:
+            setattr(my_proxy, 'use_tor', use_tor)
+            if use_tor == False:
+                my_proxy.proxy_list = my_proxy.get_proxy_list()
+                my_proxy.switch_proxy()
+        else:
+            if use_tor == True:
+                raise ValueError("Tor service is not available. Please start it")
+            else:
+                my_proxy = my_proxy = proxy.Proxy(OS=OS, use_tor=use_tor)
 
-            if obj.product_url is None or obj.category is None:
-                if obj.product_url is None:
-                    logger.warning(f"Product ID {product_id} has a NULL product_url")
+        if categories is not None:
+            if listing == True:
+                if num_products is not None and isinstance(num_products, list):
+                    assert len(num_products) == len(categories)
+                
+                if override == False:
+                    results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages)
                 else:
-                    logger.warning(f"Product ID {product_id} has a NULL category")
-                logger.newline()
-                continue
+                    # Override
+                    results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages)
+                """
+                if detail == True:
+                    for category in categories:
+                        curr_item = 0
+                        curr_page = 1
 
-            # Scrape the product
-            product_url = obj.product_url
-            category = obj.category
-            try:
-                product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-            except Exception as ex:
-                logger.critical(f"{ex}")
-                logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
-                logger.newline()
+                        while curr_item < num_items:
+                            if curr_page in results[category]:
+                                for title in results[category][curr_page]:
+                                    if results[category][curr_page][title]['product_url'] is not None:
+                                        product_url = results[category][curr_page][title]['product_url']
+                                        try:
+                                            product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                                        except Exception as ex:
+                                            logger.critical(f"{ex}")
+                                            logger.warning(f"Could not scrape details of Product - URL = {product_url}")
+                                            logger.newline()
+                                        curr_item += 1
+                                        if curr_item == num_items:
+                                            break
+                            else:
+                                break
+                            curr_page += 1
+                """
+            else:
+                for category in categories:
+                    if product_ids is None:
+                        with open(f'dumps/{category}.pkl', 'rb') as f:
+                            results = pickle.load(f)
+                        curr_item = 0
+                        curr_page = 1
+
+                        while curr_item < num_items:
+                            if curr_page in results[category]:
+                                for title in results[category][curr_page]:
+                                    if results[category][curr_page][title]['product_url'] is not None:
+                                        product_url = results[category][curr_page][title]['product_url']
+                                        try:
+                                            product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                                        except Exception as ex:
+                                            logger.critical(f"{ex}")
+                                            logger.warning(f"Could not scrape details of Product - URL = {product_url}")
+                                            logger.newline()
+                                        curr_item += 1
+                                        if curr_item == num_items:
+                                            break
+                            else:
+                                break
+                            curr_page += 1
+                    else:
+                        # Product ids are also there
+                        for product_id in product_ids:
+                            obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
+                            if obj is None:
+                                logger.warning(f"Product ID {product_id} not found in the Database")
+                                logger.newline()
+                                continue
+
+                            assert obj.product_id == product_id
+
+                            if obj.product_url is None or obj.category is None:
+                                if obj.product_url is None:
+                                    logger.warning(f"Product ID {product_id} has a NULL product_url")
+                                else:
+                                    logger.warning(f"Product ID {product_id} has a NULL category")
+                                logger.newline()
+                                continue
+
+                            # Scrape the product
+                            product_url = obj.product_url
+                            category = obj.category
+                            try: 
+                                product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                            except Exception as ex:
+                                logger.critical(f"{ex}")
+                                logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
+                                logger.newline()
+
+        else:
+            # Categories is None
+            # See if the ids are there
+            for product_id in product_ids:
+                obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
+                if obj is None:
+                    logger.warning(f"Product ID {product_id} not found in the Database")
+                    logger.newline()
+                    continue
+
+                assert obj.product_id == product_id
+
+                if obj.product_url is None or obj.category is None:
+                    if obj.product_url is None:
+                        logger.warning(f"Product ID {product_id} has a NULL product_url")
+                    else:
+                        logger.warning(f"Product ID {product_id} has a NULL category")
+                    logger.newline()
+                    continue
+
+                # Scrape the product
+                product_url = obj.product_url
+                category = obj.category
+                try:
+                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                except Exception as ex:
+                    logger.critical(f"{ex}")
+                    logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
+                    logger.newline()
+    finally:
+        Session.close()
+        logger.info("Closed DB connections!")
