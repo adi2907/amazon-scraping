@@ -98,8 +98,9 @@ except UndefinedValueError:
     logger.newline()
 
 
-session_factory = sessionmaker(bind=engine)
-Session = scoped_session(session_factory)
+Session = sessionmaker(bind=engine)
+#session_factory = sessionmaker(bind=engine)
+#Session = scoped_session(session_factory)
 
 db_session = Session()
 
@@ -144,11 +145,11 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
         if my_proxy is None:
             session = requests.Session()
+        
+        db_session = Session()
     else:
         pass
     
-    db_session = Session()
-
     try:
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
 
@@ -402,7 +403,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
         change = True
     finally:
-        Session.remove()
+        if use_multithreading == True:
+            db_session.close()
+            # Session.remove()
 
 
 def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False):
@@ -1329,5 +1332,6 @@ if __name__ == '__main__':
                     logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
                     logger.newline()
     finally:
-        Session.remove()
+        db_session.close()
+        #Session.remove()
         logger.info("Closed DB connections!")
