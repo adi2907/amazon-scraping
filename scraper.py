@@ -753,6 +753,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             details = parse_data.get_product_data(soup, html=html)
             break
         except ValueError:
+            with open(f'{category}_{product_url}.html', 'wb') as f:
+                f.write(html)
+            logger.warning(f"Written html to {category}_{product_url}.html")
             logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
             logger.warning("Trying again...")
             time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else time.sleep(random.randint(2, 5))
