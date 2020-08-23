@@ -668,39 +668,44 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             page_results = dict()
             page_results[category] = final_results[category]
 
-            listing = []
+            try:
+                listing = []
 
-            temp = deepcopy(page_results)
+                temp = deepcopy(page_results)
 
-            # Identify Duplicates
-            for title in temp[category][curr_page]:
-                value = temp[category][curr_page][title]
+                # Identify Duplicates
+                for title in temp[category][curr_page]:
+                    value = temp[category][curr_page][title]
+                    
+                    if 'total_ratings' not in value or 'price' not in value or value['total_ratings'] is None or value['price'] is None:
+                        continue
+                    
+                    total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
+                    price = int(value['price'][1:].replace(',', '').replace('.', ''))
+
+                    small_title = title.split()[0].strip()
+
+                    duplicate = False
+
+                    for item in listing:
+                        if item['small_title'] == small_title and item['total_ratings'] == total_ratings and item['price'] == price:
+                            logger.info(f"Found duplicate match! For title - {small_title}")
+                            logger.info(f"Existing product is {title}, but old one is {item['title']}")
+                            duplicate = True
+                            break
+                    
+                    if duplicate == True:
+                        del final_results[category][curr_page][title]
+                    else:
+                        listing.append({'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
                 
-                if 'total_ratings' not in value or 'price' not in value or value['total_ratings'] is None or value['price'] is None:
-                    continue
-                
-                total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
-                price = int(value['price'][1:].replace(',', '').replace('.', ''))
-
-                small_title = title.split()[0].strip()
-
-                duplicate = False
-
-                for item in listing:
-                    if item['small_title'] == small_title and item['total_ratings'] == total_ratings and item['price'] == price:
-                        logger.info(f"Found duplicate match! For title - {small_title}")
-                        logger.info(f"Existing product is {title}, but old one is {item['title']}")
-                        duplicate = True
-                        break
-                
-                if duplicate == True:
-                    del final_results[category][curr_page][title]
-                else:
-                    listing.append({'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
-            
-            # Reset it
-            listing = []
-            del temp
+                # Reset it
+                listing = []
+                del temp
+            except Exception as ex:
+                logger.warning(f"Exception occured during comparison - Category {category}")
+                logger.info(ex)
+                logger.newline()
             
             if no_listing == False:
                 if USE_DB == True:
