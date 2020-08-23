@@ -858,7 +858,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             if use_cache:
                 # Store to cache first
                 with SqliteDict(cache_file) as mydict:
-                    mydict[f"QANDA_{product_id}"] = qanda
+                    mydict[f"QANDA_{product_id}_{curr}"] = qanda
                     mydict.commit()
             
             # Insert to the DB
@@ -963,7 +963,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 if use_cache:
                     # Store to cache first
                     with SqliteDict(cache_file) as mydict:
-                        mydict[f"REVIEWS_{product_id}"] = reviews
+                        mydict[f"REVIEWS_{product_id}_{curr}"] = reviews
                         mydict.commit()
                 
                 # Insert the reviews to the DB
