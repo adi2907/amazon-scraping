@@ -173,7 +173,7 @@ class Proxy():
         self.delay = 0
         self.penalty = 0
         self.ip_address = None
-        self.max_retries = 3
+        self.max_retries = 5
         self.reference_count = self.generate_count()
         self.delay = 0
         self.penalty = 0
