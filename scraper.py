@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
+from sqlitedict import SqliteDict
 
 import cache
 import db_manager
@@ -68,6 +69,25 @@ except UndefinedValueError:
     use_multithreading = False
 
 logger.info(f"Multithreading is - {use_multithreading}")
+
+
+try:
+    use_cache = config('use_cache')
+    if use_cache == 'True':
+        use_cache = True
+    else:
+        use_cache = False
+except UndefinedValueError:
+    use_cache = False
+
+logger.info(f"use_cache is - {use_cache}")
+
+try:
+    cache_file = config('cache_file')
+except UndefinedValueError:
+    cache_file = 'cache.sqlite3'
+
+logger.info(f"Using Sqlite3 Cache File = {cache_file}")
 
 # Start the session
 session = requests.Session()
@@ -133,6 +153,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
     global cache
     global speedup
     global use_multithreading
+    global cache_file, use_cache
 
     if use_multithreading == True:
         my_proxy = proxy.Proxy(OS=OS, stream_isolation=True) # Separate Proxy per thread
@@ -310,6 +331,12 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             # Reset it
             listing = []
             del temp
+
+            if use_cache:
+                # Store to cache first
+                with SqliteDict(cache_file) as mydict:
+                    mydict[f"LISTING_{category}_PAGE_{curr_page}"] = page_results
+                    mydict.commit()
             
             if no_listing == False:
                 # Dump the results of this page to the DB
@@ -394,6 +421,12 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             with open(f'dumps/{category}.pkl', 'wb') as f:
                 pickle.dump(results, f)
         
+        if use_cache:
+            # Store to cache first
+            with SqliteDict(cache_file) as mydict:
+                mydict[f"LISTING_{category}_PAGE_{curr_page}"] = results
+                mydict.commit()
+
         # Insert to the DB
         db_manager.insert_product_listing(db_session, results)
 
@@ -414,6 +447,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     global last_product_detail
     global cache
     global use_multithreading
+    global cache_file, use_cache
     # session = requests.Session()
 
     if pages is None:
@@ -707,6 +741,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     global headers, cookies
     global cache
     global use_multithreading
+    global cache_file, use_cache
     # session = requests.Session()
     server_url = 'https://www.amazon.in'
 
@@ -777,6 +812,13 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     # Check if the product is sponsored
     sponsored = parse_data.is_sponsored(product_url)
 
+    if use_cache:
+        # Store to cache first
+        with SqliteDict(cache_file) as mydict:
+            mydict[f"DETAILS_{product_id}"] = details
+            mydict[f"IS_SPONSORED_{product_id}"] = sponsored
+            mydict.commit()
+
     # Insert to the DB
     db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
     
@@ -812,6 +854,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
             qanda, next_url = parse_data.get_qanda(soup)
+
+            if use_cache:
+                # Store to cache first
+                with SqliteDict(cache_file) as mydict:
+                    mydict[f"QANDA_{product_id}"] = qanda
+                    mydict.commit()
             
             # Insert to the DB
             db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
@@ -911,6 +959,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 soup = BeautifulSoup(html, 'lxml')
 
                 reviews, next_url = parse_data.get_customer_reviews(soup)
+
+                if use_cache:
+                    # Store to cache first
+                    with SqliteDict(cache_file) as mydict:
+                        mydict[f"REVIEWS_{product_id}"] = reviews
+                        mydict.commit()
                 
                 # Insert the reviews to the DB
                 db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
