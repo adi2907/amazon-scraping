@@ -1248,7 +1248,8 @@ if __name__ == '__main__':
                 if override == False:
                     assert len(pages) == len(categories)
                 else:
-                    assert len(pages) == len(listing_templates)
+                    if isinstance(pages, list):
+                        assert len(pages) == len(listing_templates)
 
         #if categories is not None and product_ids is not None:
         #    raise ValueError("Both --categories and --ids cannot be provided")
@@ -1280,7 +1281,10 @@ if __name__ == '__main__':
                     results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing)
                 else:
                     # Override
-                    results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing)
+                    if isinstance(pages, list):
+                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing)
+                    else:
+                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing)
                 """
                 if detail == True:
                     for category in categories:
