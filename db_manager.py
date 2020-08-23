@@ -296,25 +296,29 @@ def insert_product_listing(session, data, table='ProductListing'):
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
+                        return True
                 except exc.IntegrityError:
                     session.rollback()
                     result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
                     if result is None:
-                        pass
+                        return True
                     else:
                         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
                         for field in update_fields:
                             setattr(result, field, row[field])
                         try:
                             session.commit()
+                            return True
                         except:
                             session.rollback()
                             logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                             logger.newline()
+                            return False
                 except Exception:
                     session.rollback()
                     logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                     logger.newline()
+                    return False
 
 
 def insert_daily_product_listing(session, data, table='DailyProductListing'):
@@ -343,6 +347,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
+                        return True
                 except exc.IntegrityError:
                     session.rollback()
                     result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
@@ -357,14 +362,17 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                         setattr(result, 'date', date)
                         try:
                             session.commit()
+                            return True
                         except:
                             session.rollback()
                             logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                             logger.newline()
+                            return False
                 except Exception:
                     session.rollback()
                     logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                     logger.newline()
+                    return False
 
 
 def insert_product_details(session, data, table='ProductDetails', is_sponsored=False):
@@ -382,6 +390,7 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
         [setattr(obj, key, value) for key, value in row.items()]
         session.add(obj)
         session.commit()
+        return True
     except exc.IntegrityError:
         session.rollback()
         result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
@@ -390,14 +399,17 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
             setattr(result, field, row[field])
         try:
             session.commit()
+            return True
         except:
             session.rollback()
             logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
             logger.newline()
+            return False
     except Exception:
         session.rollback()
         logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
         logger.newline()
+        return False
 
 
 def insert_product_qanda(session, qanda, product_id, table='QandA'):
@@ -411,10 +423,12 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
     # TODO: Change this later outisde the loop
     try:
         session.commit()
+        return True
     except:
         session.rollback()
         logger.warning(f" For Product {product_id}, there is an error with the data.")
         logger.newline()
+        return False
 
 
 def insert_product_reviews(session, reviews, product_id, table='Reviews'):
@@ -439,10 +453,12 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
     # TODO: Change this later outisde the loop
     try:
         session.commit()
+        return True
     except:
         session.rollback()
         logger.warning(f"For Product {product_id}, there is an error with the data.")
         logger.newline()
+        return False
 
 
 def query_table(session, table, query='all', filter_cond=None):

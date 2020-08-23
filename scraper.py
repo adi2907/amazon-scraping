@@ -157,6 +157,12 @@ def exit_gracefully(signum, frame):
     signal.signal(signal.SIGINT, exit_gracefully)
 
 
+def store_to_cache(key, value):
+    global cache_file, use_cache
+    with SqliteDict(cache_file) as mydict:
+        mydict[key] = value
+ 
+
 def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False):
     # global my_proxy, session
     global headers, cookies
@@ -353,8 +359,18 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             if no_listing == False:
                 # Dump the results of this page to the DB
                 if USE_DB == True:
-                    db_manager.insert_product_listing(db_session, page_results)
-                    db_manager.insert_daily_product_listing(db_session, page_results)
+                    try:
+                        status = db_manager.insert_product_listing(db_session, page_results)
+                        if not status:
+                            raise ValueError("Yikes. Status is False")
+                    except:
+                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+                    try:
+                        status = db_manager.insert_daily_product_listing(db_session, page_results)
+                        if not status:
+                            raise ValueError("Yikes. Status is False")
+                    except:
+                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -442,7 +458,13 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
         if USE_DB == True:
             # Insert to the DB
-            db_manager.insert_product_listing(db_session, results)
+            try:
+                status = db_manager.insert_product_listing(db_session, results)
+                if status == False:
+                    # Store to Cache
+                    raise ValueError("Status is False")
+            except:
+                store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", results)
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
@@ -683,8 +705,19 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             if no_listing == False:
                 if USE_DB == True:
                     # Dump the results of this page to the DB
-                    db_manager.insert_product_listing(db_session, page_results)
-                    db_manager.insert_daily_product_listing(db_session, page_results)
+                    try:
+                        status = db_manager.insert_product_listing(db_session, page_results)
+                        if status == False:
+                            # Insert to cache
+                            raise ValueError
+                    except:
+                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+                    try:
+                        status = db_manager.insert_daily_product_listing(db_session, page_results)
+                        if status == False:
+                            raise ValueError
+                    except:
+                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -743,7 +776,12 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
         
         if USE_DB == True:
             # Insert to the DB
-            db_manager.insert_product_listing(db_session, results)
+            try:
+                status = db_manager.insert_product_listing(db_session, results)
+                if status == False:
+                    raise ValueError
+            except:
+                store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", results)
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
@@ -850,7 +888,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     if USE_DB == True:
         # Insert to the DB
-        db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
+        try:
+            status = db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
+            if status == False:
+                store_to_cache(f"DETAILS_{product_id}", details)
+                store_to_cache(f"IS_SPONSORED_{product_id}", sponsored)
+        except:
+            store_to_cache(f"DETAILS_{product_id}", details)
+            store_to_cache(f"IS_SPONSORED_{product_id}", sponsored)
     
     time.sleep(4)
     
@@ -858,6 +903,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if 'customer_lazy' in details and details['customer_lazy'] == True:
         qanda_url = details['customer_qa']
         curr = 0
+        factor = 0
         first_request = True
         prev_url = product_url
         
@@ -919,7 +965,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             
             if USE_DB == True:
                 # Insert to the DB
-                db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
+                try:
+                    status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
+                    if status == False:
+                        store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
+                except:
+                    store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
             
             if next_url is not None:
                 logger.info(f"QandA: Going to Page {curr}")
@@ -986,6 +1037,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         reviews_url = details['reviews_url']
         prev_url = product_url
         curr = 0
+        factor = 0
         first_request = True
         
         retry = 0
@@ -1050,7 +1102,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 
                 if USE_DB == True:
                     # Insert the reviews to the DB
-                    db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+                    try:
+                        status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+                        if not status:
+                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                    except:
+                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                 
                 #with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
                 #	pickle.dump(reviews, f)
