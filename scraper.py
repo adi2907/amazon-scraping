@@ -30,6 +30,8 @@ from utils import (create_logger, customer_reviews_template,
 
 logger = create_logger('scraper')
 
+error_logger = create_logger('errors')
+
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 
 cookies = dict()
@@ -255,6 +257,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 page_url = next_page.find("a")
                 if page_url is None:
                     logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
+                    error_logger.warning(f"For category {category}, after page {curr_page}, next page is NOT none, but URL is none")
                     time.sleep(3)
                     break
                 
@@ -317,7 +320,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                     if product_url is not None:
                         if product_url.startswith(f"/s?k={category}"):
                             # Probably the heading. SKip this
-                            logger.info(f"Encountered the heading -> Tiel = {title}")
+                            logger.info(f"Encountered the heading -> Title = {title}")
+                            error_logger.info(f"Encountered the heading -> Title = {title}")
                             logger.newline()
                             continue
 
@@ -326,11 +330,20 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                             if obj is not None:
                                 logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
                                 continue
                             else:
                                 logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
+                                error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
 
-                        _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
+                        # Let's try to approximate the minimum reviews we need
+                        value = final_results[category][curr_page][title]
+                        if 'total_ratings' not in value:
+                            total_ratings = None
+                        else:
+                            total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
+                        
+                        _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
                         idx += 1
 
                         if last_product_detail == True:
@@ -344,11 +357,13 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             elif num_products is not None and idx > num_products:
                                 # We're done for this product
                                 logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
+                                error_logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
                                 overflow = True
                                 break
 
             if next_page is None:
                 logger.info("Next Page is None. Exiting catgory...")
+                error_logger.info("Next Page is None. Exiting catgory...")
                 break
 
 
@@ -682,7 +697,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     return final_results
 
 
-def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None):
+def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None, total_ratings=None):
     global my_proxy, session
     global headers, cookies
     global cache
@@ -705,6 +720,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     assert response.status_code == 200
     cookies = dict(response.cookies)
     time.sleep(3)
+
+    REVIEWS_PER_PAGE = 10
 
     while True:
         if my_proxy is None:
@@ -806,8 +823,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     time.sleep(random.randint(6, 12)) if not speedup else time.sleep(random.randint(2, 5))
 
                 if qanda_pages is not None and curr == qanda_pages:
-                    logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
-                    logger.newline()
+                    error_logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
+                    error_logger.newline()
                     break
                 
                 if first_request == True:
@@ -834,15 +851,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             if qanda_date is not None:
                                 # Review Date must be greater than threshold
                                 if qanda_date < threshold_date:
-                                    logger.info(f"QandA (Current Page = {curr}) - Date Limit Exceeded.")
-                                    logger.newline()
+                                    error_logger.info(f"{product_id} : QandA (Current Page = {curr}) - Date Limit Exceeded.")
+                                    error_logger.newline()
                                     limit = True
                                     break
                         if limit == True:
                             break
             else:
-                logger.info(f"QandA (Current Page = {curr}) - Next Page is None. Going to Reviews now...")
-                logger.newline()
+                error_logger.info(f"{product_id} : QandA (Current Page = {curr}) - Next Page is None. Going to Reviews now...")
                 break
     
     # Get the customer reviews
@@ -851,6 +867,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         prev_url = product_url
         curr = 0
         first_request = True
+        
+        retry = 0
+        MAX_RETRIES = 3
+
         while reviews_url is not None:
             if reviews_url is not None and product_url is not None:
                 if my_proxy is None:
@@ -865,7 +885,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     cookies = {**cookies, **dict(response.cookies)}
                 
                 if response.status_code != 200:
-                    logger.error(f"Review Page - Got code {response.status_code}")
+                    logger.error(f"{product_id} : Review Page - Got code {response.status_code}")
+                    error_logger.error(f"{product_id} : Review Page - Got code {response.status_code}")
                     logger.error(f"Content = {response.content}")
 
                 assert response.status_code == 200
@@ -907,8 +928,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             if review_date is not None:
                                 # Review Date must be greater than threshold
                                 if review_date < threshold_date:
-                                    logger.info(f"Reviews (Current Page = {curr}) - Date Limit Exceeded.")
-                                    logger.newline()
+                                    error_logger.info(f"{product_id} : Reviews (Current Page = {curr}) - Date Limit Exceeded.")
                                     limit = True
                                     break
                         if limit == True:
@@ -932,13 +952,28 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         time.sleep(random.randint(6, 12))
                     
                     if review_pages is not None and curr == review_pages:
-                        logger.info(f"Reviews (Current Page = {curr}) - Finished last page.")
-                        logger.newline()
+                        error_logger.info(f"{product_id} : Reviews (Current Page = {curr}) - Finished last page.")
                         break
                     logger.info(f"Reviews: Going to Page {curr}")
                 else:
-                    logger.info(f"Reviews (Current Page = {curr}). Next Page is None. Finished Scraping Reviews for this product")
-                    break
+                    # Approximating it to 80% total reviews
+                    if curr < round((0.8 * total_ratings) // REVIEWS_PER_PAGE):
+                        error_logger.warning(f"{product_id} : Reviews (Current Page = {curr}). Next Page is None. But total_ratings = {total_ratings}. Is there an error????")
+                        error_logger.info("Trying again....")
+                        
+                        retry += 1
+                        
+                        if retry <= MAX_RETRIES:
+                            response = my_proxy.get(server_url + t_prev, referer=server_url + t_curr, product_url=product_url, ref_count='constant')
+                            time.sleep(random.randint(6, 12))
+                            response = my_proxy.get(server_url + t_curr, referer=server_url + t_prev, product_url=product_url, ref_count='constant')
+                            time.sleep(random.randint(6, 12))
+                        else:
+                            error_logger.error(f"{product_id} : Reviews (Current Page = {curr}). Next Page is None. Max retries exceeded. Exiting product...")
+                            break
+                    else:
+                        error_logger.info(f"{product_id} : Reviews (Current Page = {curr}). Next Page is None. Finished Scraping Reviews for this product")
+                        break
     
     time.sleep(3)
 
