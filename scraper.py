@@ -125,7 +125,7 @@ def exit_gracefully(signum, frame):
     signal.signal(signal.SIGINT, exit_gracefully)
 
 
-def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in'):
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False):
     # global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -310,9 +310,10 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             listing = []
             del temp
             
-            # Dump the results of this page to the DB
-            db_manager.insert_product_listing(db_session, page_results)
-            db_manager.insert_daily_product_listing(db_session, page_results)
+            if no_listing == False:
+                # Dump the results of this page to the DB
+                db_manager.insert_product_listing(db_session, page_results)
+                db_manager.insert_daily_product_listing(db_session, page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -404,7 +405,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         Session.remove()
 
 
-def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None):
+def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -627,9 +628,10 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             listing = []
             del temp
             
-            # Dump the results of this page to the DB
-            db_manager.insert_product_listing(db_session, page_results)
-            db_manager.insert_daily_product_listing(db_session, page_results)
+            if no_listing == False:
+                # Dump the results of this page to the DB
+                db_manager.insert_product_listing(db_session, page_results)
+                db_manager.insert_daily_product_listing(db_session, page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -980,7 +982,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     return final_results
 
 
-def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None):
+def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -1042,14 +1044,14 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     
     if use_multithreading == False:
         for category, category_template, num_pages in zip(listing_categories, listing_templates, pages):
-            fetch_category(category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url=server_url)
+            fetch_category(category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url=server_url, no_listing=no_listing)
     else:
         num_workers = max(1, min(32, len(listing_categories)))
         # TODO: https://stackoverflow.com/questions/56733397/how-i-can-get-new-ip-from-tor-every-requests-in-threads
         # Separate proxy object per thread
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
-            future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
+            future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             for future in concurrent.futures.as_completed(future_to_category):
                 category = future_to_category[future]
                 try:
@@ -1079,6 +1081,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', help='A config file for the options', type=str)
     parser.add_argument('--tor', help='To use Tor vs Public Proxies', default=False, action='store_true')
     parser.add_argument('--override', help='To scape using existing filters at utils.py', default=False, action='store_true')
+    parser.add_argument('--no_listing', help='To specify if listing is needed while scraping details', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1096,6 +1099,7 @@ if __name__ == '__main__':
     use_tor = args.tor
     num_products = args.num_products
     override = args.override
+    no_listing = args.no_listing
 
     no_scrape = False
 
@@ -1114,6 +1118,8 @@ if __name__ == '__main__':
                 if args == 'tor':
                     continue
                 if args == 'override':
+                    continue
+                if args == 'no_listing':
                     continue
                 if arg not in ('config', 'number',) and getattr(args, arg) not in (None, False):
                     raise ValueError("--config file is already specified")
@@ -1192,6 +1198,8 @@ if __name__ == '__main__':
                 raise ValueError("Tor service is not available. Please start it")
             else:
                 my_proxy = my_proxy = proxy.Proxy(OS=OS, use_tor=use_tor)
+        
+        logger.info(f"no_listing is {no_listing}")
 
         if categories is not None:
             if listing == True:
@@ -1199,10 +1207,10 @@ if __name__ == '__main__':
                     assert len(num_products) == len(categories)
                 
                 if override == False:
-                    results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages)
+                    results = scrape_category_listing(categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing)
                 else:
                     # Override
-                    results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages)
+                    results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing)
                 """
                 if detail == True:
                     for category in categories:
