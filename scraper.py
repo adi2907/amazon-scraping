@@ -853,6 +853,32 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
+
+            # Check if this is a CAPTCHA page
+            captcha_id = "captchacharacters"
+            captcha_node = soup.find("input", id=captcha_id)
+            if captcha_node is not None:
+                # We need to retry
+                if factor >= 4:
+                    if cooldown == False:
+                        logger.critical(f"Time limit exceeded during backoff. Cooling down for sometime before trying...")
+                        factor = 0
+                        time.sleep(random.randint(200, 350))
+                        my_proxy.change_identity()
+                        cooldown = True
+                        continue
+                    else:
+                        cooldown = False
+                        logger.critical("Trying again...")
+                        time.sleep(random.randint(7, 15))
+                        factor = 0
+                        continue
+
+                logger.warning(f"Encountered a CAPTCHA page. Using exponential backoff. Current Delay = {my_proxy.delay}")
+                factor += 1
+                my_proxy.delay *= 2
+                continue
+
             qanda, next_url = parse_data.get_qanda(soup)
 
             if use_cache:
@@ -957,6 +983,31 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 
                 html = response.content
                 soup = BeautifulSoup(html, 'lxml')
+
+                # Check if this is a CAPTCHA page
+                captcha_id = "captchacharacters"
+                captcha_node = soup.find("input", id=captcha_id)
+                if captcha_node is not None:
+                    # We need to retry
+                    if factor >= 4:
+                        if cooldown == False:
+                            logger.critical(f"Time limit exceeded during backoff. Cooling down for sometime before trying...")
+                            factor = 0
+                            time.sleep(random.randint(200, 350))
+                            my_proxy.change_identity()
+                            cooldown = True
+                            continue
+                        else:
+                            cooldown = False
+                            logger.critical("Trying again...")
+                            time.sleep(random.randint(7, 15))
+                            factor = 0
+                            continue
+
+                    logger.warning(f"Encountered a CAPTCHA page. Using exponential backoff. Current Delay = {my_proxy.delay}")
+                    factor += 1
+                    my_proxy.delay *= 2
+                    continue
 
                 reviews, next_url = parse_data.get_customer_reviews(soup)
 
