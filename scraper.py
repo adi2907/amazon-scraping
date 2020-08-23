@@ -1245,7 +1245,10 @@ if __name__ == '__main__':
             pages = [pages[0] for _ in categories]
         else:
             if categories is not None and pages is not None:
-                assert len(pages) == len(categories)
+                if override == False:
+                    assert len(pages) == len(categories)
+                else:
+                    assert len(pages) == len(listing_templates)
 
         #if categories is not None and product_ids is not None:
         #    raise ValueError("Both --categories and --ids cannot be provided")
