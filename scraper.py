@@ -905,6 +905,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         curr = 0
         factor = 0
         first_request = True
+        cooldown = False
         prev_url = product_url
         
         qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + '?isAnswered=true'
@@ -1039,6 +1040,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         curr = 0
         factor = 0
         first_request = True
+        cooldown = False
         
         retry = 0
         MAX_RETRIES = 3
