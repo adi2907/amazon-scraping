@@ -753,15 +753,15 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             details = parse_data.get_product_data(soup, html=html)
             break
         except ValueError:
-            DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
-            if not os.path.exists(DUMP_DIR):
-                os.mkdir(DUMP_DIR)
-            if category is None or product_url is None:
-                filename = 'none'
-            else:
-                filename = category.replace('/', '') + product_url.replace('/', '') + '.html'
-            with open(os.path.join(DUMP_DIR, filename), 'wb') as f:
-                f.write(html)
+            #DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
+            #if not os.path.exists(DUMP_DIR):
+            #    os.mkdir(DUMP_DIR)
+            #if category is None or product_url is None:
+            #    filename = 'none'
+            #else:
+            #    filename = category.replace('/', '') + product_url.replace('/', '') + '.html'
+            #with open(os.path.join(DUMP_DIR, filename), 'wb') as f:
+            #    f.write(html)
             logger.warning(f"Written html to {category}_{product_url}.html")
             logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
             logger.warning("Trying again...")
