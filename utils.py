@@ -76,7 +76,7 @@ def create_logger(app_name: str) -> logging.Logger:
     logger.setLevel(logging.DEBUG)
 
     # handler = logging.FileHandler(filename=app_logfile, mode='a')
-    handler = logging.handlers.RotatingFileHandler(filename=app_logfile, mode='a', maxBytes=5000, backupCount=5)
+    handler = logging.handlers.RotatingFileHandler(filename=app_logfile, mode='a', maxBytes=20000, backupCount=10)
     handler.setLevel(logging.DEBUG)
 
     # Set the formatter
