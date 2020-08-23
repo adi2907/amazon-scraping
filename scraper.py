@@ -89,6 +89,17 @@ except UndefinedValueError:
 
 logger.info(f"Using Sqlite3 Cache File = {cache_file}")
 
+try:
+    USE_DB = config('USE_DB')
+    if USE_DB == 'False':
+        USE_DB = False
+    else:
+        USE_DB = True
+except UndefinedValueError:
+    USE_DB = True
+
+logger.info(f"USE_DB is - {USE_DB}")
+
 # Start the session
 session = requests.Session()
 
@@ -154,6 +165,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
     global speedup
     global use_multithreading
     global cache_file, use_cache
+    global USE_DB
 
     if use_multithreading == True:
         my_proxy = proxy.Proxy(OS=OS, stream_isolation=True) # Separate Proxy per thread
@@ -340,8 +352,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             
             if no_listing == False:
                 # Dump the results of this page to the DB
-                db_manager.insert_product_listing(db_session, page_results)
-                db_manager.insert_daily_product_listing(db_session, page_results)
+                if USE_DB == True:
+                    db_manager.insert_product_listing(db_session, page_results)
+                    db_manager.insert_daily_product_listing(db_session, page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -427,8 +440,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 mydict[f"LISTING_{category}_PAGE_{curr_page}"] = results
                 mydict.commit()
 
-        # Insert to the DB
-        db_manager.insert_product_listing(db_session, results)
+        if USE_DB == True:
+            # Insert to the DB
+            db_manager.insert_product_listing(db_session, results)
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
@@ -448,6 +462,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     global cache
     global use_multithreading
     global cache_file, use_cache
+    global USE_DB
     # session = requests.Session()
 
     if pages is None:
@@ -666,9 +681,10 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             del temp
             
             if no_listing == False:
-                # Dump the results of this page to the DB
-                db_manager.insert_product_listing(db_session, page_results)
-                db_manager.insert_daily_product_listing(db_session, page_results)
+                if USE_DB == True:
+                    # Dump the results of this page to the DB
+                    db_manager.insert_product_listing(db_session, page_results)
+                    db_manager.insert_daily_product_listing(db_session, page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -725,8 +741,9 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             with open(f'dumps/{category}.pkl', 'wb') as f:
                 pickle.dump(results, f)
         
-        # Insert to the DB
-        db_manager.insert_product_listing(db_session, results)
+        if USE_DB == True:
+            # Insert to the DB
+            db_manager.insert_product_listing(db_session, results)
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
@@ -742,8 +759,22 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     global cache
     global use_multithreading
     global cache_file, use_cache
+    global USE_DB
     # session = requests.Session()
     server_url = 'https://www.amazon.in'
+
+    product_id = parse_data.get_product_id(product_url)
+
+    if use_cache:
+        # Store to cache first
+        with SqliteDict(cache_file) as mydict:
+            try:
+                _set = mydict[f"DETAILS_SET_{category}"]
+            except KeyError:
+                _set = set()
+            _set.add(product_id)
+            mydict[f"DETAILS_SET_{category}"] = _set
+            mydict.commit()
 
     if review_pages is None:
         review_pages = 1000
@@ -781,8 +812,6 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
         time.sleep(3) if not speedup else time.sleep(random.randint(2, 5))
         html = response.content
-            
-        product_id = parse_data.get_product_id(product_url)
         
         soup = BeautifulSoup(html, 'lxml')
         
@@ -819,8 +848,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             mydict[f"IS_SPONSORED_{product_id}"] = sponsored
             mydict.commit()
 
-    # Insert to the DB
-    db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
+    if USE_DB == True:
+        # Insert to the DB
+        db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
     
     time.sleep(4)
     
@@ -887,8 +917,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     mydict[f"QANDA_{product_id}_{curr}"] = qanda
                     mydict.commit()
             
-            # Insert to the DB
-            db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
+            if USE_DB == True:
+                # Insert to the DB
+                db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
             
             if next_url is not None:
                 logger.info(f"QandA: Going to Page {curr}")
@@ -1017,8 +1048,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         mydict[f"REVIEWS_{product_id}_{curr}"] = reviews
                         mydict.commit()
                 
-                # Insert the reviews to the DB
-                db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+                if USE_DB == True:
+                    # Insert the reviews to the DB
+                    db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
                 
                 #with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
                 #	pickle.dump(reviews, f)
@@ -1106,6 +1138,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     global last_product_detail
     global cache
     global use_multithreading
+    global USE_DB
 
     if pages is None:
         pages = [10000 for _ in listing_templates] # Keeping a big number
