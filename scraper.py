@@ -812,16 +812,15 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     product_id = parse_data.get_product_id(product_url)
 
-    if use_cache:
-        # Store to cache first
-        with SqliteDict(cache_file) as mydict:
-            try:
-                _set = mydict[f"DETAILS_SET_{category}"]
-            except KeyError:
-                _set = set()
-            _set.add(product_id)
-            mydict[f"DETAILS_SET_{category}"] = _set
-            mydict.commit()
+    # Store to cache first
+    with SqliteDict(cache_file) as mydict:
+        try:
+            _set = mydict[f"DETAILS_SET_{category}"]
+        except KeyError:
+            _set = set()
+        _set.add(product_id)
+        mydict[f"DETAILS_SET_{category}"] = _set
+        mydict.commit()
 
     if review_pages is None:
         review_pages = 1000
