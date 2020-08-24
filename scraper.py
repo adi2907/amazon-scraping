@@ -9,6 +9,7 @@ import signal
 import sqlite3
 import sys
 import time
+import traceback
 from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime
@@ -32,6 +33,8 @@ from utils import (create_logger, customer_reviews_template,
 logger = create_logger('scraper')
 
 error_logger = create_logger('errors')
+
+exception_logger = create_logger('threads')
 
 headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 
@@ -1289,6 +1292,8 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                     _ = future.result()
                 except Exception as exc:
                     logger.critical('%r generated an exception: %s' % (category, exc))
+                    exception_logger.critical(f"Thread {category} generated an exception {exc}")
+                    exception_logger.critical("".join(traceback.TracebackException.from_exception(exc).format()))
                 else:
                     logger.info(f"Category {category} is done!")
 
