@@ -42,7 +42,18 @@ cookies = dict()
 
 cache = cache.Cache()
 
-cache.connect('master', use_redis=False)
+try:
+    USE_REDIS = config('USE_REDIS')
+    if USE_REDIS == 'True':
+        USE_REDIS = True
+    else:
+        USE_REDIS = False
+except UndefinedValueError:
+    USE_REDIS = False
+
+logger.info(f"USE_REDIS = {USE_REDIS}")
+
+cache.connect('master', use_redis=USE_REDIS)
 
 try:
     OS = config('OS')
@@ -162,9 +173,18 @@ def exit_gracefully(signum, frame):
 
 def store_to_cache(key, value):
     global cache_file, use_cache
-    with SqliteDict(cache_file) as mydict:
-        mydict[key] = value
-        mydict.commit()
+    global cache
+    try:
+        with SqliteDict(cache_file) as mydict:
+            mydict[key] = value
+            mydict.commit()
+    except RecursionError:
+        error_logger.critical(f"Recursion Depth exceeded when trying to store key -> {key}")
+        logger.info(f"Trying to store to Redis Cache")
+        try:
+            cache.set(key, value, timeout=None)
+        except Exception as ex:
+            logger.info(f"Redis Cache -> Generated Exception: {ex}")
  
 
 def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False):
