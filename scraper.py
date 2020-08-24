@@ -164,6 +164,7 @@ def store_to_cache(key, value):
     global cache_file, use_cache
     with SqliteDict(cache_file) as mydict:
         mydict[key] = value
+        mydict.commit()
  
 
 def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False):
