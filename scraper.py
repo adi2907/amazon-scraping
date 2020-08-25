@@ -1249,6 +1249,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     global cache
     global use_multithreading
     global USE_DB
+    global listing_templates, listing_categories
 
     if pages is None:
         pages = [10000 for _ in listing_templates] # Keeping a big number
@@ -1307,6 +1308,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         for category, category_template, num_pages in zip(listing_categories, listing_templates, pages):
             fetch_category(category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url=server_url, no_listing=no_listing, detail=detail)
     else:
+        no_sub = False
         num_workers = max(1, min(32, len(listing_categories)))
 
         if num_workers == 1:
@@ -1319,6 +1321,8 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
 
             templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in range(1, num_workers+1)]
             listing_templates = templates
+
+            no_sub = True
         
         try:
             if concurrent_jobs == True and detail == True:
@@ -1330,7 +1334,10 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         # Separate proxy object per thread
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
-            future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
+            if no_sub == False:
+                future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
+            else:
+                future_to_category = {executor.submit(fetch_category, category, category_template, num_pages, change, server_url, no_listing, detail): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             
             try:
                 if concurrent_jobs == True:
