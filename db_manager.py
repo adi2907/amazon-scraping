@@ -468,7 +468,7 @@ def query_table(session, table, query='all', filter_cond=None):
             try:
                 instance = session.query(table_map[table]).all()
                 return instance
-            except NoResultFound:
+            except:
                 return None
         elif isinstance(filter_cond, list):
             # Filter IN
@@ -481,7 +481,7 @@ def query_table(session, table, query='all', filter_cond=None):
                     choices = filter_cond[2]
                     instance = session.query(table_map[table]).filter(getattr(table_map[table], column).in_(choices)).all()
                     return instance
-            except NoResultFound:
+            except:
                 return None
         else:
             # Filter Condition MUST be a dict
@@ -489,7 +489,7 @@ def query_table(session, table, query='all', filter_cond=None):
             try:
                 instance = session.query(table_map[table]).filter_by(**filter_cond).all()
                 return instance
-            except NoResultFound:
+            except:
                 return None
     
     elif query == 'one':
@@ -497,7 +497,7 @@ def query_table(session, table, query='all', filter_cond=None):
             try:
                 instance = session.query(table_map[table]).one()
                 return instance
-            except NoResultFound:
+            except:
                 return None
         else:
             # Filter Condition MUST be a dict
@@ -505,7 +505,7 @@ def query_table(session, table, query='all', filter_cond=None):
             try:
                 instance = session.query(table_map[table]).filter_by(**filter_cond).one()
                 return instance
-            except NoResultFound:
+            except:
                 return None
     
     else:
@@ -520,7 +520,7 @@ def fetch_product_ids(session, table, categories):
         try:
             instances = session.query(table_map[table]).filter_by(category=category).all()
             result.extend([getattr(instance, 'product_id') for instance in instances])
-        except NoResultFound:
+        except:
             result.extend([])
     return result
 
