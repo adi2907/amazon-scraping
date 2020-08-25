@@ -180,15 +180,21 @@ def store_to_cache(key, value):
             mydict.commit()
     except RecursionError:
         error_logger.critical(f"Recursion Depth exceeded when trying to store key -> {key}")
-        logger.info(f"Trying to store to Redis Cache")
+        logger.info("Trying to convert to string and store...")
         try:
-            cache.set(key, value, timeout=None)
-        except Exception as ex:
+            with SqliteDict(cache_file) as mydict:
+                mydict[key] = str(value)
+                mydict.commit()
+        except RecursionError:
+            logger.info(f"Trying to store to Redis Cache")
             try:
-                logger.info("Trying to convert to string and store...")
-                cache.set(key, str(value), timeout=None)
-            except Exception as exc:
-                error_logger.info(f"Redis Cache -> Generated Exception: {exc}")
+                cache.set(key, value, timeout=None)
+            except Exception as ex:
+                try:
+                    logger.info("Trying to convert to string and store...")
+                    cache.set(key, str(value), timeout=None)
+                except Exception as exc:
+                    error_logger.info(f"Redis Cache -> Generated Exception: {exc}")
  
 
 def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False):
