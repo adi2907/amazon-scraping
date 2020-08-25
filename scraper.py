@@ -1308,6 +1308,17 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             fetch_category(category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url=server_url, no_listing=no_listing, detail=detail)
     else:
         num_workers = max(1, min(32, len(listing_categories)))
+
+        if num_workers == 1:
+            # Only one category. Split it into pages
+            num_workers = 5
+            logger.info(f"Only one category. Splitting work into {num_workers} threads")
+            
+            categories = [listing_categories[0] for _ in range(1, num_workers+1)]
+            listing_categories = categories
+
+            templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in range(1, num_workers+1)]
+            listing_templates = templates
         
         try:
             if concurrent_jobs == True and detail == True:
