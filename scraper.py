@@ -862,6 +862,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     cookies = dict(response.cookies)
     time.sleep(3)
 
+    is_completed = False
+
     REVIEWS_PER_PAGE = 10
 
     while True:
@@ -1173,6 +1175,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                 if review_date < threshold_date:
                                     error_logger.info(f"{product_id} : Reviews (Current Page = {curr}) - Date Limit Exceeded.")
                                     limit = True
+                                    is_completed = True
                                     break
                         if limit == True:
                             break
@@ -1196,6 +1199,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     
                     if review_pages is not None and curr == review_pages:
                         error_logger.info(f"{product_id} : Reviews (Current Page = {curr}) - Finished last page.")
+                        is_completed = True
                         break
                     logger.info(f"Reviews: Going to Page {curr}")
                 else:
@@ -1216,8 +1220,23 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             break
                     else:
                         error_logger.info(f"{product_id} : Reviews (Current Page = {curr}). Next Page is None. Finished Scraping Reviews for this product")
+                        is_completed = True
                         break
     
+    obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+    if obj is not None:
+        logger.info(f"Product with ID {product_id} is completed = {is_completed}")
+        if hasattr(obj, 'completed'):
+            setattr(obj, 'completed', is_completed)
+            try:
+                db_session.commit()
+            except:
+                db_session.rollback()
+                logger.warning(f"For Product {product_id}, there is an error with the data.")
+                logger.newline()
+    else:
+        error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+
     time.sleep(3)
 
     return final_results

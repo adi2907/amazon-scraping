@@ -56,6 +56,7 @@ tables = {
         'created_on': 'DATETIME',
         'subcategories': 'LONGTEXT',
         'is_sponsored': 'BOOLEAN',
+        'completed': 'BOOLEAN',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
