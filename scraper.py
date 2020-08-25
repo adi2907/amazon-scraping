@@ -1322,6 +1322,8 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in range(1, num_workers+1)]
             listing_templates = templates
 
+            pages = [1 for _ in range(1, num_workers+1)]
+
             no_sub = True
         
         try:
