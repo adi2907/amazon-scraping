@@ -184,7 +184,11 @@ def store_to_cache(key, value):
         try:
             cache.set(key, value, timeout=None)
         except Exception as ex:
-            logger.info(f"Redis Cache -> Generated Exception: {ex}")
+            try:
+                logger.info("Trying to convert to string and store...")
+                cache.set(key, str(value), timeout=None)
+            except Exception as exc:
+                error_logger.info(f"Redis Cache -> Generated Exception: {ex}")
  
 
 def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False):
