@@ -1211,6 +1211,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 else:
                     # Approximating it to 80% total reviews
                     if total_ratings is not None and curr < round((0.8 * total_ratings) // REVIEWS_PER_PAGE):
+                        t_curr = reviews_url
+                        t_prev = prev_url
                         error_logger.warning(f"{product_id} : Reviews (Current Page = {curr}). Next Page is None. But total_ratings = {total_ratings}. Is there an error????")
                         error_logger.info("Trying again....")
                         
