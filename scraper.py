@@ -417,26 +417,34 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             logger.newline()
                             continue
 
-                        product_id = parse_data.get_product_id(product_url)
-                        if product_id is not None:
-                            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                            if obj is not None:
-                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                continue
-                            else:
-                                logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
-                                error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
+                        product_id = None
 
-                        # Let's try to approximate the minimum reviews we need
-                        value = final_results[category][curr_page][title]
-                        if 'total_ratings' not in value or value['total_ratings'] is None:
-                            total_ratings = None
-                        else:
-                            total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
-                        
-                        _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
-                        idx += 1
+                        try:
+                            product_id = parse_data.get_product_id(product_url)
+                            if product_id is not None:
+                                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                                if obj is not None:
+                                    logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                    error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                    continue
+                                else:
+                                    logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
+                                    error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
+
+                            # Let's try to approximate the minimum reviews we need
+                            value = final_results[category][curr_page][title]
+                            if 'total_ratings' not in value or value['total_ratings'] is None:
+                                total_ratings = None
+                            else:
+                                total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
+                            
+                            _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
+                            idx += 1
+                        except Exception as ex:
+                            if product_id is not None:
+                                logger.critical(f"During scraping product details for ID {product_id}, got exception: {ex}")
+                            else:
+                                logger.critical(f"Product ID is None, got exception: {ex}")
 
                         if last_product_detail == True:
                             logger.info("Completed pending products. Exiting...")
