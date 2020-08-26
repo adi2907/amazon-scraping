@@ -1337,15 +1337,16 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             categories = [listing_categories[0] for _ in range(1, num_workers+1)]
             listing_categories = categories
 
-            templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in range(1, num_workers+1)]
-            listing_templates = templates
-
             pages = [1 for _ in range(1, num_workers+1)]
             if worker_pages is not None: 
                 assert len(worker_pages) == num_workers
                 pages = worker_pages
                 templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in pages]
                 listing_templates = templates
+            else:
+                templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in range(1, num_workers+1)]
+                listing_templates = templates
+
 
             no_sub = True
         
