@@ -1258,7 +1258,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     return final_results
 
 
-def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None):
+def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -1341,6 +1341,9 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             listing_templates = templates
 
             pages = [1 for _ in range(1, num_workers+1)]
+            if worker_pages is not None: 
+                assert len(worker_pages) == num_workers
+                pages = worker_pages
 
             no_sub = True
         
@@ -1349,6 +1352,8 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                 num_workers *= 2
         except:
             pass
+        
+        logger.info(f"Have {len(listing_categories)} categories. Splitting work into {num_workers} threads")
 
         # TODO: https://stackoverflow.com/questions/56733397/how-i-can-get-new-ip-from-tor-every-requests-in-threads
         # Separate proxy object per thread
@@ -1401,6 +1406,7 @@ if __name__ == '__main__':
     parser.add_argument('--no_listing', help='To specify if listing is needed while scraping details', default=False, action='store_true')
     parser.add_argument('--concurrent_jobs', help='To specify if listing + details need to be done', default=False, action='store_true')
     parser.add_argument('--num_workers', help='To specify number of worker threads', type=int, default=0)
+    parser.add_argument('--worker_pages', help='Page per worker thread for product detail', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
 
     args = parser.parse_args()
 
@@ -1421,6 +1427,7 @@ if __name__ == '__main__':
     no_listing = args.no_listing
     concurrent_jobs = args.concurrent_jobs
     num_workers = args.num_workers
+    worker_pages = args.worker_pages
 
     if num_workers <= 0:
         num_workers = None
@@ -1541,9 +1548,9 @@ if __name__ == '__main__':
                 else:
                     # Override
                     if isinstance(pages, list):
-                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers)
+                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages)
                     else:
-                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers)
+                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages)
                 """
                 if detail == True:
                     for category in categories:
