@@ -1,3 +1,4 @@
+import itertools
 import math
 import random
 import socket
@@ -231,9 +232,19 @@ class Proxy():
         Returns:
             str: An IP Address
         """
+        retries = 0
+        limit = 5
         urls = [to_http("https://ident.me", use_tor=self.use_tor), to_http("http://myip.dnsomatic.com", use_tor=self.use_tor), to_http("https://checkip.amazonaws.com", use_tor=self.use_tor)]
-        for url in urls:
-            response = requests.get(url, proxies=self.proxies)
+        for url in itertools.cycle(urls):
+            try:
+                response = requests.get(url, proxies=self.proxies)
+            except requests.exceptions.ConnectionError:
+                if retries == limit:
+                    break
+                print("Connection Error when changing IP. Trying with another URL")
+                retries += 1
+                time.sleep(5)
+                continue
             if response.status_code == 200:
                 ip = response.text.strip()
                 return ip
