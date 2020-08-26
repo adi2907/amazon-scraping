@@ -1344,6 +1344,8 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             if worker_pages is not None: 
                 assert len(worker_pages) == num_workers
                 pages = worker_pages
+                templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in pages]
+                listing_templates = templates
 
             no_sub = True
         
