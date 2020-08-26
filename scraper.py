@@ -74,6 +74,18 @@ logger.info(f"Speedup is {speedup}")
 
 
 try:
+    ultra_fast = config('ultra_fast')
+    if ultra_fast == 'True':
+        ultra_fast = True
+    else:
+        ultra_fast = False
+except UndefinedValueError:
+    ultra_fast = False
+
+logger.info(f"ultra_fast is {ultra_fast}")
+
+
+try:
     use_multithreading = config('MULTITHREADING')
     if use_multithreading == 'True':
         use_multithreading = True
@@ -256,7 +268,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
         
-        time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
+        time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
         curr_page = 1
         curr_url = base_url
 
@@ -264,7 +276,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         cooldown = False
 
         while curr_page <= num_pages:
-            time.sleep(6) if not speedup else time.sleep(random.randint(2, 5))
+            time.sleep(6) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
 
@@ -346,7 +358,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                     cookies = {**cookies, **dict(response.cookies)}
                 next_url = server_url + page_url
 
-                time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
+                time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
 
             listing = []
 
@@ -453,7 +465,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                         if my_proxy is not None:
                             if num_products is None or idx <= num_products:
                                 response = my_proxy.get(curr_url, referer=server_url + product_url)
-                                time.sleep(random.randint(3, 5)) if not speedup else time.sleep(random.randint(2, 5))
+                                time.sleep(random.randint(3, 5)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
                             elif num_products is not None and idx > num_products:
                                 # We're done for this product
                                 logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
@@ -573,7 +585,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     if my_proxy is not None:
         my_proxy.cookies = cookies
     
-    time.sleep(10) if not speedup else time.sleep(random.randint(4, 7))
+    time.sleep(10) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(4, 7)))
 
     final_results = dict()
 
@@ -598,7 +610,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
             if change == True:
                 change = False
                 my_proxy.change_identity()
-                time.sleep(random.randint(2, 5)) if not speedup else time.sleep(random.randint(2, 5))
+                time.sleep(random.randint(2, 5)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             logger.info(f"Proxy Cookies = {my_proxy.cookies}")
             response = my_proxy.get(base_url)
             setattr(my_proxy, 'category', category)
@@ -616,7 +628,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
         
-        time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
+        time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
         curr_page = 1
         curr_url = base_url
 
@@ -624,7 +636,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
         cooldown = False
 
         while curr_page <= num_pages:
-            time.sleep(6) if not speedup else time.sleep(random.randint(2, 5))
+            time.sleep(6) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
                         
@@ -705,7 +717,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                 cookies = {**cookies, **dict(response.cookies)}
             next_url = server_url + page_url
 
-            time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
+            time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
 
             page_results = dict()
             page_results[category] = final_results[category]
@@ -789,7 +801,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                         if my_proxy is not None:
                             if num_products is None or idx <= num_products:
                                 response = my_proxy.get(curr_url, referer=server_url + product_url)
-                                time.sleep(random.randint(3, 5)) if not speedup else time.sleep(random.randint(2, 5))
+                                time.sleep(random.randint(3, 5)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
                             elif num_products is not None and idx > num_products:
                                 # We're done for this product
                                 logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
@@ -832,7 +844,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
-        time.sleep(4) if not speedup else time.sleep(random.randint(2, 5))
+        time.sleep(4) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
 
         change = True
     return final_results
@@ -892,11 +904,11 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
         
-        time.sleep(10) if not speedup else time.sleep(random.randint(2, 5))
+        time.sleep(10) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
 
         final_results = dict()
 
-        time.sleep(3) if not speedup else time.sleep(random.randint(2, 5))
+        time.sleep(3) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
         html = response.content
         
         soup = BeautifulSoup(html, 'lxml')
@@ -918,7 +930,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             logger.warning(f"Written html to {category}_{product_url}.html")
             logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
             logger.warning("Trying again...")
-            time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else time.sleep(random.randint(2, 5))
+            time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             if my_proxy is not None:
                 my_proxy.goto_product_listing(category)
 
@@ -975,7 +987,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 cookies = {**cookies, **dict(response.cookies)}
             assert response.status_code == 200
             
-            time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
+            time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
 
@@ -1029,7 +1041,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 qanda_url = server_url + next_url
                 curr += 1
                 rand = random.randint(4, 17)
-                time.sleep(rand) if not speedup else time.sleep(random.randint(3, 8))
+                time.sleep(rand) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(3, 8)))
                 rand = random.randint(0, 100)
                 
                 if rand <= 15:
@@ -1038,9 +1050,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         # Prev URL doesnt have full path
                         t_prev = server_url + t_prev
                     response = my_proxy.get(t_prev, referer=t_curr, product_url=product_url, ref_count='constant')
-                    time.sleep(random.randint(6, 12)) if not speedup else time.sleep(random.randint(2, 5))
+                    time.sleep(random.randint(6, 12)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
                     response = my_proxy.get(t_curr, referer=t_prev, product_url=product_url, ref_count='constant')
-                    time.sleep(random.randint(6, 12)) if not speedup else time.sleep(random.randint(2, 5))
+                    time.sleep(random.randint(6, 12)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
 
                 if qanda_pages is not None and curr == qanda_pages:
                     error_logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
@@ -1054,7 +1066,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     response = my_proxy.get(qanda_url, referer=prev_url, product_url=product_url, ref_count='constant')
                     assert response.status_code == 200
 
-                    time.sleep(random.randint(4, 5) + random.uniform(0, 1)) if not speedup else time.sleep(random.randint(2, 5) + random.uniform(0, 1))
+                    time.sleep(random.randint(4, 5) + random.uniform(0, 1)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5) + random.uniform(0, 1)))
                     
                     # Now sort by date
                     logger.info("Now moving into sorting by most recent.")
@@ -1112,7 +1124,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     logger.error(f"Content = {response.content}")
 
                 assert response.status_code == 200
-                time.sleep(5) if not speedup else time.sleep(random.randint(2, 5))
+                time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
                 
                 html = response.content
                 soup = BeautifulSoup(html, 'lxml')
@@ -1168,7 +1180,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
                     assert response.status_code == 200
 
-                    time.sleep(random.randint(4, 5) + random.uniform(0, 1)) if not speedup else time.sleep(random.randint(2, 5) + random.uniform(0, 1))
+                    time.sleep(random.randint(4, 5) + random.uniform(0, 1)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5) + random.uniform(0, 1)))
 
                     prev_url = reviews_url
                     reviews_url = reviews_url + f"&sortBy=recent&pageNumber={curr+1}"
@@ -1201,7 +1213,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     reviews_url = next_url
                     curr += 1
                     rand = random.randint(4, 17)
-                    time.sleep(rand) if not speedup else time.sleep(random.randint(3, 8))
+                    time.sleep(rand) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(3, 8)))
                     rand = random.randint(0, 100)
                     
                     if rand <= 15 and curr > 1:
@@ -1299,7 +1311,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         while True:
             if my_proxy is not None:
                 logger.warning(f"Cookies is Empty. Changing identity and trying again...")
-                time.sleep(random.randint(4, 16) + random.uniform(0, 2)) if not speedup else time.sleep(random.randint(4, 8))
+                time.sleep(random.randint(4, 16) + random.uniform(0, 2)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(4, 8)))
                 my_proxy.change_identity()
                 response = my_proxy.get(server_url)
                 cookies = response.cookies
@@ -1311,7 +1323,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     if my_proxy is not None:
         my_proxy.cookies = cookies
     
-    time.sleep(10) if not speedup else time.sleep(random.randint(2, 5))
+    time.sleep(10) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
 
     final_results = dict()
 
