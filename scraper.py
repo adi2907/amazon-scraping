@@ -1258,7 +1258,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     return final_results
 
 
-def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False):
+def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -1325,11 +1325,13 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             fetch_category(category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url=server_url, no_listing=no_listing, detail=detail)
     else:
         no_sub = False
-        num_workers = max(1, min(32, len(listing_categories)))
+        if num_workers is None or not isinstance(num_workers, int):
+            num_workers = max(1, min(32, len(listing_categories)))
 
-        if num_workers == 1:
+        if len(listing_categories) == 1:
             # Only one category. Split it into pages
-            num_workers = 5
+            if num_workers == 1:
+                num_workers = 5
             logger.info(f"Only one category. Splitting work into {num_workers} threads")
             
             categories = [listing_categories[0] for _ in range(1, num_workers+1)]
@@ -1398,6 +1400,7 @@ if __name__ == '__main__':
     parser.add_argument('--override', help='To scape using existing filters at utils.py', default=False, action='store_true')
     parser.add_argument('--no_listing', help='To specify if listing is needed while scraping details', default=False, action='store_true')
     parser.add_argument('--concurrent_jobs', help='To specify if listing + details need to be done', default=False, action='store_true')
+    parser.add_argument('--num_workers', help='To specify number of worker threads', type=int, default=0)
 
     args = parser.parse_args()
 
@@ -1417,6 +1420,10 @@ if __name__ == '__main__':
     override = args.override
     no_listing = args.no_listing
     concurrent_jobs = args.concurrent_jobs
+    num_workers = args.num_workers
+
+    if num_workers <= 0:
+        num_workers = None
 
     no_scrape = False
 
@@ -1534,9 +1541,9 @@ if __name__ == '__main__':
                 else:
                     # Override
                     if isinstance(pages, list):
-                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing)
+                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers)
                     else:
-                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing)
+                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers)
                 """
                 if detail == True:
                     for category in categories:
