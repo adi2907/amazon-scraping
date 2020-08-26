@@ -231,7 +231,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         if my_proxy is None:
             session = requests.Session()
         
-        db_session = Session()
+        db_session = scoped_session(Session)
     else:
         pass
     
