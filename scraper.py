@@ -966,6 +966,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + '?isAnswered=true'
         
         while qanda_url is not None:
+            if qanda_pages <= 0:
+                break
             if my_proxy is None:
                 response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
             else:
@@ -1110,6 +1112,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         MAX_RETRIES = 3
 
         while reviews_url is not None:
+            if review_pages <= 0:
+                break
             if reviews_url is not None and product_url is not None:
                 if my_proxy is None:
                     response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + prev_url}, cookies=cookies)
