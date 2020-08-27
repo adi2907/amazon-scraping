@@ -311,7 +311,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                     if result is None:
                         return True
                     else:
-                        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
+                        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], ""))
                         for field in update_fields:
                             setattr(result, field, row[field])
                         try:
@@ -363,7 +363,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                     if result is None:
                         pass
                     else:
-                        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
+                        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], ""))
                         for field in update_fields:
                             setattr(result, field, row[field])
                         # Update the date
@@ -404,7 +404,7 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
     except exc.IntegrityError:
         session.rollback()
         result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
-        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) is None)
+        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], ""))
         for field in update_fields:
             setattr(result, field, row[field])
         try:
