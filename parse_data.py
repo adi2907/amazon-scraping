@@ -275,18 +275,20 @@ def get_product_data(soup, html=None):
         
         if flag == True:
             # For some categories, this may work
-            headers = detail_node.find_all("table")
+            tables = detail_node.find_all("table")
+            titles = detail_node.find_all("h1")
+
             flag = True
-            if headers is not None:
-                for header in headers:
+            if tables is not None:
+                for idx, table in enumerate(tables):
                     flag = False
-                    desc = header.text.strip()
+                    try:
+                        desc = titles[idx].text.strip()
+                    except:
+                        desc = f'Product Details {idx}'
                     details[desc] = dict()
                     # Per Table basis
-                    table = detail_node.find("table")
-                    if table is None:
-                        continue
-                    labels, values = table.find_all("td", class_="label"), table.find_all("td", class_="value")
+                    labels, values = table.find_all("th"), table.find_all("td")
                     if len(labels) != len(values):
                         continue
                     for label, value in zip(labels, values):
