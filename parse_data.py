@@ -256,8 +256,10 @@ def get_product_data(soup, html=None):
     else:
         details = dict()
         headers = detail_node.find_all("div", class_="secHeader")
+        flag = True
         if headers is not None:
             for header in headers:
+                flag = False
                 desc = header.text.strip()
                 details[desc] = dict()
                 # Per Table basis
@@ -270,6 +272,29 @@ def get_product_data(soup, html=None):
                 for label, value in zip(labels, values):
                     _label, _value = label.text.strip(), value.text.strip()
                     details[desc][_label] = _value
+        
+        if flag == True:
+            # For some categories, this may work
+            headers = detail_node.find_all("table")
+            flag = True
+            if headers is not None:
+                for header in headers:
+                    flag = False
+                    desc = header.text.strip()
+                    details[desc] = dict()
+                    # Per Table basis
+                    table = detail_node.find("table")
+                    if table is None:
+                        continue
+                    labels, values = table.find_all("td", class_="label"), table.find_all("td", class_="value")
+                    if len(labels) != len(values):
+                        continue
+                    for label, value in zip(labels, values):
+                        _label, _value = label.text.strip(), value.text.strip()
+                        details[desc][_label] = _value
+            if flag == True:
+                # Is Empty
+                pass
 
         results['product_details'] = details
     
@@ -524,6 +549,11 @@ if __name__ == '__main__':
     #results, _ = get_product_info(soup)
     #print(results)
     #print(len(results.keys()))
+
+    soup = init_parser('headphones/bug')
+    results = get_product_data(soup)
+    print(results['product_details'])
+    exit(0)
 
     # Get the Product Data (Including Customer Reviews)
     #soup =  init_parser('headphones/B07HZ8JWCL')
