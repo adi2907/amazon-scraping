@@ -187,16 +187,14 @@ def store_to_cache(key, value):
     global cache_file, use_cache
     global cache
     try:
-        with SqliteDict(cache_file) as mydict:
+        with SqliteDict(cache_file, autocommit=True) as mydict:
             mydict[key] = value
-            mydict.commit()
     except RecursionError:
         error_logger.critical(f"Recursion Depth exceeded when trying to store key -> {key}")
         logger.info("Trying to convert to string and store...")
         try:
-            with SqliteDict(cache_file) as mydict:
+            with SqliteDict(cache_file, autocommit=True) as mydict:
                 mydict[key] = str(value)
-                mydict.commit()
         except RecursionError:
             logger.info(f"Trying to store to Redis Cache")
             try:
@@ -399,9 +397,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
             if use_cache:
                 # Store to cache first
-                with SqliteDict(cache_file) as mydict:
+                with SqliteDict(cache_file, autocommit=True) as mydict:
                     mydict[f"LISTING_{category}_PAGE_{curr_page}"] = page_results
-                    mydict.commit()
             
             if no_listing == False:
                 # Dump the results of this page to the DB
@@ -507,9 +504,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         
         if use_cache:
             # Store to cache first
-            with SqliteDict(cache_file) as mydict:
+            with SqliteDict(cache_file, autocommit=True) as mydict:
                 mydict[f"LISTING_{category}_PAGE_{curr_page}"] = results
-                mydict.commit()
 
         if USE_DB == True:
             # Insert to the DB
@@ -864,14 +860,13 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     product_id = parse_data.get_product_id(product_url)
 
     # Store to cache first
-    with SqliteDict(cache_file) as mydict:
+    with SqliteDict(cache_file, autocommit=True) as mydict:
         try:
             _set = mydict[f"DETAILS_SET_{category}"]
         except KeyError:
             _set = set()
         _set.add(product_id)
         mydict[f"DETAILS_SET_{category}"] = _set
-        mydict.commit()
 
     if review_pages is None:
         review_pages = 1000
@@ -942,10 +937,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     if use_cache:
         # Store to cache first
-        with SqliteDict(cache_file) as mydict:
+        with SqliteDict(cache_file, autocommit=True) as mydict:
             mydict[f"DETAILS_{product_id}"] = details
             mydict[f"IS_SPONSORED_{product_id}"] = sponsored
-            mydict.commit()
 
     if USE_DB == True:
         # Insert to the DB
@@ -1031,9 +1025,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
             if use_cache:
                 # Store to cache first
-                with SqliteDict(cache_file) as mydict:
+                with SqliteDict(cache_file, autocommit=True) as mydict:
                     mydict[f"QANDA_{product_id}_{curr}"] = qanda
-                    mydict.commit()
             
             if USE_DB == True:
                 # Insert to the DB
@@ -1179,9 +1172,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
                 if use_cache:
                     # Store to cache first
-                    with SqliteDict(cache_file) as mydict:
+                    with SqliteDict(cache_file, autocommit=True) as mydict:
                         mydict[f"REVIEWS_{product_id}_{curr}"] = reviews
-                        mydict.commit()
                 
                 if USE_DB == True:
                     # Insert the reviews to the DB
