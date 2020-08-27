@@ -354,7 +354,7 @@ def get_product_data(soup, html=None):
     return results
 
 
-def get_qanda(soup):
+def get_qanda(soup, page_num=None):
     """Parses the QandA page for a particular product
     """
     results = []
@@ -391,6 +391,7 @@ def get_qanda(soup):
                     answer = pair[1].span.text.strip()
                     qanda['answer'] = answer
                     qanda['date'] = date
+                    qanda['page_num'] = page_num
                     results.append(qanda)
     
     # Get the url of the next page, if it exists
@@ -406,7 +407,7 @@ def get_qanda(soup):
     return results, next_url
 
 
-def get_customer_reviews(soup, content={}):
+def get_customer_reviews(soup, content={}, page_num=None):
     # Now capture the reviews
     reviews = soup.find_all("div", id=re.compile(r'customer_review-.+'))
     if reviews is None:
@@ -496,6 +497,8 @@ def get_customer_reviews(soup, content={}):
                     mapping = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9}
                     data['helpful_votes'] = mapping[value]
 
+            data['page_num'] = page_num
+            
             review_data.append(data)
 
         content['reviews'] = review_data

@@ -1017,7 +1017,17 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 my_proxy.delay *= 2
                 continue
 
-            qanda, next_url = parse_data.get_qanda(soup)
+            try:
+                if first_request == True:
+                    page_num = 0
+                else:
+                    page_num = curr + 1
+            except Exception as e:
+                page_num = None
+                print(e)
+                pass
+
+            qanda, next_url = parse_data.get_qanda(soup, page_num=page_num)
 
             if use_cache:
                 # Store to cache first
@@ -1028,16 +1038,6 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             if USE_DB == True:
                 # Insert to the DB
                 try:
-                    try:
-                        if 'page_num' not in qanda:
-                            if first_request == True:
-                                page_num = 0
-                            else:
-                                page_num = curr + 1
-                            qanda['page_num'] = page_num
-                    except Exception as e:
-                        print(e)
-                        pass
                     status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
                     if status == False:
                         store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
@@ -1165,7 +1165,17 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     my_proxy.delay *= 2
                     continue
 
-                reviews, next_url = parse_data.get_customer_reviews(soup)
+                try:
+                    if first_request == True:
+                        page_num = 0
+                    else:
+                        page_num = curr + 1
+                except Exception as e:
+                    page_num = None
+                    print(e)
+                    pass
+                
+                reviews, next_url = parse_data.get_customer_reviews(soup, page_num=page_num)
 
                 if use_cache:
                     # Store to cache first
@@ -1176,18 +1186,6 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 if USE_DB == True:
                     # Insert the reviews to the DB
                     try:
-                        
-                        try:
-                            if 'page_num' not in reviews:
-                                if first_request == True:
-                                    page_num = 0
-                                else:
-                                    page_num = curr + 1
-                                reviews['page_num'] = page_num
-                        except Exception as e:
-                            print(e)
-                            pass
-
                         status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
                         if not status:
                             store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
