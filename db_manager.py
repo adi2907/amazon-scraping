@@ -23,6 +23,11 @@ pymysql.install_as_MySQLdb()
 # Create the logger
 logger = create_logger(__name__)
 
+productlisting_logger = create_logger('productlisting')
+productdetails_logger = create_logger('productdetails')
+qanda_logger = create_logger('qanda')
+reviews_logger = create_logger('reviews')
+
 # Our Database Schema
 tables = {
     'ProductListing': {
@@ -317,8 +322,9 @@ def insert_product_listing(session, data, table='ProductListing'):
                             logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                             logger.newline()
                             return False
-                except Exception:
+                except Exception as ex:
                     session.rollback()
+                    productlisting_logger.critical(f"{row['product_id']}-> Exception: {ex}")
                     logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                     logger.newline()
                     return False
@@ -371,8 +377,9 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                             logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                             logger.newline()
                             return False
-                except Exception:
+                except Exception as ex:
                     session.rollback()
+                    productlisting_logger.critical(f"{row['product_id']} -> Exception: {ex}")
                     logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                     logger.newline()
                     return False
@@ -403,13 +410,15 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
         try:
             session.commit()
             return True
-        except:
+        except Exception as ex:
             session.rollback()
+            productdetails_logger.critical(f"{row['product_id']} -> Exception: {ex}")
             logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
             logger.newline()
             return False
-    except Exception:
+    except Exception as ex:
         session.rollback()
+        productdetails_logger.critical(f"{row['product_id']} -> Exception: {ex}")
         logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
         logger.newline()
         return False
@@ -427,8 +436,9 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
     try:
         session.commit()
         return True
-    except:
+    except Exception as ex:
         session.rollback()
+        qanda_logger.critical(f"{product_id} -> Exception: {ex}")
         logger.warning(f" For Product {product_id}, there is an error with the data.")
         logger.newline()
         return False
@@ -457,8 +467,9 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
     try:
         session.commit()
         return True
-    except:
+    except Exception as ex:
         session.rollback()
+        reviews_logger.critical(f"{product_id} -> Exception: {ex}")
         logger.warning(f"For Product {product_id}, there is an error with the data.")
         logger.newline()
         return False
