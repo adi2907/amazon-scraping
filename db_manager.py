@@ -84,6 +84,7 @@ tables = {
         'question': 'LONGTEXT',
         'answer': 'LONGTEXT',
         'date': 'DATETIME',
+        'page_num': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'Reviews': {
@@ -97,6 +98,7 @@ tables = {
         'product_info': 'LONGTEXT',
         'verified_purchase': 'INTEGER',
         'helpful_votes': 'INTEGER',
+        'page_num': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'DailyProductListing': {
