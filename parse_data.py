@@ -434,12 +434,20 @@ def get_qanda(soup, page_num=None):
     return results, next_url
 
 
-def get_customer_reviews(soup, content={}, page_num=None):
+def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
     # Now capture the reviews
     reviews = soup.find_all("div", id=re.compile(r'customer_review-.+'))
+    num_reviews = None
+
     if reviews is None:
         content['reviews'] = None
     else:
+        if first_request == True:
+            # Get the number of reviews
+            num_reviews = soup.find("span", {"data-hook": "cr-filter-info-review-count"})
+        else:
+            num_reviews = None
+        
         reviews_url = soup.find("div", id="reviews-medley-footer")
         if reviews_url is not None:
             reviews_url = reviews_url.find("a", {"data-hook": "see-all-reviews-link-foot"})
@@ -539,7 +547,7 @@ def get_customer_reviews(soup, content={}, page_num=None):
             next_url = next_url.find("a")
             if next_url is not None:
                 next_url = next_url.attrs['href']
-    return content, next_url
+    return content, next_url, num_reviews
 
 
 if __name__ == '__main__':
@@ -564,7 +572,7 @@ if __name__ == '__main__':
 
     # Get the customer reviews alone (https://www.amazon.in/Sony-WH-1000XM3-Wireless-Cancellation-Headphones/product-reviews/B07HZ8JWCL/ref=cm_cr_getr_d_paging_btm_prev_1?ie=UTF8&pageNumber=1&reviewerType=all_reviews)
     #soup = init_parser('headphones/reviews_B07HZ8JWCL')
-    #results, next_url = get_customer_reviews(soup)
+    #results, next_url, num_reviews = get_customer_reviews(soup)
     #with open('dump_B07HZ8JWCL_reviews.pkl', 'wb') as f:
     #    pickle.dump(results, f)
     #print(results, next_url)
