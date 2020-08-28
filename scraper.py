@@ -1179,7 +1179,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         logger.warning(f"For {product_id}, num_reviews is None. Taking it from the listing page")
                     else:
                         logger.info(f"For {product_id}, num_reviews is {num_reviews}")
-                        review_pages = round(num_reviews // REVIEWS_PER_PAGE) + 1
+                        total_ratings = num_reviews
                 
                 if use_cache:
                     # Store to cache first
