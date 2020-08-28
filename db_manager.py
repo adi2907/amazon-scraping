@@ -598,11 +598,12 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                     key = f"REVIEWS_{product_id}_{page_num}"
                     if key not in cache:
                         continue
+                    
+                    data = cache[key]
 
                     if len(data) == 0 or 'page_num' not in data[0]:
                         continue
                     
-                    data = cache[key]
                     status = insert_product_reviews(session, data, product_id)
 
                     if status == False:
