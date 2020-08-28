@@ -591,6 +591,7 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                         _q.add(page_num)
                     else:
                         qanda_counter += 1
+                        del cache[key]
                 
                 cache[qanda_errors] = _q
                 
@@ -611,6 +612,7 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                         _r.add(page_num)
                     else:
                         reviews_counter += 1
+                        del cache[key]
                 
                 cache[reviews_errors] = _r
 
