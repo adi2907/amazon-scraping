@@ -445,6 +445,12 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
         if first_request == True:
             # Get the number of reviews
             num_reviews = soup.find("span", {"data-hook": "cr-filter-info-review-count"})
+            if num_reviews is not None:
+                try:
+                    num_reviews = num_reviews.text.strip()
+                    num_reviews = int(num_reviews)
+                except Exception as ex:
+                    print(ex)
         else:
             num_reviews = None
         
