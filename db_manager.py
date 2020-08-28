@@ -622,6 +622,8 @@ if __name__ == '__main__':
 
     session = Session()
 
+    #dump_from_cache(session, 'headphones', cache_file='cache.sqlite3')
+
     #print(fetch_product_ids(session, 'ProductListing', 'books'))
 
     #column = Column('category', String(100))
