@@ -14,6 +14,7 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
+from sqlitedict import SqliteDict
 
 from utils import create_logger
 
@@ -546,6 +547,72 @@ def add_column(engine, table_name: str, column: Column):
 
 def alter_column(engine, table_name: str, column_name: str, new_name: str, data_type: str):
     engine.execute('ALTER TABLE %s CHANGE COLUMN %s %s %s' % (table_name, column_name, new_name, data_type))
+
+
+def dump_from_cache(session, category, cache_file='cache.sqlite3'):
+    with SqliteDict(cache_file, autocommit=True) as cache:
+        key = f"DETAILS_SET_{category}"
+        if key in cache:
+            _set = cache[key]
+            for product_id in _set:
+                logger.info(f"Dumping Product ID {product_id}")
+                
+                qanda_counter = 0
+                reviews_counter = 0
+
+                qanda_errors = f"ERRORS_QANDA_{product_id}"
+                reviews_errors = f"ERRORS_REVIEWS_{product_id}"
+
+                if qanda_errors not in cache:
+                    cache[qanda_errors] = set()
+                
+                _q = cache[qanda_errors]
+                
+                if reviews_errors not in cache:
+                    cache[reviews_errors] = set
+                
+                _r = cache[reviews_errors]
+
+                for page_num in range(10+1):
+                    key = f"QANDA_{product_id}_{page_num}"
+                    if key not in cache:
+                        continue
+
+                    data = cache[key]
+
+                    if len(data) == 0 or 'page_num' not in data[0]:
+                        continue
+
+                    status = insert_product_qanda(session, data, product_id)
+                    
+                    if status == False:
+                        logger.error(f"QandA: Error during dumping PAGE-{page_num} from cache for Product ID {product_id}")
+                        _q.add(page_num)
+                    else:
+                        qanda_counter += 1
+                
+                cache[qanda_errors] = _q
+                
+                for page_num in range(100+1):
+                    key = f"REVIEWS_{product_id}_{page_num}"
+                    if key not in cache:
+                        continue
+
+                    if len(data) == 0 or 'page_num' not in data[0]:
+                        continue
+                    
+                    data = cache[key]
+                    status = insert_product_reviews(session, data, product_id)
+
+                    if status == False:
+                        logger.error(f"Reviews: Error during dumping PAGE - {page_num} from cache for Product ID {product_id}")
+                        _r.add(page_num)
+                    else:
+                        reviews_counter += 1
+                
+                cache[reviews_errors] = _r
+
+                logger.info(f"For PRODUCT ID {product_id}, dumped {qanda_counter} QandA pages, and {reviews_counter} Review Pages")
 
 
 if __name__ == '__main__':
