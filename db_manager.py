@@ -570,7 +570,7 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                 _q = cache[qanda_errors]
                 
                 if reviews_errors not in cache:
-                    cache[reviews_errors] = set
+                    cache[reviews_errors] = set()
                 
                 _r = cache[reviews_errors]
 
