@@ -1172,8 +1172,15 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     print(e)
                     pass
                 
-                reviews, next_url = parse_data.get_customer_reviews(soup, page_num=page_num)
+                reviews, next_url, num_reviews = parse_data.get_customer_reviews(soup, page_num=page_num, first_request=first_request)
 
+                if first_request == True:
+                    if num_reviews is None:
+                        logger.warning(f"For {product_id}, num_reviews is None. Taking it from the listing page")
+                    else:
+                        logger.info(f"For {product_id}, num_reviews is {num_reviews}")
+                        review_pages = round(num_reviews // REVIEWS_PER_PAGE) + 1
+                
                 if use_cache:
                     # Store to cache first
                     with SqliteDict(cache_file, autocommit=True) as mydict:
