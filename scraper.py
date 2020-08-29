@@ -430,15 +430,22 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             continue
 
                         product_id = None
+                        rescrape = 0
 
                         try:
                             product_id = parse_data.get_product_id(product_url)
                             if product_id is not None:
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                                 if obj is not None:
-                                    logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                    error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                    continue
+                                    if hasattr(obj, 'product_details') and obj.product_details in (None, {}, '{}'):
+                                        rescrape = 1
+                                        error_logger.info(f"Product ID {product_id} has NULL product_details. Scraping it again...")
+                                        if hasattr(obj, 'completed') and obj.completed is None:
+                                            rescrape = 2
+                                    else:
+                                        logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                        error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                        continue
                                 else:
                                     logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
                                     error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
@@ -450,7 +457,15 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             else:
                                 total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
                             
-                            _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
+                            if rescrape == 0:
+                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
+                            elif rescrape == 1:
+                                # Only details
+                                _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
+                            elif rescrape == 2:
+                                # Whole thing again
+                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
+
                             idx += 1
                         except Exception as ex:
                             if product_id is not None:
