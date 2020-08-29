@@ -1139,6 +1139,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
         while reviews_url is not None:
             if review_pages <= 0:
+                dont_update = True
                 break
             if reviews_url is not None and product_url is not None:
                 if my_proxy is None:
@@ -1302,19 +1303,22 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         is_completed = True
                         break
     
-    obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-    if obj is not None:
-        logger.info(f"Product with ID {product_id} is completed = {is_completed}")
-        if hasattr(obj, 'completed'):
-            setattr(obj, 'completed', is_completed)
-            try:
-                db_session.commit()
-            except:
-                db_session.rollback()
-                logger.warning(f"For Product {product_id}, there is an error with the data.")
-                logger.newline()
+    if dont_update == True:
+        pass
     else:
-        error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+        obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+        if obj is not None:
+            logger.info(f"Product with ID {product_id} is completed = {is_completed}")
+            if hasattr(obj, 'completed'):
+                setattr(obj, 'completed', is_completed)
+                try:
+                    db_session.commit()
+                except:
+                    db_session.rollback()
+                    logger.warning(f"For Product {product_id}, there is an error with the data.")
+                    logger.newline()
+        else:
+            error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
 
     time.sleep(3)
 
