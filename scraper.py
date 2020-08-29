@@ -162,6 +162,7 @@ Session = sessionmaker(bind=engine)
 db_session = Session()
 
 last_product_detail = False
+terminate = False
 
 
 def exit_gracefully(signum, frame):
@@ -174,6 +175,7 @@ def exit_gracefully(signum, frame):
         if input("\nReally quit? (y/n)> ").lower().startswith('y'):
             logger.info("Terminating after finishing pending product Details...")
             last_product_detail = True
+            terminate = True
 
     except KeyboardInterrupt:
         logger.info("Exiting Immediately...")
@@ -1651,6 +1653,8 @@ if __name__ == '__main__':
                             curr_page += 1
                     else:
                         # Product ids are also there
+                        jobs = []
+                        ids = []
                         for product_id in product_ids:
                             obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': product_id}))
                             if obj is None:
@@ -1671,12 +1675,42 @@ if __name__ == '__main__':
                             # Scrape the product
                             product_url = obj.product_url
                             category = obj.category
-                            try: 
-                                product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                            except Exception as ex:
-                                logger.critical(f"{ex}")
-                                logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
-                                logger.newline()
+
+                            jobs.append([category, product_url, review_pages, qanda_pages, threshold_date])
+                            ids.append(product_id)
+                            
+                            if use_multithreading == False:
+                                try: 
+                                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                                except Exception as ex:
+                                    logger.critical(f"{ex}")
+                                    logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
+                                    logger.newline()
+                        
+                        if use_multithreading == True:
+                            num_jobs = len(jobs)
+                            for idx, jobs in enumerate(jobs[::num_workers]):
+                                if terminate == True:
+                                    logger.info("Terminating....")
+                                batch_size = min(num_jobs - idx, num_workers)
+                                logger.info(f"Now going for batch from idx {idx}with batch size {batch_size}...")
+                                time.sleep(5)
+                                with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as executor:
+                                    future_to_category = dict()
+                                    for i, job in enumerate(jobs[idx: idx + batch_size]):
+                                        product_id = ids[idx + i]
+                                        future_to_category[executor.submit(scrape_product_detail, *job)] = f"{product_id}_detail"   
+                                    
+                                    for future in concurrent.futures.as_completed(future_to_category):
+                                        product_id = future_to_category[future]
+                                        try:
+                                            _ = future.result()
+                                        except Exception as exc:
+                                            logger.critical('%r generated an exception: %s' % (category, exc))
+                                            exception_logger.critical(f"Thread {product_id} generated an exception {exc}")
+                                            exception_logger.critical("".join(traceback.TracebackException.from_exception(exc).format()))
+                                        else:
+                                            logger.info(f"Product ID {product_id} is done!")
 
         else:
             # Categories is None
