@@ -780,15 +780,24 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                     product_url = final_results[category][curr_page][title]['product_url']
                     if product_url is not None:
                         product_id = parse_data.get_product_id(product_url)
+                        only_detail = False
                         if product_id is not None:
                             obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                             if obj is not None:
-                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                continue
+                                if hasattr(obj, 'product_details') and obj.product_details not in ({}, [], '', '{}', '[]', None):
+                                    logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                    continue
+                                else:
+                                    # We only need to scrape product detail page
+                                    logger.info(f"Product with ID {product_id} has NULL product_details. Scraping only details page")
+                                    only_detail = True
                             else:
                                 logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
                         
-                        _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
+                        if only_detail == True:
+                            _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=threshold_date, listing_url=curr_url)
+                        else:
+                            _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
                         idx += 1
 
                         if last_product_detail == True:
