@@ -624,6 +624,8 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
 def update_brands_and_models(session, table='ProductDetails'):
     instances = session.query(table_map[table]).all()
     for instance in instances:
+        if instance.brand is not None and instance.model is not None:
+            continue
         brand = None
         _model = None
         if instance.product_details not in (None, {}):
