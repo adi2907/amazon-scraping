@@ -301,15 +301,19 @@ def get_product_data(soup, html=None):
         results['product_details'] = details
     
     brand = None
+    model = None
     try:
         if 'product_details' in results:
             if results['product_details'] not in (None, {}):
-                # Get the brand
+                # Get the brand and model
                 if 'Technical Details' in results['product_details']:
                     if 'Brand' in results['product_details']['Technical Details']:
                         brand = results['product_details']['Technical Details']['Brand']
                     elif 'Manufacturer' in results['product_details']['Technical Details']:
                         brand = results['product_details']['Technical Details']['Manufacturer']
+                    
+                    if 'Model' in results['product_details']['Technical Details']:
+                        model = results['product_details']['Technical Details']['Model']
                 else:
                     # Get it from byline_info
                     if 'byline_info' in results and 'info' in results['byline_info']:
@@ -321,6 +325,7 @@ def get_product_data(soup, html=None):
     except Exception as ex:
         print(ex)
     results['brand'] = brand
+    results['model'] = model
     
     # Customer Q&A
     customer_node = soup.find("div", class_="askWidgetQuestions askLiveSearchHide")

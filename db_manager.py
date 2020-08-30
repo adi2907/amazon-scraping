@@ -64,6 +64,7 @@ tables = {
         'is_sponsored': 'BOOLEAN',
         'completed': 'BOOLEAN',
         'brand': 'TEXT(100)',
+        'model': 'TEXT(100)',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
