@@ -1007,10 +1007,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         qanda_pages = 0
 
         num_reviews_none = 0
-        num_reviews_not_none = db_session.query(Reviews).filter(Reviews.product_id == product_id, Reviews.page_num != None).count()
+        num_reviews_not_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num != None).count()
         
         if num_reviews_not_none == 0:
-            num_reviews_none = db_session.query(Reviews).filter(Reviews.product_id == product_id, Reviews.page_num == None).count()
+            num_reviews_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num == None).count()
         
         curr_reviews = max(num_reviews_not_none, num_reviews_none)
     
@@ -1755,7 +1755,7 @@ if __name__ == '__main__':
                             product_url = obj.product_url
                             category = obj.category
 
-                            jobs.append([category, product_url, review_pages, qanda_pages, threshold_date])
+                            jobs.append([category, product_url, review_pages, qanda_pages, threshold_date, None, None, True])
                             ids.append(product_id)
                             
                             if use_multithreading == False:
@@ -1768,7 +1768,7 @@ if __name__ == '__main__':
                         
                         if use_multithreading == True:
                             num_jobs = len(jobs)
-                            for idx, jobs in enumerate(jobs[::num_workers]):
+                            for idx, _job in enumerate(jobs[::num_workers]):
                                 if terminate == True:
                                     logger.info("Terminating....")
                                 batch_size = min(num_jobs - idx, num_workers)
