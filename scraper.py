@@ -1007,10 +1007,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         qanda_pages = 0
 
         num_reviews_none = 0
-        num_reviews_not_none = db_session.query(Reviews).filter(product_id=product_id, Reviews.page_num != None).count()
+        num_reviews_not_none = db_session.query(Reviews).filter(Reviews.product_id == product_id, Reviews.page_num != None).count()
         
         if num_reviews_not_none == 0:
-            num_reviews_none = db_session.query(Reviews).filter(product_id=product_id, Reviews.page_num == None).count()
+            num_reviews_none = db_session.query(Reviews).filter(Reviews.product_id == product_id, Reviews.page_num == None).count()
         
         curr_reviews = max(num_reviews_not_none, num_reviews_none)
     
