@@ -885,6 +885,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     product_id = parse_data.get_product_id(product_url)
 
+    dont_update = False
+
     # Store to cache first
     with SqliteDict(cache_file, autocommit=True) as mydict:
         try:
