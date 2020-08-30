@@ -660,6 +660,27 @@ def update_brands_and_models(session, table='ProductDetails'):
                 print(ex)
 
 
+def update_completed(session, table='ProductDetails'):
+    from sqlalchemy import func
+
+    instances = session.query(table_map[table]).all()
+    for instance in instances:
+        if instance.completed == False:
+            # Check reviews
+            num_reviews_not_none = 0
+            num_reviews_none = session.query(table_map['Reviews']).filter(Reviews.page_num == None).count()
+            if num_reviews_none == 0:
+                num_reviews_not_none = session.query(table_map['Reviews']).filter(Reviews.page_num != None).count()
+            else:
+                if num_reviews_none >= 900 or num_reviews_not_none >= 900:
+                    instance.completed = True
+                    try:
+                        session.commit()
+                    except Exception as ex:
+                        session.rollback()
+                        print(ex)
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)

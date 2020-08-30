@@ -940,6 +940,16 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         # Get the product details
         try:
             details = parse_data.get_product_data(soup, html=html)
+            # Now check model
+            '''
+            if 'model' in details:
+                model = details['model']
+                if model is not None:
+                    obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'model': f'{product_id}'}))
+                    if obj is not None:
+                        logger.info(f"For product {product_id}, encountered duplicate Model. Exiting...")
+                        return None
+            '''
             break
         except ValueError:
             #DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
