@@ -300,6 +300,28 @@ def get_product_data(soup, html=None):
 
         results['product_details'] = details
     
+    brand = None
+    try:
+        if 'product_details' in results:
+            if results['product_details'] not in (None, {}):
+                # Get the brand
+                if 'Technical Details' in results['product_details']:
+                    if 'Brand' in results['product_details']['Technical Details']:
+                        brand = results['product_details']['Technical Details']['Brand']
+                    elif 'Manufacturer' in results['product_details']['Technical Details']:
+                        brand = results['product_details']['Technical Details']['Manufacturer']
+                else:
+                    # Get it from byline_info
+                    if 'byline_info' in results and 'info' in results['byline_info']:
+                        brand = results['byline_info']['info']
+                        if brand.startswith("Visit the "):
+                            brand = brand.replace("Visit the ", "")
+                            if brand.strip()[-1] == 'store':
+                                brand = brand.replace(' store', '')
+    except Exception as ex:
+        print(ex)
+    results['brand'] = brand
+    
     # Customer Q&A
     customer_node = soup.find("div", class_="askWidgetQuestions askLiveSearchHide")
     if customer_node is None:

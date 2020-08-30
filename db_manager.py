@@ -63,6 +63,7 @@ tables = {
         'subcategories': 'LONGTEXT',
         'is_sponsored': 'BOOLEAN',
         'completed': 'BOOLEAN',
+        'brand': 'TEXT(100)',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
