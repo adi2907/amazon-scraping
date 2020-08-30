@@ -591,7 +591,7 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                     if status == False:
                         logger.error(f"QandA: Error during dumping PAGE-{page_num} from cache for Product ID {product_id}")
                         _q.add(page_num)
-                        continue
+                        break
                     else:
                         qanda_counter += 1
                         del cache[key]
@@ -613,7 +613,7 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                     if status == False:
                         logger.error(f"Reviews: Error during dumping PAGE - {page_num} from cache for Product ID {product_id}")
                         _r.add(page_num)
-                        continue
+                        break
                     else:
                         reviews_counter += 1
                         del cache[key]
