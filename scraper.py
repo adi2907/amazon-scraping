@@ -798,12 +798,17 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                     if product_url is not None:
                         product_id = parse_data.get_product_id(product_url)
                         only_detail = False
+                        incomplete = False
                         if product_id is not None:
                             obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                             if obj is not None:
                                 if hasattr(obj, 'product_details') and obj.product_details not in ({}, [], '', '{}', '[]', None):
-                                    logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                    continue
+                                    if obj.completed == True:
+                                        logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                        continue
+                                    else:
+                                        logger.info(f"Product with ID {product_id} not yet completed. Scraping only details page")
+                                        incomplete = True
                                 else:
                                     # We only need to scrape product detail page
                                     logger.info(f"Product with ID {product_id} has NULL product_details. Scraping only details page")
@@ -814,7 +819,10 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                         if only_detail == True:
                             _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=threshold_date, listing_url=curr_url)
                         else:
-                            _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
+                            if incomplete == True:
+                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, incomplete=True)
+                            else:
+                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url)
                         idx += 1
 
                         if last_product_detail == True:
@@ -873,7 +881,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     return final_results
 
 
-def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None, total_ratings=None):
+def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None, total_ratings=None, incomplete=False):
     global my_proxy, session
     global headers, cookies
     global cache
@@ -991,6 +999,20 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             store_to_cache(f"IS_SPONSORED_{product_id}", sponsored)
     
     time.sleep(4)
+
+    curr_reviews = -1
+
+    if incomplete == True:
+        # Don't scrape QandA
+        qanda_pages = 0
+
+        num_reviews_none = 0
+        num_reviews_not_none = db_session.query(Reviews).filter(product_id=product_id, Reviews.page_num != None).count()
+        
+        if num_reviews_not_none == 0:
+            num_reviews_none = db_session.query(Reviews).filter(product_id=product_id, Reviews.page_num == None).count()
+        
+        curr_reviews = max(num_reviews_not_none, num_reviews_none)
     
     # Get the qanda for this product
     if 'customer_lazy' in details and details['customer_lazy'] == True:
@@ -1220,6 +1242,32 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         logger.info(f"For {product_id}, num_reviews is {num_reviews}")
                         store_to_cache(f"NUM_REVIEWS_{product_id}", num_reviews)
                         total_ratings = num_reviews
+
+                        if not isinstance(total_ratings, int):
+                            total_ratings = 1000
+                        
+                        if incomplete == True:
+                            if curr_reviews >= round(int(0.9 * total_ratings)):
+                                # Mark as completed
+                                logger.info(f"For Product {product_id}, marking as completed")
+                                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                                if obj is not None:
+                                    logger.info(f"Product with ID {product_id} is completed = {is_completed}")
+                                    if hasattr(obj, 'completed'):
+                                        setattr(obj, 'completed', is_completed)
+                                        try:
+                                            db_session.commit()
+                                            break
+                                        except:
+                                            db_session.rollback()
+                                            logger.warning(f"For Product {product_id}, there is an error with the data.")
+                                            logger.newline()
+                                            break
+                                else:
+                                    error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+                                    break
+                            else:
+                                logger.info(f"For Product {product_id}, scraping reviews again. Curr Reviews = {curr_reviews}, while num_reviews = {total_ratings}")                                
                 
                 if use_cache:
                     # Store to cache first
