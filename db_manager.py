@@ -628,20 +628,22 @@ def update_brands_and_models(session, table='ProductDetails'):
             continue
         brand = None
         _model = None
-        if instance.product_details not in (None, {}):
+        if instance.product_details not in (None, {}, "{}"):
             # Get the brand
-            if 'Technical Details' in instance.product_details:
-                if 'Brand' in instance.product_details['Technical Details']:
-                    brand = instance.product_details['Technical Details']['Brand']
-                elif 'Manufacturer' in instance.product_details['Technical Details']:
-                    brand = instance.product_details['Technical Details']['Manufacturer']
+            details = json.loads(instance.product_details)
+            if 'Technical Details' in details:
+                if 'Brand' in details['Technical Details']:
+                    brand = details['Technical Details']['Brand']
+                elif 'Manufacturer' in details['Technical Details']:
+                    brand = details['Technical Details']['Manufacturer']
                 
-                if 'Model' in instance.product_details['Technical Details']:
-                    _model = instance.product_details['Technical Details']['Model']
+                if 'Model' in details['Technical Details']:
+                    _model = details['Technical Details']['Model']
             else:
                 # Get it from byline_info
-                if instance.byline_info is not None and 'info' in instance.byline_info:
-                    brand = instance.byline_info['info']
+                byline_info = json.loads(instance.byline_info)
+                if byline_info not in (None, {}, "{}", "") and 'info' in byline_info:
+                    brand = byline_info['info']
                     if brand.startswith("Visit the "):
                         brand = brand.replace("Visit the ", "")
                         if brand.strip()[-1] == 'store':
@@ -665,6 +667,8 @@ if __name__ == '__main__':
     session = Session()
 
     dump_from_cache(session, 'headphones', cache_file='cache.sqlite3')
+    #update_brands_and_models(session, 'ProductDetails')
+    
     exit(0)
 
     #print(fetch_product_ids(session, 'ProductListing', 'books'))
