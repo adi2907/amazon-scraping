@@ -621,6 +621,41 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                 logger.info(f"For PRODUCT ID {product_id}, dumped {qanda_counter} QandA pages, and {reviews_counter} Review Pages")
 
 
+def update_brands_and_models(session, table='ProductDetails'):
+    instances = session.query(table_map[table]).all()
+    for instance in instances:
+        brand = None
+        _model = None
+        if instance.product_details not in (None, {}):
+            # Get the brand
+            if 'Technical Details' in instance.product_details:
+                if 'Brand' in instance.product_details['Technical Details']:
+                    brand = instance.product_details['Technical Details']['Brand']
+                elif 'Manufacturer' in instance.product_details['Technical Details']:
+                    brand = instance.product_details['Technical Details']['Manufacturer']
+                
+                if 'Model' in instance.product_details['Technical Details']:
+                    _model = instance.product_details['Technical Details']['Model']
+            else:
+                # Get it from byline_info
+                if instance.byline_info is not None and 'info' in instance.byline_info:
+                    brand = instance.byline_info['info']
+                    if brand.startswith("Visit the "):
+                        brand = brand.replace("Visit the ", "")
+                        if brand.strip()[-1] == 'store':
+                            brand = brand.replace(' store', '')
+        
+        if brand is not None and _model is not None:
+            # Update
+            setattr(instance, 'brand', brand)
+            setattr(instance, 'model', _model)
+            try:
+                session.commit()
+            except Exception as ex:
+                session.rollback()
+                print(ex)
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
