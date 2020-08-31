@@ -1268,6 +1268,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                     break
                             else:
                                 logger.info(f"For Product {product_id}, scraping reviews again. Curr Reviews = {curr_reviews}, while num_reviews = {total_ratings}")                                
+                                d = Reviews.delete().where(db_manager.Reviews.product_id == product_id)
+                                d.execute()
+                                logger.info(f"ID {product_id}, deleted old reviews")
                 
                 if use_cache:
                     # Store to cache first
