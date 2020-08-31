@@ -666,18 +666,54 @@ def update_completed(session, table='ProductDetails'):
     from sqlalchemy import func
 
     instances = session.query(table_map[table]).all()
+    count = 0
     for instance in instances:
-        if instance.completed == False:
-            # Check reviews
-            num_reviews_not_none = 0
-            num_reviews_none = session.query(table_map['Reviews']).filter(Reviews.page_num == None).count()
-            if num_reviews_none == 0:
-                num_reviews_not_none = session.query(table_map['Reviews']).filter(Reviews.page_num != None).count()
-            else:
-                if num_reviews_none >= 900 or num_reviews_not_none >= 900:
+        if instance.completed is None or instance.completed == False:
+            if instance.num_reviews <= 1000:
+                num_reviews = instance.num_reviews
+                nr = -1
+                with SqliteDict('cache.sqlite3') as mydict:
+                    if f"NUM_REVIEWS_{instance.product_id}" in mydict:
+                        nr = mydict[f"NUM_REVIEWS_{instance.product_id}"]
+                        if not isinstance(nr, int):
+                            nr = 1000
+                if nr > -1:
+                    num_reviews = nr
+                num_reviews_not_none = 0
+                num_reviews_none = session.query(table_map['Reviews']).filter(Reviews.product_id == instance.product_id, Reviews.page_num == None).count()
+                if num_reviews_none == 0:
+                    num_reviews_not_none = session.query(table_map['Reviews']).filter(Reviews.product_id == instance.product_id, Reviews.page_num != None).count()
+                
+                if num_reviews_none >= round(int(0.85 * num_reviews)) or num_reviews_not_none >= round(int(0.85 * num_reviews)):
+                    logger.info(f"{count} - ID {instance.product_id}: Marking as complete...")
                     instance.completed = True
                     try:
                         session.commit()
+                        count += 1
+                    except Exception as ex:
+                        session.rollback()
+                        print(ex)
+            else:
+                # Gt than 1000
+                num_reviews = 1000
+                nr = -1
+                with SqliteDict('cache.sqlite3') as mydict:
+                    if f"NUM_REVIEWS_{instance.product_id}" in mydict:
+                        nr = mydict[f"NUM_REVIEWS_{instance.product_id}"]
+                        if not isinstance(nr, int):
+                            nr = 1000
+                if nr > -1:
+                    num_reviews = nr
+                num_reviews_not_none = 0
+                num_reviews_none = session.query(table_map['Reviews']).filter(Reviews.product_id == instance.product_id, Reviews.page_num == None).count()
+                if num_reviews_none == 0:
+                    num_reviews_not_none = session.query(table_map['Reviews']).filter(Reviews.product_id == instance.product_id, Reviews.page_num != None).count()
+                if num_reviews_none >= round(int(0.9 * num_reviews)) or num_reviews_not_none >= round(int(0.9 * num_reviews)):
+                    logger.info(f"{count} - ID {instance.product_id}: Marking as complete...")
+                    instance.completed = True
+                    try:
+                        session.commit()
+                        count += 1
                     except Exception as ex:
                         session.rollback()
                         print(ex)
@@ -689,7 +725,10 @@ if __name__ == '__main__':
 
     session = Session()
 
-    dump_from_cache(session, 'headphones', cache_file='cache.sqlite3')
+    #instances = session.query(ProductDetails).filter(ProductListing.category == "headphones", ProductListing.product_id == ProductDetails.product_id, ProductDetails.completed == None)
+    #print(", ".join(obj.product_id for obj in instances[30:50]))
+    #update_completed(session)
+    #dump_from_cache(session, 'headphones', cache_file='cache.sqlite3')
     #update_brands_and_models(session, 'ProductDetails')
     
     exit(0)
