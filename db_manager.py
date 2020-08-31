@@ -668,6 +668,7 @@ def update_completed(session, table='ProductDetails'):
     instances = session.query(table_map[table]).all()
     count = 0
     for instance in instances:
+        flag = True
         if instance.completed is None or instance.completed == False:
             if instance.num_reviews <= 1000:
                 num_reviews = instance.num_reviews
@@ -677,8 +678,12 @@ def update_completed(session, table='ProductDetails'):
                         nr = mydict[f"NUM_REVIEWS_{instance.product_id}"]
                         if not isinstance(nr, int):
                             nr = 1000
+                    else:
+                        flag = False
                 if nr > -1:
                     num_reviews = nr
+                if flag == False:
+                    continue
                 num_reviews_not_none = 0
                 num_reviews_none = session.query(table_map['Reviews']).filter(Reviews.product_id == instance.product_id, Reviews.page_num == None).count()
                 if num_reviews_none == 0:
@@ -727,7 +732,7 @@ if __name__ == '__main__':
 
     #instances = session.query(ProductDetails).filter(ProductListing.category == "headphones", ProductListing.product_id == ProductDetails.product_id, ProductDetails.completed == None)
     #print(", ".join(obj.product_id for obj in instances[30:50]))
-    #update_completed(session)
+    update_completed(session)
     #dump_from_cache(session, 'headphones', cache_file='cache.sqlite3')
     #update_brands_and_models(session, 'ProductDetails')
     
