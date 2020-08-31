@@ -1779,13 +1779,13 @@ if __name__ == '__main__':
                             for idx, _job in enumerate(jobs[::num_workers]):
                                 if terminate == True:
                                     logger.info("Terminating....")
-                                batch_size = min(num_jobs - idx, num_workers)
-                                logger.info(f"Now going for batch from idx {idx}with batch size {batch_size}...")
+                                batch_size = min(num_jobs - num_workers*idx, num_workers)
+                                logger.info(f"Now going for batch from idx {idx} with batch size {batch_size}...")
                                 time.sleep(5)
                                 with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as executor:
                                     future_to_category = dict()
-                                    for i, job in enumerate(jobs[idx: idx + batch_size]):
-                                        product_id = ids[idx + i]
+                                    for i, job in enumerate(jobs[num_workers*idx: num_workers*idx + batch_size]):
+                                        product_id = ids[num_workers*idx + i]
                                         future_to_category[executor.submit(scrape_product_detail, *job)] = f"{product_id}_detail"   
                                     
                                     for future in concurrent.futures.as_completed(future_to_category):
