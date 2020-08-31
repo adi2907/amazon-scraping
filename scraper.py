@@ -1269,8 +1269,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             else:
                                 logger.info(f"For Product {product_id}, scraping reviews again. Curr Reviews = {curr_reviews}, while num_reviews = {total_ratings}")                                
                                 try:
-                                    db_manager.Reviews.where(db_manager.Reviews.product_id == product_id).delete(synchronize_session=False)
+                                    db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id).delete(synchronize_session=False)
                                 except Exception as ex:
+                                    error_logger.critical(f"{ex}")
                                     error_logger.critical(f"Product ID {product_id}, deletion failed")
                                     break
                                 logger.info(f"ID {product_id}, deleted old reviews")
