@@ -1252,6 +1252,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                 logger.info(f"For Product {product_id}, marking as completed")
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                                 if obj is not None:
+                                    is_completed = True
                                     logger.info(f"Product with ID {product_id} is completed = {is_completed}")
                                     if hasattr(obj, 'completed'):
                                         setattr(obj, 'completed', True)
