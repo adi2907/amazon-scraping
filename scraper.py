@@ -1254,7 +1254,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                 if obj is not None:
                                     logger.info(f"Product with ID {product_id} is completed = {is_completed}")
                                     if hasattr(obj, 'completed'):
-                                        setattr(obj, 'completed', is_completed)
+                                        setattr(obj, 'completed', True)
                                         try:
                                             db_session.commit()
                                             break
