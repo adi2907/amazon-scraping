@@ -636,11 +636,15 @@ def update_brands_and_models(session, table='ProductDetails'):
             if 'Technical Details' in details:
                 if 'Brand' in details['Technical Details']:
                     brand = details['Technical Details']['Brand']
+                elif 'Brand Name' in details['Technical Details']:
+                    brand = details['Technical Details']['Brand Name']
                 elif 'Manufacturer' in details['Technical Details']:
                     brand = details['Technical Details']['Manufacturer']
                 
                 if 'Model' in details['Technical Details']:
                     _model = details['Technical Details']['Model']
+                elif 'Item model name' in details['Technical Details']:
+                    _model = details['Technical Details']['Item model name']
             else:
                 # Get it from byline_info
                 byline_info = json.loads(instance.byline_info)

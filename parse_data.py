@@ -309,11 +309,15 @@ def get_product_data(soup, html=None):
                 if 'Technical Details' in results['product_details']:
                     if 'Brand' in results['product_details']['Technical Details']:
                         brand = results['product_details']['Technical Details']['Brand']
+                    elif 'Brand Name' in results['product_details']['Technical Details']:
+                        brand = results['product_details']['Technical Details']['Brand Name']
                     elif 'Manufacturer' in results['product_details']['Technical Details']:
                         brand = results['product_details']['Technical Details']['Manufacturer']
                     
                     if 'Model' in results['product_details']['Technical Details']:
                         model = results['product_details']['Technical Details']['Model']
+                    elif 'Item model name' in results['product_details']['Technical Details']:
+                        model = results['product_details']['Technical Details']['Item model name']
                 else:
                     # Get it from byline_info
                     if 'byline_info' in results and 'info' in results['byline_info']:
