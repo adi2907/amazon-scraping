@@ -397,12 +397,6 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             raise ValueError("Yikes. Status is False")
                     except:
                         store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
-                    try:
-                        status = db_manager.insert_daily_product_listing(db_session, page_results)
-                        if not status:
-                            raise ValueError("Yikes. Status is False")
-                    except:
-                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
