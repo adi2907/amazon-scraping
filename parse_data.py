@@ -275,6 +275,7 @@ def get_product_data(soup, html=None):
         
         if flag == True:
             # For some categories, this may work
+            # Ex: headphones
             tables = detail_node.find_all("table")
             titles = detail_node.find_all("h1")
 
@@ -297,8 +298,30 @@ def get_product_data(soup, html=None):
             if flag == True:
                 # Is Empty
                 pass
+    
+    if detail_node is None:
+        # Possible Empty. Ceiling Fan?
+        detail_node = soup.find("div", id="detailBullets_feature_div")
+        if detail_node is not None:
+            details = dict()
+            flag = True
+            tables = detail_node.find_all("span", class_="a-list-item")
+            desc = "Product Details"
+            details[desc] = dict()
+            for idx, detail in enumerate(tables):
+                flag = False
+                elements = detail.find_all("span")
+                try:
+                    label, value = elements[0].text.strip().replace("\n:", "").strip(), elements[1].text.strip()
+                    details[desc][label] = value
+                except:
+                    pass
+            
+            if flag == True:
+                # Is Empty
+                pass
 
-        results['product_details'] = details
+            results['product_details'] = details
     
     brand = None
     model = None
@@ -597,7 +620,7 @@ if __name__ == '__main__':
     #print(results)
     #print(len(results.keys()))
 
-    soup = init_parser('headphones/bug')
+    soup = init_parser('ceiling fan/sample')
     results = get_product_data(soup)
     print(results['product_details'])
     exit(0)
