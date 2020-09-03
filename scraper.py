@@ -448,10 +448,10 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
                             elif rescrape == 1:
                                 # Only details
-                                _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
+                                _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True)
                             elif rescrape == 2:
                                 # Whole thing again
-                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
+                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True)
 
                             idx += 1
                         except Exception as ex:
