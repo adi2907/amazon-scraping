@@ -493,21 +493,24 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
     reviews = soup.find_all("div", id=re.compile(r'customer_review-.+'))
     num_reviews = None
 
+    if first_request == True:
+        # Get the number of reviews
+        num_reviews = soup.find("span", {"data-hook": "cr-filter-info-review-count"})
+        if num_reviews is not None:
+            try:
+                num_reviews = num_reviews.text.strip().split() # Showing, 1-5, of, 5, reviews
+                try:
+                    num_reviews = int(num_reviews[-2])
+                except:
+                    num_reviews = 1000
+            except Exception as ex:
+                print(ex)
+    else:
+        num_reviews = None
+
     if reviews is None:
         content['reviews'] = None
-    else:
-        if first_request == True:
-            # Get the number of reviews
-            num_reviews = soup.find("span", {"data-hook": "cr-filter-info-review-count"})
-            if num_reviews is not None:
-                try:
-                    num_reviews = num_reviews.text.strip().split() # Showing, 1-5, of, 5, reviews
-                    num_reviews = int(num_reviews[-2])
-                except Exception as ex:
-                    print(ex)
-        else:
-            num_reviews = None
-        
+    else:        
         reviews_url = soup.find("div", id="reviews-medley-footer")
         if reviews_url is not None:
             reviews_url = reviews_url.find("a", {"data-hook": "see-all-reviews-link-foot"})
