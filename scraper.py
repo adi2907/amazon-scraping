@@ -1231,7 +1231,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         total_ratings = num_reviews
 
                         if not isinstance(total_ratings, int):
-                            total_ratings = 1000
+                            total_ratings = 10000
                         
                         if incomplete == True:
                             if curr_reviews >= round(int(0.9 * total_ratings)):
