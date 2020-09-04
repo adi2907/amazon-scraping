@@ -298,6 +298,12 @@ def get_product_data(soup, html=None):
             if flag == True:
                 # Is Empty
                 pass
+            else:
+                # Smartphones
+                results['product_details'] = details
+        else:
+            # Smartphones
+            results['product_details'] = details
     
     if detail_node is None:
         # Possible Empty. Ceiling Fan?
@@ -623,7 +629,7 @@ if __name__ == '__main__':
     #print(results)
     #print(len(results.keys()))
 
-    soup = init_parser('ceiling fan/sample')
+    soup = init_parser('mobile/sample')
     results = get_product_data(soup)
     print(results['product_details'])
     exit(0)
