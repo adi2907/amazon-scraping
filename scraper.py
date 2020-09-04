@@ -1520,7 +1520,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
     parser.add_argument('--pages', help='Number of pages to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=1)
     parser.add_argument('--num_products', help='Number of products per category to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
-    parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int, default=100) # 100 pages Reviews (1000 reviews)
+    parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int, default=1000) # 100 pages Reviews (1000 reviews)
     parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int, default=10) # 10 pages QandA (100 QandAs)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
     parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
