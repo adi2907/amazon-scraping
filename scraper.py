@@ -5,6 +5,7 @@ import json
 import os
 import pickle
 import random
+import re
 import signal
 import sqlite3
 import sys
@@ -409,7 +410,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 for title in final_results[category][curr_page]:
                     product_url = final_results[category][curr_page][title]['product_url']
                     if product_url is not None:
-                        if product_url.startswith(f"/s?k="):
+                        if re.search('^/s\?.+=', product_url) is not None:
                             # Probably the heading. SKip this
                             logger.info(f"Encountered the heading -> Title = {title}")
                             error_logger.info(f"Encountered the heading -> Title = {title}")
