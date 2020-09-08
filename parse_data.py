@@ -335,18 +335,19 @@ def get_product_data(soup, html=None):
         if 'product_details' in results:
             if results['product_details'] not in (None, {}):
                 # Get the brand and model
-                if 'Technical Details' in results['product_details']:
-                    if 'Brand' in results['product_details']['Technical Details']:
-                        brand = results['product_details']['Technical Details']['Brand']
-                    elif 'Brand Name' in results['product_details']['Technical Details']:
-                        brand = results['product_details']['Technical Details']['Brand Name']
-                    elif 'Manufacturer' in results['product_details']['Technical Details']:
-                        brand = results['product_details']['Technical Details']['Manufacturer']
+                key = 'Technical Details' if 'Technical Details' in results['product_details'] else 'Product Details'
+                if key in results['product_details']:
+                    if 'Brand' in results['product_details'][key]:
+                        brand = results['product_details'][key]['Brand']
+                    elif 'Brand Name' in results['product_details'][key]:
+                        brand = results['product_details'][key]['Brand Name']
+                    elif 'Manufacturer' in results['product_details'][key]:
+                        brand = results['product_details'][key]['Manufacturer']
                     
-                    if 'Model' in results['product_details']['Technical Details']:
-                        model = results['product_details']['Technical Details']['Model']
-                    elif 'Item model name' in results['product_details']['Technical Details']:
-                        model = results['product_details']['Technical Details']['Item model name']
+                    if 'Model' in results['product_details'][key]:
+                        model = results['product_details'][key]['Model']
+                    elif 'Item model name' in results['product_details'][key]:
+                        model = results['product_details'][key]['Item model name']
                 else:
                     # Get it from byline_info
                     if 'byline_info' in results and 'info' in results['byline_info']:
