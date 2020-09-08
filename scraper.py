@@ -420,6 +420,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                         product_id = None
                         rescrape = 0
 
+                        jump_page = 0
+
                         try:
                             product_id = parse_data.get_product_id(product_url)
                             if product_id is not None:
@@ -431,9 +433,11 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                         if hasattr(obj, 'completed') and obj.completed is None:
                                             rescrape = 2
                                     else:
-                                        logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                        error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                        continue
+                                        jump_page = 100
+                                        rescrape = 2
+                                        #logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                        #error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                        #continue
                                 else:
                                     logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
                                     error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
@@ -452,7 +456,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True)
                             elif rescrape == 2:
                                 # Whole thing again
-                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True)
+                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True, jump_page=jump_page)
 
                             idx += 1
                         except Exception as ex:
@@ -869,7 +873,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     return final_results
 
 
-def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None, total_ratings=None, incomplete=False):
+def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None, total_ratings=None, incomplete=False, jump_page=0):
     global my_proxy, session
     global headers, cookies
     global cache
@@ -994,13 +998,16 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         # Don't scrape QandA
         qanda_pages = 0
 
-        num_reviews_none = 0
-        num_reviews_not_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num != None).count()
-        
-        if num_reviews_not_none == 0:
-            num_reviews_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num == None).count()
-        
-        curr_reviews = max(num_reviews_not_none, num_reviews_none)
+        if jump_page > 0:
+            curr_reviews = 1000
+        else:
+            num_reviews_none = 0
+            num_reviews_not_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num != None).count()
+            
+            if num_reviews_not_none == 0:
+                num_reviews_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num == None).count()
+            
+            curr_reviews = max(num_reviews_not_none, num_reviews_none)
     
     # Get the qanda for this product
     if 'customer_lazy' in details and details['customer_lazy'] == True:
@@ -1235,7 +1242,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             total_ratings = 10000
                         
                         if incomplete == True:
-                            if curr_reviews >= round(int(0.9 * total_ratings)):
+                            if curr_reviews >= round(int(0.9 * total_ratings)) and jump_page == 0:
                                 # Mark as completed
                                 logger.info(f"For Product {product_id}, marking as completed")
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
@@ -1257,13 +1264,16 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                     break
                             else:
                                 logger.info(f"For Product {product_id}, scraping reviews again. Curr Reviews = {curr_reviews}, while num_reviews = {total_ratings}")                                
-                                try:
-                                    db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id).delete(synchronize_session=False)
-                                except Exception as ex:
-                                    error_logger.critical(f"{ex}")
-                                    error_logger.critical(f"Product ID {product_id}, deletion failed")
-                                    break
-                                logger.info(f"ID {product_id}, deleted old reviews")
+                                if jump_page == 0:
+                                    try:
+                                        db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id).delete(synchronize_session=False)
+                                    except Exception as ex:
+                                        error_logger.critical(f"{ex}")
+                                        error_logger.critical(f"Product ID {product_id}, deletion failed")
+                                        break
+                                    logger.info(f"ID {product_id}, deleted old reviews")
+                                else:
+                                    logger.info(f"Jumping to page {jump_page}")
                 
                 if use_cache:
                     # Store to cache first
@@ -1272,12 +1282,26 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 
                 if USE_DB == True:
                     # Insert the reviews to the DB
-                    try:
-                        status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
-                        if not status:
+                    if jump_page == 0:
+                        try:
+                            status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+                            if not status:
+                                store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                        except:
                             store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
-                    except:
-                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                    else:
+                        if curr <= jump_page:
+                            try:
+                                store_to_cache(f"JUMP_REVIEWS_{product_id}_{curr}", reviews)
+                            except:
+                                pass
+                        else:
+                            try:
+                                status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+                                if not status:
+                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                            except:
+                                store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                 
                 #with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
                 #	pickle.dump(reviews, f)
@@ -1533,6 +1557,7 @@ if __name__ == '__main__':
     parser.add_argument('--concurrent_jobs', help='To specify if listing + details need to be done', default=False, action='store_true')
     parser.add_argument('--num_workers', help='To specify number of worker threads', type=int, default=0)
     parser.add_argument('--worker_pages', help='Page per worker thread for product detail', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
+    parser.add_argument('--jump_page', help='Jump page', type=int, default=0)
 
     args = parser.parse_args()
 
@@ -1554,6 +1579,7 @@ if __name__ == '__main__':
     concurrent_jobs = args.concurrent_jobs
     num_workers = args.num_workers
     worker_pages = args.worker_pages
+    jump_page = args.jump_page
 
     if num_workers <= 0:
         num_workers = None
@@ -1751,7 +1777,7 @@ if __name__ == '__main__':
                             product_url = obj.product_url
                             category = obj.category
 
-                            jobs.append([category, product_url, review_pages, qanda_pages, threshold_date, None, None, True])
+                            jobs.append([category, product_url, review_pages, qanda_pages, threshold_date, None, None, True, jump_page])
                             ids.append(product_id)
                             
                             if use_multithreading == False:

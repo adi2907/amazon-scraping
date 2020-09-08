@@ -4,7 +4,7 @@ import json
 import pickle
 import re
 import sqlite3
-from datetime import datetime
+import datetime
 
 import pymysql
 from decouple import UndefinedValueError, config
@@ -353,7 +353,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                         row[key] = value[key]
                 try:
                     if row['product_id'] is not None:
-                        row['date'] = datetime.now(timezone('Asia/Kolkata'))#.date()
+                        row['date'] = datetime.datetime.now(timezone('Asia/Kolkata'))#.date()
                         row['category'] = category
                         obj = table_map[table]()
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
@@ -370,7 +370,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                         for field in update_fields:
                             setattr(result, field, row[field])
                         # Update the date
-                        date = datetime.now(timezone('Asia/Kolkata'))#.date()
+                        date = datetime.datetime.now(timezone('Asia/Kolkata'))#.date()
                         setattr(result, 'date', date)
                         try:
                             session.commit()
@@ -396,7 +396,7 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
                 row[field] = int(row[field].split()[0].replace(',', '').replace('.', ''))
             elif field in ('curr_price'):
                 row[field] = float(row[field].replace(',', ''))
-    row['created_on'] = datetime.now()
+    row['created_on'] = datetime.datetime.now()
     row['is_sponsored'] = is_sponsored
     try:
         obj = table_map[table]()
@@ -728,15 +728,48 @@ def update_completed(session, table='ProductDetails'):
                         print(ex)
 
 
+
+def find_incomplete(session, table='ProductDetails'):
+    instances = session.query(table_map[table]).all()
+    count = 0
+    pids = []
+    for instance in instances:
+        if instance.completed == True:
+            if instance.num_reviews >= 1000:
+                num_reviews = instance.num_reviews
+                num_reviews_not_none = 0
+                num_reviews_none = session.query(table_map['Reviews']).filter(Reviews.product_id == instance.product_id, Reviews.page_num == None, Reviews.review_date >= datetime.date(2020, 7, 1)).count()
+                if num_reviews_none == 0:
+                    num_reviews_not_none = session.query(table_map['Reviews']).filter(Reviews.product_id == instance.product_id, Reviews.page_num != None, Reviews.review_date >= datetime.date(2020, 7, 1)).count()
+                
+                if max(num_reviews_none, num_reviews_not_none) >= 900 and max(num_reviews_none, num_reviews_not_none) <= 1040:
+                    logger.info(f"{count} - ID {instance.product_id}: Incomplete...")
+                    pids.append(instance.product_id)
+    return pids
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
+    from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
     session = Session()
 
     #instances = session.query(ProductDetails).filter(ProductListing.category == "headphones", ProductListing.product_id == ProductDetails.product_id, ProductDetails.completed == None)
     #print(", ".join(obj.product_id for obj in instances[30:50]))
-    update_completed(session)
+    #pids = find_incomplete(session)
+    
+    #print(", ".join(pid for pid in pids))
+    
+    pids = "B008V6T1IW, B00D75AB6I, B01DEWVZ2C, B01F262EUU, B01FSYQ2A4, B01FSYQ3XA, B06Y5LK5QJ, B07B9CS9FQ, B07BGV6KVG, B07C2VJFDW, B07C2VJXP4, B07C9GHXFW, B07D4CN9T7, B07DD26SDZ, B07GLR7JM5, B07HWMCW7H, B07LG94S6T, B07PR1CL3S, B07Q9CZCDW, B07S13PJ3W, B07S7QXSKS, B07SGY8VP6, B07WCTP58X, B07WSHWNH8, B07XJWTYM2, B0819WLZGT, B081TPVXSG, B082FN5WR4, B082VS5H3Y, B082VSJPD6, B0868TH9SD, B087VNBXP5, B08CVMXPGY, B08CZXQC3Z, B08D11F35P, B08D11QG9Y"
+
+    #pids = ["B008V6T1IW", "B00D75AB6I", "B01DEWVZ2C", "B01F262EUU", "B01FSYQ2A4", "B01FSYQ3XA", "B06Y5LK5QJ", "B07B9CS9FQ", "B07BGV6KVG", "B07C2VJFDW", "B07C2VJXP4", "B07C9GHXFW", "B07D4CN9T7", "B07DD26SDZ", "B07GLR7JM5", "B07HWMCW7H", "B07LG94S6T", "B07PR1CL3S", "B07Q9CZCDW", "B07S13PJ3W", "B07S7QXSKS", "B07SGY8VP6", "B07WCTP58X", "B07WSHWNH8", "B07XJWTYM2", "B0819WLZGT", "B081TPVXSG", "B082FN5WR4", "B082VS5H3Y", "B082VSJPD6", "B0868TH9SD", "B087VNBXP5", "B08CVMXPGY", "B08CZXQC3Z", "B08D11F35P", "B08D11QG9Y"]
+    #for product_id in pids:
+    #    q = session.query(table_map['Reviews']).filter(Reviews.product_id == product_id, Reviews.page_num != None).order_by(desc(Reviews.page_num)).limit(1)
+    #    results = engine.execute(q).fetchall()
+    #    print(product_id, max_page)
+    
+    #update_completed(session)
     #dump_from_cache(session, 'headphones', cache_file='cache.sqlite3')
     #update_brands_and_models(session, 'ProductDetails')
     
