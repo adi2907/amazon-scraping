@@ -999,7 +999,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         qanda_pages = 0
 
         if jump_page > 0:
-            curr_reviews = 1000
+            curr_reviews = REVIEWS_PER_PAGE * jump_page
         else:
             num_reviews_none = 0
             num_reviews_not_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num != None).count()
