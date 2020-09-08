@@ -432,9 +432,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                             rescrape = 2
                                     else:
                                         rescrape = 2
-                                        #logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                        #error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                        #continue
+                                        logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                        error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                        continue
                                 else:
                                     logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
                                     error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
