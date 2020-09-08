@@ -196,7 +196,7 @@ def store_to_cache(key, value):
         error_logger.critical(f"Recursion Depth exceeded when trying to store key -> {key}")
  
 
-def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False):
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0):
     # global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -420,8 +420,6 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                         product_id = None
                         rescrape = 0
 
-                        jump_page = 0
-
                         try:
                             product_id = parse_data.get_product_id(product_url)
                             if product_id is not None:
@@ -433,7 +431,6 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                         if hasattr(obj, 'completed') and obj.completed is None:
                                             rescrape = 2
                                     else:
-                                        jump_page = 100
                                         rescrape = 2
                                         #logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
                                         #error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
