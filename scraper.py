@@ -548,7 +548,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
     # session = requests.Session()
 
     if pages is None:
-        pages = [10000 for _ in categories] # Keeping a big number
+        pages = [100000 for _ in categories] # Keeping a big number
     else:
         if isinstance(pages, int):
             if pages <= 0:
@@ -1239,7 +1239,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         total_ratings = num_reviews
 
                         if not isinstance(total_ratings, int):
-                            total_ratings = 10000
+                            total_ratings = 100000
                         
                         if incomplete == True:
                             if curr_reviews >= round(int(0.9 * total_ratings)) and jump_page == 0:
@@ -1415,12 +1415,12 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     global listing_templates, listing_categories
 
     if pages is None:
-        pages = [10000 for _ in listing_templates] # Keeping a big number
+        pages = [100000 for _ in listing_templates] # Keeping a big number
     else:
         if isinstance(pages, int):
             if pages <= 0:
                 raise ValueError("pages must be a positive integer")
-            pages = [10000 for _ in listing_templates]
+            pages = [100000 for _ in listing_templates]
 
     server_url = 'https://www.amazon.in'
     

@@ -508,7 +508,7 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                 try:
                     num_reviews = int(num_reviews[-2])
                 except:
-                    num_reviews = 10000
+                    num_reviews = 100000
             except Exception as ex:
                 print(ex)
     else:
