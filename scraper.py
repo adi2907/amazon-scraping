@@ -165,6 +165,8 @@ db_session = Session()
 last_product_detail = False
 terminate = False
 
+pids = set()
+
 
 def exit_gracefully(signum, frame):
     # restore the original signal handler as otherwise evil things will happen
@@ -205,6 +207,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
     global use_multithreading
     global cache_file, use_cache
     global USE_DB
+    global pids
 
     if use_multithreading == True:
         my_proxy = proxy.Proxy(OS=OS, stream_isolation=True) # Separate Proxy per thread
@@ -422,6 +425,13 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
                         try:
                             product_id = parse_data.get_product_id(product_url)
+                            if product_id not in pids:
+                                logger.info(f"PID {product_id} not in set")
+                                pids.add(product_id)
+                            else:
+                                logger.info(f"PID {product_id} in set. Skipping this product")
+                                continue
+
                             if product_id is not None:
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                                 if obj is not None:

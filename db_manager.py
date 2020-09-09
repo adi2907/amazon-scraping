@@ -633,18 +633,19 @@ def update_brands_and_models(session, table='ProductDetails'):
         if instance.product_details not in (None, {}, "{}"):
             # Get the brand
             details = json.loads(instance.product_details)
-            if 'Technical Details' in details:
-                if 'Brand' in details['Technical Details']:
-                    brand = details['Technical Details']['Brand']
-                elif 'Brand Name' in details['Technical Details']:
-                    brand = details['Technical Details']['Brand Name']
-                elif 'Manufacturer' in details['Technical Details']:
-                    brand = details['Technical Details']['Manufacturer']
+            key = 'Technical Details' if 'Technical Details' in details else 'Product Details'
+            if key in details:
+                if 'Brand' in details[key]:
+                    brand = details[key]['Brand']
+                elif 'Brand Name' in details[key]:
+                    brand = details[key]['Brand Name']
+                elif 'Manufacturer' in details[key]:
+                    brand = details[key]['Manufacturer']
                 
-                if 'Model' in details['Technical Details']:
-                    _model = details['Technical Details']['Model']
-                elif 'Item model name' in details['Technical Details']:
-                    _model = details['Technical Details']['Item model name']
+                if 'Model' in details[key]:
+                    _model = details[key]['Model']
+                elif 'Item model name' in details[key]:
+                    _model = details[key]['Item model name']
             else:
                 # Get it from byline_info
                 byline_info = json.loads(instance.byline_info)
@@ -757,9 +758,9 @@ if __name__ == '__main__':
 
     #instances = session.query(ProductDetails).filter(ProductListing.category == "headphones", ProductListing.product_id == ProductDetails.product_id, ProductDetails.completed == None)
     #print(", ".join(obj.product_id for obj in instances[30:50]))
-    #pids = find_incomplete(session)
+    pids = find_incomplete(session)
     
-    #print(", ".join(pid for pid in pids))
+    print(", ".join(pid for pid in pids))
     
     pids = "B008V6T1IW, B00D75AB6I, B01DEWVZ2C, B01F262EUU, B01FSYQ2A4, B01FSYQ3XA, B06Y5LK5QJ, B07B9CS9FQ, B07BGV6KVG, B07C2VJFDW, B07C2VJXP4, B07C9GHXFW, B07D4CN9T7, B07DD26SDZ, B07GLR7JM5, B07HWMCW7H, B07LG94S6T, B07PR1CL3S, B07Q9CZCDW, B07S13PJ3W, B07S7QXSKS, B07SGY8VP6, B07WCTP58X, B07WSHWNH8, B07XJWTYM2, B0819WLZGT, B081TPVXSG, B082FN5WR4, B082VS5H3Y, B082VSJPD6, B0868TH9SD, B087VNBXP5, B08CVMXPGY, B08CZXQC3Z, B08D11F35P, B08D11QG9Y"
 
