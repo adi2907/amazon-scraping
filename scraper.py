@@ -1731,7 +1731,9 @@ if __name__ == '__main__':
         if assign_subcategories == True:
             print("Assigning Subcategories")
             assign_template_subcategories(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None)
-            return
+            db_session.close()
+            logger.info("Closed DB connections!")
+            exit(0)
 
         if categories is not None:
             if listing == True:
