@@ -1436,7 +1436,7 @@ def assign_template_subcategories(categories=None, pages=None, dump=False, detai
         for subcategory in subcategory_map[category]:
             # Go to the URL
             url = subcategory_map[category][subcategory]
-            fetch_category(category, url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=[subcategory])
+            fetch_category(category, url, 10000, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=[subcategory])
 
 
 def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None):
@@ -1592,6 +1592,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', help='To specify number of worker threads', type=int, default=0)
     parser.add_argument('--worker_pages', help='Page per worker thread for product detail', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
     parser.add_argument('--jump_page', help='Jump page', type=int, default=0)
+    parser.add_argument('--assign_subcategories', help='Assign Subcategories', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1614,10 +1615,11 @@ if __name__ == '__main__':
     num_workers = args.num_workers
     worker_pages = args.worker_pages
     jump_page = args.jump_page
+    assign_subcategories = args.assign_subcategories
 
     if num_workers <= 0:
         num_workers = None
-
+    
     no_scrape = False
 
     # store the original SIGINT handler
@@ -1639,6 +1641,8 @@ if __name__ == '__main__':
                 if args == 'no_listing':
                     continue
                 if args == 'concurrent_jobs':
+                    continue
+                if args == 'assign_subcategories':
                     continue
                 if arg not in ('config', 'number',) and getattr(args, arg) not in (None, False):
                     raise ValueError("--config file is already specified")
@@ -1723,6 +1727,11 @@ if __name__ == '__main__':
                 my_proxy = my_proxy = proxy.Proxy(OS=OS, use_tor=use_tor)
         
         logger.info(f"no_listing is {no_listing}")
+
+        if assign_subcategories == True:
+            print("Assigning Subcategories")
+            assign_template_subcategories(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None)
+            return
 
         if categories is not None:
             if listing == True:
