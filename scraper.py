@@ -29,7 +29,7 @@ import parse_data
 import proxy
 from utils import (create_logger, customer_reviews_template,
                    listing_categories, listing_templates, qanda_template,
-                   url_template)
+                   subcategory_map, url_template)
 
 logger = create_logger('scraper')
 
@@ -198,7 +198,7 @@ def store_to_cache(key, value):
         error_logger.critical(f"Recursion Depth exceeded when trying to store key -> {key}")
  
 
-def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0):
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None):
     # global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -408,6 +408,23 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             raise ValueError("Yikes. Status is False")
                     except:
                         store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+            
+            if subcategories is not None:
+                for title in final_results[category][curr_page]:
+                    product_url = final_results[category][curr_page][title]['product_url']
+                    if product_url is not None:
+                        product_id = parse_data.get_product_id(product_url)
+                        if product_id is None:
+                            continue
+                        for subcategory in subcategories:
+                            with SqliteDict(cache_file, autocommit=True) as mydict:
+                                try:
+                                    _set = mydict[f"SUBCATEGORIES_{category}_{subcategory}"]
+                                except KeyError:
+                                    _set = set()
+                                _set.add(product_id)
+                                mydict[f"SUBCATEGORIES_{category}_{subcategory}"] = _set
+
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -1410,6 +1427,16 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     time.sleep(3)
 
     return final_results
+
+
+
+def assign_template_subcategories(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None):
+    global subcategory_map
+    for category in subcategory_map:
+        for subcategory in subcategory_map[category]:
+            # Go to the URL
+            url = subcategory_map[category][subcategory]
+            fetch_category(category, url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=[subcategory])
 
 
 def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None):
