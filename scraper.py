@@ -198,7 +198,7 @@ def store_to_cache(key, value):
         error_logger.critical(f"Recursion Depth exceeded when trying to store key -> {key}")
  
 
-def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None):
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False):
     # global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -236,15 +236,19 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         overflow = False
 
         final_results[category] = dict()
-        
+
         if my_proxy is not None:
             if change == True:
                 change = False
                 my_proxy.change_identity()
                 time.sleep(random.randint(2, 5))
             logger.info(f"Proxy Cookies = {my_proxy.cookies}")
-            response = my_proxy.get(base_url, referer=server_url)
+            if no_refer == True:
+                response = my_proxy.get(base_url, ref_count='constant')
+            else:
+                response = my_proxy.get(base_url, referer=server_url)
             setattr(my_proxy, 'category', category)
+            logger.info(f"Proxy Cookies = {my_proxy.cookies}")
         else:
             response = session.get(base_url, headers=headers, cookies=cookies)
         
@@ -267,6 +271,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         cooldown = False
 
         while curr_page <= num_pages:
+            logger.info(f"curr_page = {curr_page}")
             time.sleep(6) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
@@ -316,45 +321,27 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                     time.sleep(3)
                     break
             
-            next_page = page_element.find("li", class_="a-last")
-            if next_page is None:
-                if my_proxy is None:
-                    response = session.get(base_url, headers=headers, cookies=cookies)
-                else:
-                    response = my_proxy.get(base_url)
-                
-                if hasattr(response, 'cookies'):
-                    cookies = {**cookies, **dict(response.cookies)}
-                
-                logger.warning(f"Curr Page = {curr_page}. Next Page Element is None")
-
-                time.sleep(3)
-            
-            if next_page is not None:
-                page_url = next_page.find("a")
-                if page_url is None:
-                    logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
-                    error_logger.warning(f"For category {category}, after page {curr_page}, next page is NOT none, but URL is none")
-                    time.sleep(3)
-                    break
-                
-                page_url = page_url.attrs['href']
-
-                if my_proxy is None:       
-                    response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
-                else:
-                    response = my_proxy.get(server_url + page_url, referer=curr_url)
-                
-                if hasattr(response, 'cookies'):
-                    cookies = {**cookies, **dict(response.cookies)}
-                next_url = server_url + page_url
-
-                time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
 
             listing = []
 
             page_results = dict()
             page_results[category] = final_results[category]
+            
+            if subcategories is not None:
+                for title in final_results[category][curr_page]:
+                    product_url = final_results[category][curr_page][title]['product_url']
+                    if product_url is not None:
+                        product_id = parse_data.get_product_id(product_url)
+                        if product_id is None:
+                            continue
+                        for subcategory in subcategories:
+                            with SqliteDict(cache_file, autocommit=True) as mydict:
+                                try:
+                                    _set = mydict[f"SUBCATEGORIES_{category}_{subcategory}"]
+                                except KeyError:
+                                    _set = set()
+                                _set.add(product_id)
+                                mydict[f"SUBCATEGORIES_{category}_{subcategory}"] = _set
 
             temp = deepcopy(page_results)
 
@@ -409,22 +396,6 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                     except:
                         store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
             
-            if subcategories is not None:
-                for title in final_results[category][curr_page]:
-                    product_url = final_results[category][curr_page][title]['product_url']
-                    if product_url is not None:
-                        product_id = parse_data.get_product_id(product_url)
-                        if product_id is None:
-                            continue
-                        for subcategory in subcategories:
-                            with SqliteDict(cache_file, autocommit=True) as mydict:
-                                try:
-                                    _set = mydict[f"SUBCATEGORIES_{category}_{subcategory}"]
-                                except KeyError:
-                                    _set = set()
-                                _set.add(product_id)
-                                mydict[f"SUBCATEGORIES_{category}_{subcategory}"] = _set
-
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -493,7 +464,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             logger.info("Completed pending products. Exiting...")
                             return final_results
 
-                        if my_proxy is not None:
+                        if my_proxy is not None and no_ref == False:
                             if num_products is None or idx <= num_products:
                                 response = my_proxy.get(curr_url, referer=server_url + product_url)
                                 time.sleep(random.randint(3, 5)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
@@ -504,15 +475,53 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 overflow = True
                                 break
 
+            # Delete the previous page results
+            if category in final_results and curr_page in final_results[category]:
+                del final_results[category][curr_page]
+            
+            next_page = page_element.find("li", class_="a-last")
+            if next_page is None:
+                logger.warning(f"Curr Page = {curr_page}. Next Page Element is None")
+                if my_proxy is None:
+                    response = session.get(base_url, headers=headers, cookies=cookies)
+                else:
+                    response = my_proxy.get(base_url)
+                
+                if hasattr(response, 'cookies'):
+                    cookies = {**cookies, **dict(response.cookies)}
+
+                time.sleep(3)
+            
+            
             if next_page is None:
                 logger.info("Next Page is None. Exiting catgory...")
                 error_logger.info("Next Page is None. Exiting catgory...")
                 break
+            
+            if next_page is not None:
+                page_url = next_page.find("a")
+                if page_url is None:
+                    logger.warning(f"Curr Page = {curr_page}. Next Page Element is not None, but URL is None")
+                    error_logger.warning(f"For category {category}, after page {curr_page}, next page is NOT none, but URL is none")
+                    time.sleep(3)
+                    break
+                
+                page_url = page_url.attrs['href']
 
+                if my_proxy is None:       
+                    response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
+                else:
+                    logger.info(f"Next page is {server_url + page_url}")
+                    logger.info(f"Proxy Cookies = {my_proxy.cookies}")
+                    response = my_proxy.get(server_url + page_url, referer=curr_url, ref_count='constant')
+                    logger.info("Completed")
+                
+                if hasattr(response, 'cookies'):
+                    cookies = {**cookies, **dict(response.cookies)}
+                next_url = server_url + page_url
 
-            # Delete the previous page results
-            if category in final_results and curr_page in final_results[category]:
-                del final_results[category][curr_page]
+                time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
+            
             
             logger.info(f"Finished Scraping Listing Page {curr_page} of {category}")
             curr_url = next_url
@@ -1436,7 +1445,7 @@ def assign_template_subcategories(categories=None, pages=None, dump=False, detai
         for subcategory in subcategory_map[category]:
             # Go to the URL
             url = subcategory_map[category][subcategory]
-            fetch_category(category, url, 10000, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=[subcategory])
+            fetch_category(category, url, 10000, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=[subcategory], no_refer=True)
 
 
 def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None):

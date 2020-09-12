@@ -1,5 +1,8 @@
 # Represents all the Models used to create our scraper
 
+import os
+import glob
+
 import json
 import pickle
 import re
@@ -749,6 +752,47 @@ def find_incomplete(session, table='ProductDetails'):
     return pids
 
 
+def assign_subcategories(session, category, subcategory, table='ProductDetails'):
+    import parse_data
+    from bs4 import BeautifulSoup
+
+    DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
+
+    if not os.path.exists(DUMP_DIR):
+        return
+
+    files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory}_*")
+    
+    curr = 1
+
+    for filename in files:
+        with open(filename, 'r') as f:
+            html = f.read()
+
+        soup = BeautifulSoup(html, 'lxml')
+        product_info, _ = parse_data.get_product_info(soup)
+
+        for title in product_info:
+            product_id = product_info[title]['product_id']
+            if product_id is None:
+                continue
+            print(curr, product_id, title)
+            curr += 1
+            obj = query_table(session, 'ProductDetails', 'one', filter_cond=({'product_id': product_id}))
+            if obj is not None:
+                if obj.subcategories in ([], None):
+                    obj.subcategories = json.dumps([subcategory])
+                else:
+                    subcategories = json.loads(obj.subcategories)
+                    subcategories.append(subcategory)
+                    obj.subcategories = json.dumps(subcategories)
+                try:
+                    session.commit()
+                except Exception as ex:
+                    session.rollback()
+                    print(ex)
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     from sqlalchemy import desc
@@ -758,9 +802,6 @@ if __name__ == '__main__':
 
     #instances = session.query(ProductDetails).filter(ProductListing.category == "headphones", ProductListing.product_id == ProductDetails.product_id, ProductDetails.completed == None)
     #print(", ".join(obj.product_id for obj in instances[30:50]))
-    pids = find_incomplete(session)
-    
-    print(", ".join(pid for pid in pids))
     
     pids = "B008V6T1IW, B00D75AB6I, B01DEWVZ2C, B01F262EUU, B01FSYQ2A4, B01FSYQ3XA, B06Y5LK5QJ, B07B9CS9FQ, B07BGV6KVG, B07C2VJFDW, B07C2VJXP4, B07C9GHXFW, B07D4CN9T7, B07DD26SDZ, B07GLR7JM5, B07HWMCW7H, B07LG94S6T, B07PR1CL3S, B07Q9CZCDW, B07S13PJ3W, B07S7QXSKS, B07SGY8VP6, B07WCTP58X, B07WSHWNH8, B07XJWTYM2, B0819WLZGT, B081TPVXSG, B082FN5WR4, B082VS5H3Y, B082VSJPD6, B0868TH9SD, B087VNBXP5, B08CVMXPGY, B08CZXQC3Z, B08D11F35P, B08D11QG9Y"
 
@@ -771,9 +812,11 @@ if __name__ == '__main__':
     #    print(product_id, max_page)
     
     #update_completed(session)
-    #dump_from_cache(session, 'headphones', cache_file='cache.sqlite3')
+    #for c in ["smartphones", "ceiling fan", "washing machine", "refrigerator"]:
+    #    dump_from_cache(session, c, cache_file='cache.sqlite3')
     #update_brands_and_models(session, 'ProductDetails')
     
+    assign_subcategories(session, 'headphones', 'wireless')
     exit(0)
 
     #print(fetch_product_ids(session, 'ProductListing', 'books'))
