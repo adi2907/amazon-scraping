@@ -424,11 +424,12 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             if product_id is not None:
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                                 if obj is not None:
-                                    if hasattr(obj, 'date_completed') and obj.date_completed is not None:
-                                        # Go until this point only
-                                        _date = obj.date_completed
-                                    else:
-                                        _date = threshold_date
+                                    if obj.completed == True:
+                                        if hasattr(obj, 'date_completed') and obj.date_completed is not None:
+                                            # Go until this point only
+                                            _date = obj.date_completed
+                                        else:
+                                            _date = threshold_date
 
                                     if hasattr(obj, 'product_details') and obj.product_details in (None, {}, '{}'):
                                         rescrape = 1
