@@ -472,7 +472,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             logger.info("Completed pending products. Exiting...")
                             return final_results
 
-                        if my_proxy is not None and no_ref == False:
+                        if my_proxy is not None and no_refer == False:
                             if num_products is None or idx <= num_products:
                                 response = my_proxy.get(curr_url, referer=server_url + product_url)
                                 time.sleep(random.randint(3, 5)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
