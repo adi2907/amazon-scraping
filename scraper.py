@@ -422,6 +422,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 #continue
 
                             if product_id is not None:
+                                _date = threshold_date
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                                 if obj is not None:
                                     if obj.completed == True:
@@ -442,10 +443,13 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                         if hasattr(obj, 'completed') and obj.completed is None:
                                             rescrape = 2
                                     else:
-                                        rescrape = 2
-                                        logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                        error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                        continue
+                                        if _date != threshold_date:
+                                            rescrape = 0
+                                        else:
+                                            rescrape = 2
+                                            logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                            error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                            continue
                                 else:
                                     logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
                                     error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
