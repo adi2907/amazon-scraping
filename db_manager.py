@@ -68,6 +68,7 @@ tables = {
         'completed': 'BOOLEAN',
         'brand': 'TEXT(100)',
         'model': 'TEXT(100)',
+        'date_completed': 'DATETIME',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -784,6 +785,8 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                     obj.subcategories = json.dumps([subcategory])
                 else:
                     subcategories = json.loads(obj.subcategories)
+                    if subcategory in subcategories:
+                        continue
                     subcategories.append(subcategory)
                     obj.subcategories = json.dumps(subcategories)
                 try:
@@ -791,6 +794,32 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                 except Exception as ex:
                     session.rollback()
                     print(ex)
+
+
+def update_date(session):
+    objs = query_table(session, 'ProductDetails', 'all')
+    count = 0
+    incorrect = 0
+    for obj in objs:
+        if obj.date_completed is None:
+            continue
+        try:
+            i = session.query(Reviews).filter(Reviews.product_id == obj.product_id).order_by(desc('review_date')).first()
+            if i is not None:
+                obj.date_completed = i.review_date
+                try:
+                    session.commit()
+                    count += 1
+                    print(count)
+                except Exception as ex:
+                    session.rollback()
+                    print(ex)
+            else:
+                incorrect += 1
+                print(f"Incorrect - {incorrect}: Possible integrityError with PID {obj.product_id}")
+        except Exception as ex:
+            print(ex)
+            continue
 
 
 if __name__ == '__main__':
@@ -803,28 +832,55 @@ if __name__ == '__main__':
     #instances = session.query(ProductDetails).filter(ProductListing.category == "headphones", ProductListing.product_id == ProductDetails.product_id, ProductDetails.completed == None)
     #print(", ".join(obj.product_id for obj in instances[30:50]))
     
-    pids = "B008V6T1IW, B00D75AB6I, B01DEWVZ2C, B01F262EUU, B01FSYQ2A4, B01FSYQ3XA, B06Y5LK5QJ, B07B9CS9FQ, B07BGV6KVG, B07C2VJFDW, B07C2VJXP4, B07C9GHXFW, B07D4CN9T7, B07DD26SDZ, B07GLR7JM5, B07HWMCW7H, B07LG94S6T, B07PR1CL3S, B07Q9CZCDW, B07S13PJ3W, B07S7QXSKS, B07SGY8VP6, B07WCTP58X, B07WSHWNH8, B07XJWTYM2, B0819WLZGT, B081TPVXSG, B082FN5WR4, B082VS5H3Y, B082VSJPD6, B0868TH9SD, B087VNBXP5, B08CVMXPGY, B08CZXQC3Z, B08D11F35P, B08D11QG9Y"
-
-    #pids = ["B008V6T1IW", "B00D75AB6I", "B01DEWVZ2C", "B01F262EUU", "B01FSYQ2A4", "B01FSYQ3XA", "B06Y5LK5QJ", "B07B9CS9FQ", "B07BGV6KVG", "B07C2VJFDW", "B07C2VJXP4", "B07C9GHXFW", "B07D4CN9T7", "B07DD26SDZ", "B07GLR7JM5", "B07HWMCW7H", "B07LG94S6T", "B07PR1CL3S", "B07Q9CZCDW", "B07S13PJ3W", "B07S7QXSKS", "B07SGY8VP6", "B07WCTP58X", "B07WSHWNH8", "B07XJWTYM2", "B0819WLZGT", "B081TPVXSG", "B082FN5WR4", "B082VS5H3Y", "B082VSJPD6", "B0868TH9SD", "B087VNBXP5", "B08CVMXPGY", "B08CZXQC3Z", "B08D11F35P", "B08D11QG9Y"]
-    #for product_id in pids:
-    #    q = session.query(table_map['Reviews']).filter(Reviews.product_id == product_id, Reviews.page_num != None).order_by(desc(Reviews.page_num)).limit(1)
-    #    results = engine.execute(q).fetchall()
-    #    print(product_id, max_page)
-    
     #update_completed(session)
     #for c in ["smartphones", "ceiling fan", "washing machine", "refrigerator"]:
     #    dump_from_cache(session, c, cache_file='cache.sqlite3')
     #update_brands_and_models(session, 'ProductDetails')
     
-    assign_subcategories(session, 'headphones', 'wireless')
-    exit(0)
+    """
+    count = 0
+    objs = query_table(session, 'ProductDetails', 'all')
+    instances = session.query(ProductDetails).filter(ProductListing.category == "ceiling fan", ProductListing.product_id == ProductDetails.product_id)
+    for obj in instances:
+        if obj is not None:
+            if obj.curr_price is None:
+                continue
+            price = int(round(obj.curr_price))
+            
+            if price < 1500:
+                subcategory = "economy"
+            elif price >= 4000:
+                subcategory = "luxury"
+            elif price >= 1500 and price < 2500:
+                subcategory = "standard"
+            elif price >= 2500 and price < 4000:
+                subcategory = "premium"
+
+            subcategories = obj.subcategories
+            if subcategories is not None:
+                subcategories = json.loads(subcategories)
+                if subcategory not in subcategories:
+                    subcategories.append(subcategory)
+                    obj.subcategories = json.dumps(subcategories)
+            else:
+                obj.subcategories = json.dumps([subcategory])
+            try:
+                session.commit()
+                count += 1
+                print(f"{obj.product_title} {count}")
+            except:
+                session.rollback()
+                print(ex)
+    """
+    #assign_subcategories(session, 'washing machine', 'fully automatic')
 
     #print(fetch_product_ids(session, 'ProductListing', 'books'))
 
     #column = Column('category', String(100))
     #add_column(engine, 'DailyProductListing', column)
     #column = Column('categories', Text())
-    #add_column(engine, 'ProductDetails', column)
+    #update_date(session)
+    exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
     #alter_column(engine, 'ProductDetails', 'categories', 'subcategories', 'Text')
