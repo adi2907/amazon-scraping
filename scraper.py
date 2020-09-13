@@ -419,7 +419,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 pids.add(product_id)
                             else:
                                 logger.info(f"PID {product_id} in set. Skipping this product")
-                                #continue
+                                continue
 
                             if product_id is not None:
                                 _date = threshold_date
