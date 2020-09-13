@@ -429,6 +429,10 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                             # Go until this point only
                                             _date = obj.date_completed
                                             logger.info(f"Set date as {_date}")
+                                            delta = datetime.now() - _date
+                                            if delta.days < 7:
+                                                logger.info(f"Skipping this product. within the last week")
+                                                continue
                                         else:
                                             _date = threshold_date
 
