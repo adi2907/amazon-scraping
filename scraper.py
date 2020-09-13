@@ -419,7 +419,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 pids.add(product_id)
                             else:
                                 logger.info(f"PID {product_id} in set. Skipping this product")
-                                continue
+                                #continue
 
                             if product_id is not None:
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
@@ -428,6 +428,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                         if hasattr(obj, 'date_completed') and obj.date_completed is not None:
                                             # Go until this point only
                                             _date = obj.date_completed
+                                            logger.info(f"Set date as {_date}")
                                         else:
                                             _date = threshold_date
 
