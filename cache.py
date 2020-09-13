@@ -178,6 +178,37 @@ class Cache():
             return history
         else:
             return self.cache.get(key)[start : end]
+    
+    @is_connected
+    def sadd(self, set_name, element):
+        if self.use_redis == True:
+            if isinstance(element, dict) or isinstance(element, uuid.UUID) or isinstance(element, list):
+                element = json.dumps(element)
+            
+            return self.cache.sadd(set_name, element)
+        else:
+            _set = self.cache.get(set_name)
+            if not isinstance(_set, set):
+                raise TypeError
+            _set.add(element)
+            self.cache[set_name] = _set
+            return True
+    
+    @is_connected
+    def sismember(self, set_name, element):
+        if self.use_redis == True:
+            if isinstance(element, dict) or isinstance(element, uuid.UUID) or isinstance(element, list):
+                element = json.dumps(element)
+            
+            return self.cache.sismember(set_name, element)
+        else:
+            _set = self.cache.get(set_name)
+            if not isinstance(_set, set):
+                raise TypeError
+            if element in _set:
+                return True
+            else:
+                return False
 
 
 if __name__ == '__main__':
