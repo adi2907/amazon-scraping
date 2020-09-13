@@ -210,6 +210,13 @@ class Cache():
             else:
                 return False
 
+    @is_connected
+    def smembers(self, set_name):
+        if self.use_redis == True:
+            return self.cache.smembers(set_name)
+        else:
+            raise ValueError("Only allowed in Redis")
+
 
 if __name__ == '__main__':
     print("Testing Cache")
@@ -241,5 +248,11 @@ if __name__ == '__main__':
     cache.delete('foo')
 
     print(cache.get('foo'))
+
+    cache.sadd("sample_set", "1234")
+    cache.sadd("sample_set", "5678")
+    cache.sadd("sample_set", "1234")
+    print(cache.sismember("sample_set", "5678"))
+    print(cache.smembers("sample_set"))
 
     print("Completed!")
