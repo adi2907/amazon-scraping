@@ -1428,6 +1428,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             logger.info(f"Product with ID {product_id} is completed = {is_completed}")
             if hasattr(obj, 'completed'):
                 setattr(obj, 'completed', is_completed)
+                if obj.completed == True:
+                    if hasattr(obj, 'date_completed'):
+                        obj.date_completed = datetime.now()
                 try:
                     db_session.commit()
                 except:
