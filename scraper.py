@@ -271,7 +271,6 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         cooldown = False
 
         while curr_page <= num_pages:
-            logger.info(f"curr_page = {curr_page}")
             time.sleep(6) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
@@ -379,16 +378,18 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 with SqliteDict(cache_file, autocommit=True) as mydict:
                     mydict[f"LISTING_{category}_PAGE_{curr_page}"] = page_results
             
+            if USE_DB == True:
+                try:
+                    status = db_manager.insert_product_listing(db_session, page_results)
+                    if not status:
+                        raise ValueError("Yikes. Status is False")
+                except Exception as ex:
+                    print(f"Exception when trung to store to Listing: {ex}")
+                    store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+                    
             if no_listing == False:
                 # Dump the results of this page to the DB
                 if USE_DB == True:
-                    try:
-                        status = db_manager.insert_product_listing(db_session, page_results)
-                        if not status:
-                            raise ValueError("Yikes. Status is False")
-                    except:
-                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
-                    
                     try:
                         status = db_manager.insert_daily_product_listing(db_session, page_results)
                         if not status:
@@ -423,6 +424,12 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             if product_id is not None:
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                                 if obj is not None:
+                                    if hasattr(obj, 'date_completed') and obj.date_completed is not None:
+                                        # Go until this point only
+                                        _date = obj.date_completed
+                                    else:
+                                        _date = threshold_date
+
                                     if hasattr(obj, 'product_details') and obj.product_details in (None, {}, '{}'):
                                         rescrape = 1
                                         error_logger.info(f"Product ID {product_id} has NULL product_details. Scraping it again...")
@@ -445,13 +452,13 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
                             
                             if rescrape == 0:
-                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings)
+                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings)
                             elif rescrape == 1:
                                 # Only details
-                                _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True)
+                                _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True)
                             elif rescrape == 2:
                                 # Whole thing again
-                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True, jump_page=jump_page)
+                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True, jump_page=jump_page)
 
                             idx += 1
                         except Exception as ex:
@@ -511,10 +518,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 if my_proxy is None:       
                     response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
                 else:
-                    logger.info(f"Next page is {server_url + page_url}")
-                    logger.info(f"Proxy Cookies = {my_proxy.cookies}")
                     response = my_proxy.get(server_url + page_url, referer=curr_url, ref_count='constant')
-                    logger.info("Completed")
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
