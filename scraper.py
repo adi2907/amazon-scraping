@@ -414,9 +414,10 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
                         try:
                             product_id = parse_data.get_product_id(product_url)
-                            if product_id not in pids:
+                            if (product_id not in pids) and (cache.sismember(f"{category}_PIDS", product_id) == False):
                                 logger.info(f"PID {product_id} not in set")
                                 pids.add(product_id)
+                                cache.sadd(f"{category}_PIDS", product_id)
                             else:
                                 logger.info(f"PID {product_id} in set. Skipping this product")
                                 continue
