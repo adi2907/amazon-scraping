@@ -198,6 +198,16 @@ def store_to_cache(key, value):
         error_logger.critical(f"Recursion Depth exceeded when trying to store key -> {key}")
  
 
+def remove_from_cache(category):
+    global cache
+    value = cache.atomic_decrement(f"COUNTER_{category}")
+    logger.info(f"For category {category}, decremented counter. Counter is now {value}")
+    if value <= 0:
+        logger.info(f"All processes finished category - {category}. Resetting the set now...")
+        cache.delete(f"COUNTER_{category}")
+        cache.delete(f"{category}_PIDS")
+
+
 def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False):
     # global my_proxy, session
     global headers, cookies
@@ -228,6 +238,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
     
     try:
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
+
+        value = cache.atomic_increment(f"COUNTER_{category}")
+        logger.info(f"Now, for category - {category}, counter = {value}")
 
         final_results = dict()
 
@@ -417,7 +430,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             if (product_id not in pids) and (cache.sismember(f"{category}_PIDS", product_id) == False):
                                 logger.info(f"PID {product_id} not in set")
                                 pids.add(product_id)
-                                cache.sadd(f"{category}_PIDS", product_id)
+                                cache.atomic_set_add(f"{category}_PIDS", product_id)
                             else:
                                 logger.info(f"PID {product_id} in set. Skipping this product")
                                 continue
@@ -480,6 +493,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
                         if last_product_detail == True:
                             logger.info("Completed pending products. Exiting...")
+                            remove_from_cache(category)
                             return final_results
 
                         if my_proxy is not None and no_refer == False:
@@ -583,6 +597,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         if use_multithreading == True:
             db_session.close()
             # Session.remove()
+        remove_from_cache(category)
 
 
 def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False):

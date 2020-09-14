@@ -265,7 +265,8 @@ class Cache():
                             val = int(val.decode('utf-8'))
                         val += value
                         pipe.set(key, val)
-                        return pipe.execute()[-1], True
+                        pipe.get(key)
+                        return int(pipe.execute()[-1].decode('utf-8'))
                     except WatchError:
                         pass
         else:
@@ -287,7 +288,8 @@ class Cache():
                             val = int(val.decode('utf-8'))
                         val -= value
                         pipe.set(key, val)
-                        return pipe.execute()[-1], True
+                        pipe.get(key)
+                        return int(pipe.execute()[-1].decode('utf-8'))
                     except WatchError:
                         pass
         else:
@@ -334,11 +336,11 @@ if __name__ == '__main__':
 
     cache.delete("counter")
 
-    _, status = cache.atomic_increment("counter")
-    print(status, cache.get("counter"))
+    val = cache.atomic_increment("counter")
+    print(val)
 
-    _, status = cache.atomic_increment("counter")
-    print(status, cache.get("counter"))
+    val = cache.atomic_increment("counter")
+    print(val)
     
     print(cache.sismember("sample_set", "5678"))
     print(cache.smembers("sample_set"))
