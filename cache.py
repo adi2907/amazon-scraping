@@ -3,6 +3,7 @@ import uuid
 
 import redis
 from decouple import UndefinedValueError, config
+from redis.exceptions import WatchError
 
 from utils import create_logger
 
@@ -216,6 +217,81 @@ class Cache():
             return self.cache.smembers(set_name)
         else:
             raise ValueError("Only allowed in Redis")
+    
+    @is_connected
+    def atomic_set_add(self, set_name, value):
+        if self.use_redis == True:
+            while True:
+                with self.cache.pipeline() as pipe:
+                    try:
+                        pipe.watch(set_name)
+                        pipe.multi()
+                        pipe.sadd(set_name, value)
+                        return pipe.execute()[-1], True
+                    except WatchError:
+                        # Somebody else set this
+                        pass
+        else:
+            raise ValueError("Only allowed in Redis")
+
+    @is_connected
+    def atomic_get_and_set(self, key, value):
+        if self.use_redis == True:
+            with self.cache.pipeline() as pipe:
+                try:
+                    pipe.watch(key)
+                    pipe.multi()
+                    pipe.set(key, value)
+                    pipe.get(key)
+                    return pipe.execute()[-1], True
+                except WatchError:
+                    return pipe.get(key), False
+        else:
+            raise ValueError("Only allowed in Redis")
+
+    @is_connected
+    def atomic_increment(self, key, value=1):
+        if self.use_redis == True:
+            while True:
+                with self.cache.pipeline() as pipe:
+                    try:
+                        pipe.watch(key)
+                        pipe.multi()
+                        val = pipe.get(key)
+                        val = pipe.execute()[-1]
+                        if val is None:
+                            val = 0
+                        else:
+                            val = int(val.decode('utf-8'))
+                        val += value
+                        pipe.set(key, val)
+                        return pipe.execute()[-1], True
+                    except WatchError:
+                        pass
+        else:
+            raise ValueError("Only allowed in Redis")
+
+    @is_connected
+    def atomic_decrement(self, key, value=1):
+        if self.use_redis == True:
+            while True:
+                with self.cache.pipeline() as pipe:
+                    try:
+                        pipe.watch(key)
+                        pipe.multi()
+                        val = pipe.get(key)
+                        val = pipe.execute()[-1]
+                        if val is None:
+                            val = 0
+                        else:
+                            val = int(val.decode('utf-8'))
+                        val -= value
+                        pipe.set(key, val)
+                        return pipe.execute()[-1], True
+                    except WatchError:
+                        pass
+        else:
+            raise ValueError("Only allowed in Redis")
 
 
 if __name__ == '__main__':
@@ -252,6 +328,18 @@ if __name__ == '__main__':
     cache.sadd("sample_set", "1234")
     cache.sadd("sample_set", "5678")
     cache.sadd("sample_set", "1234")
+    
+    _, status = cache.atomic_set_add("sample_set", "abcd")
+    print(f"Atomic set - {status}")
+
+    cache.delete("counter")
+
+    _, status = cache.atomic_increment("counter")
+    print(status, cache.get("counter"))
+
+    _, status = cache.atomic_increment("counter")
+    print(status, cache.get("counter"))
+    
     print(cache.sismember("sample_set", "5678"))
     print(cache.smembers("sample_set"))
 
