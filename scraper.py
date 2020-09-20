@@ -961,10 +961,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         mydict[f"DETAILS_SET_{category}"] = _set
 
     if review_pages is None:
-        review_pages = 1000
+        review_pages = 100000
     
     if qanda_pages is None:
-        qanda_pages = 1000
+        qanda_pages = 100000
     
     if my_proxy is None:
         response = session.get(server_url, headers=headers)
@@ -1221,6 +1221,19 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     # Get the customer reviews
     if details is not None and 'reviews_url' in details:
         reviews_url = details['reviews_url']
+        obj = True
+    else:
+        logger.warning(f"For ID {product_id}, reviews_url is not in details")
+        if details is not None:
+            logger.warning("Trying to search from DB....")
+            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+    
+    if obj is not None:
+        if obj == True:
+            pass
+        else:
+            reviews_url = obj.reviews_url
+        
         prev_url = product_url
         curr = 0
         factor = 0
