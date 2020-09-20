@@ -445,7 +445,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                             _date = obj.date_completed
                                             logger.info(f"Set date as {_date}")
                                             delta = datetime.now() - _date
-                                            if delta.days < 7:
+                                            if delta.days < 6:
                                                 logger.info(f"Skipping this product. within the last week")
                                                 continue
                                         else:
@@ -493,7 +493,6 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
                         if last_product_detail == True:
                             logger.info("Completed pending products. Exiting...")
-                            remove_from_cache(category)
                             return final_results
 
                         if my_proxy is not None and no_refer == False:
