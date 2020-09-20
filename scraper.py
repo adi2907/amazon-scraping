@@ -1639,7 +1639,7 @@ if __name__ == '__main__':
     parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int, default=10) # 10 pages QandA (100 QandAs)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
     parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
-    parser.add_argument('--date', help='Threshold Limit for scraping Product Reviews', type=lambda s: datetime.strptime(s, '%Y-%m-%d'), default=datetime(year=2020, month=7, day=1))
+    parser.add_argument('--date', help='Threshold Limit for scraping Product Reviews', type=lambda s: datetime.strptime(s, '%Y-%m-%d'), default=datetime(year=2020, month=8, day=1))
     parser.add_argument('--config', help='A config file for the options', type=str)
     parser.add_argument('--tor', help='To use Tor vs Public Proxies', default=False, action='store_true')
     parser.add_argument('--override', help='To scape using existing filters at utils.py', default=False, action='store_true')
