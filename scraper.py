@@ -239,8 +239,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
     try:
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
 
-        value = cache.atomic_increment(f"COUNTER_{category}")
-        logger.info(f"Now, for category - {category}, counter = {value}")
+        if detail == False:
+            value = cache.atomic_increment(f"COUNTER_{category}")
+            logger.info(f"Now, for category - {category}, counter = {value}")
 
         final_results = dict()
 
@@ -596,7 +597,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         if use_multithreading == True:
             db_session.close()
             # Session.remove()
-        remove_from_cache(category)
+        if detail == True:
+            remove_from_cache(category)
 
 
 def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False):
