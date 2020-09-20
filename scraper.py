@@ -367,12 +367,16 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
                 price = int(value['price'][1:].replace(',', '').replace('.', ''))
 
-                small_title = title.split()[0].strip()
+                small_title = ' '.join(word for word in title.split()[:4])
 
                 duplicate = False
 
                 for item in listing:
-                    if item['small_title'] == small_title and item['total_ratings'] == total_ratings and item['price'] == price:
+                    a = (item['small_title'] == small_title)
+                    b = (item['total_ratings'] == total_ratings)
+                    c = (item['price'] == price)
+                    if ((a & b) | (b & c) | (c & a)):
+                        # Majority function
                         logger.info(f"Found duplicate match! For title - {small_title}")
                         logger.info(f"Existing product is {title}, but old one is {item['title']}")
                         duplicate = True
@@ -466,8 +470,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                             error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
                                             continue
                                 else:
-                                    logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
-                                    error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping Details...")
+                                    error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Skipping this, as this may be a duplicate")
+                                    continue
 
                             # Let's try to approximate the minimum reviews we need
                             value = final_results[category][curr_page][title]
