@@ -69,6 +69,7 @@ tables = {
         'brand': 'TEXT(100)',
         'model': 'TEXT(100)',
         'date_completed': 'DATETIME',
+        'is_duplicate': 'BOOLEAN',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -878,7 +879,8 @@ if __name__ == '__main__':
 
     #column = Column('category', String(100))
     #add_column(engine, 'DailyProductListing', column)
-    #column = Column('categories', Text())
+    #column = Column('is_duplicate', Boolean())
+    #add_column(engine, 'ProductDetails', column)
     #update_date(session)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
