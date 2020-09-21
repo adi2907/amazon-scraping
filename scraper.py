@@ -373,8 +373,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
                 for item in listing:
                     a = (item['small_title'] == small_title)
-                    b = (item['total_ratings'] == total_ratings)
-                    c = (item['price'] == price)
+                    b = ((abs(item['total_ratings'] - total_ratings) / max(item['total_ratings'], total_ratings)) < 0.1 * (max(item['total_ratings'], total_ratings)))
+                    c = ((abs(item['price'] - price) / max(item['price'], price)) < 0.1 * (max(item['price'], price)))
                     if ((a & b) | (b & c) | (c & a)):
                         # Majority function
                         logger.info(f"Found duplicate match! For title - {small_title}")
