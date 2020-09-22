@@ -112,6 +112,7 @@ tables = {
         'verified_purchase': 'INTEGER',
         'helpful_votes': 'INTEGER',
         'page_num': 'INTEGER',
+        'is_duplicate': 'BOOLEAN',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'DailyProductListing': {
