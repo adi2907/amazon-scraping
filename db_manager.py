@@ -320,7 +320,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                     if result is None:
                         return True
                     else:
-                        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]"))
+                        update_fields = (field for field in tables[table])
                         for field in update_fields:
                             setattr(result, field, row[field])
                         try:
