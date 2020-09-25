@@ -356,46 +356,12 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 _set.add(product_id)
                                 mydict[f"SUBCATEGORIES_{category}_{subcategory}"] = _set
 
-            temp = deepcopy(page_results)
-
-            for title in temp[category][curr_page]:
-                value = temp[category][curr_page][title]
-                
-                if 'total_ratings' not in value or 'price' not in value or value['total_ratings'] is None or value['price'] is None:
-                    continue
-                
-                total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
-                price = int(value['price'][1:].replace(',', '').replace('.', ''))
-
-                small_title = ' '.join(word for word in title.split()[:4])
-
-                duplicate = False
-
-                for item in listing:
-                    a = (item['small_title'] == small_title)
-                    b = ((abs(item['total_ratings'] - total_ratings) / max(item['total_ratings'], total_ratings)) < 0.1 * (max(item['total_ratings'], total_ratings)))
-                    c = ((abs(item['price'] - price) / max(item['price'], price)) < 0.1 * (max(item['price'], price)))
-                    if ((a & b) | (b & c) | (c & a)):
-                        # Majority function
-                        logger.info(f"Found duplicate match! For title - {small_title}")
-                        logger.info(f"Existing product is {title}, but old one is {item['title']}")
-                        duplicate = True
-                        break
-                
-                if duplicate == True:
-                    del final_results[category][curr_page][title]
-                else:
-                    listing.append({'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
-            
-            # Reset it
-            listing = []
-            del temp
-
             if use_cache:
                 # Store to cache first
                 with SqliteDict(cache_file, autocommit=True) as mydict:
                     mydict[f"LISTING_{category}_PAGE_{curr_page}"] = page_results
             
+            """
             if USE_DB == True:
                 try:
                     status = db_manager.insert_product_listing(db_session, page_results)
@@ -414,6 +380,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             raise ValueError("Yikes. Status is False")
                     except:
                         store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+            """
             
 
             if detail == True:
