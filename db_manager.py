@@ -471,6 +471,7 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
         row['verified_purchase'] = review['verified_purchase']
         row['helpful_votes'] = review['helpful_votes']
         row['page_num'] = review['page_num']
+        row['is_duplicate'] = False
         obj = table_map[table]()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
