@@ -1156,9 +1156,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             if USE_DB == True:
                 # Insert to the DB
                 try:
-                    status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
-                    if status == False:
+                    if curr == 0:
                         store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
+                    else:
+                        status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
+                        if status == False:
+                            store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
                 except:
                     store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
             
@@ -1365,9 +1368,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     # Insert the reviews to the DB
                     if jump_page == 0:
                         try:
-                            status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
-                            if not status:
+                            if first_request == True:
                                 store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                            else:
+                                status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+                                if not status:
+                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                         except:
                             store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                     else:

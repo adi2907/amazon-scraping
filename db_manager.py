@@ -45,6 +45,7 @@ tables = {
         'old_price': 'INTEGER',
         'secondary_information': 'LONGTEXT',
         'image': 'TEXT(1000)',
+        'is_duplicate': 'BOOLEAN',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
