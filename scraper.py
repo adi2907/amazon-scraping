@@ -551,20 +551,21 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             with open(f'dumps/{category}.pkl', 'wb') as f:
                 pickle.dump(results, f)
         
-        if use_cache:
-            # Store to cache first
-            with SqliteDict(cache_file, autocommit=True) as mydict:
-                mydict[f"LISTING_{category}_PAGE_{curr_page}"] = results
+        if detail == False:
+            if use_cache:
+                # Store to cache first
+                with SqliteDict(cache_file, autocommit=True) as mydict:
+                    mydict[f"LISTING_{category}_PAGE_{curr_page}"] = results
 
-        if USE_DB == True:
-            # Insert to the DB
-            try:
-                status = db_manager.insert_product_listing(db_session, results)
-                if status == False:
-                    # Store to Cache
-                    raise ValueError("Status is False")
-            except:
-                store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", results)
+            if USE_DB == True:
+                # Insert to the DB
+                try:
+                    status = db_manager.insert_product_listing(db_session, results)
+                    if status == False:
+                        # Store to Cache
+                        raise ValueError("Status is False")
+                except:
+                    store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", results)
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
