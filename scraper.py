@@ -339,6 +339,53 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
             page_results = dict()
             page_results[category] = final_results[category]
+
+            if detail == False:
+                temp = deepcopy(page_results)
+
+                for title in temp[category][curr_page]:
+                    value = temp[category][curr_page][title]
+                    
+                    if 'total_ratings' not in value or 'price' not in value or value['total_ratings'] is None or value['price'] is None:
+                        continue
+                    
+                    total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
+                    price = int(value['price'][1:].replace(',', '').replace('.', ''))
+
+                    small_title = ' '.join(word.lower() for word in title.split()[:6])
+
+                    product_id = value['product_id']
+
+                    duplicate = False
+
+                    for i, item in enumerate(listing[:]):
+                        a = (item['small_title'] == small_title)
+                        b = ((abs(item['total_ratings'] - total_ratings) / max(item['total_ratings'], total_ratings)) < 0.1 * (max(item['total_ratings'], total_ratings)))
+                        c = ((abs(item['price'] - price) / max(item['price'], price)) < 0.1 * (max(item['price'], price)))
+                        if ((a & b) | (b & c) | (c & a)):
+                            # Majority function
+                            logger.info(f"Found duplicate match! For title - {small_title}")
+                            logger.info(f"Existing product is {title}, but old one is {item['title']}")
+                            
+                            pid = item['product_id']
+                            a = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{pid}'}))
+                            if a is not None and a.is_duplicate == True:
+                                if final_results[category][curr_page][item['title']]['is_duplicate'] != True:
+                                    final_results[category][curr_page][item['title']]['is_duplicate'] = True
+                                    del listing[i]
+                                    continue
+                            
+                            duplicate = True
+                            break
+                    
+                    if duplicate == True:
+                        final_results[category][curr_page][title]['is_duplicate'] = True
+                    else:
+                        listing.append({'product_id': product_id, 'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
+                
+                # Reset it
+                listing = []
+                del temp
             
             if subcategories is not None:
                 for title in final_results[category][curr_page]:
