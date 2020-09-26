@@ -361,26 +361,25 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 with SqliteDict(cache_file, autocommit=True) as mydict:
                     mydict[f"LISTING_{category}_PAGE_{curr_page}"] = page_results
             
-            """
-            if USE_DB == True:
-                try:
-                    status = db_manager.insert_product_listing(db_session, page_results)
-                    if not status:
-                        raise ValueError("Yikes. Status is False")
-                except Exception as ex:
-                    print(f"Exception when trung to store to Listing: {ex}")
-                    store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
-                    
-            if no_listing == False:
-                # Dump the results of this page to the DB
+            if detail == False: 
                 if USE_DB == True:
                     try:
-                        status = db_manager.insert_daily_product_listing(db_session, page_results)
+                        status = db_manager.insert_product_listing(db_session, page_results)
                         if not status:
                             raise ValueError("Yikes. Status is False")
-                    except:
+                    except Exception as ex:
+                        print(f"Exception when trung to store to Listing: {ex}")
                         store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
-            """
+                        
+                if no_listing == False:
+                    # Dump the results of this page to the DB
+                    if USE_DB == True:
+                        try:
+                            status = db_manager.insert_daily_product_listing(db_session, page_results)
+                            if not status:
+                                raise ValueError("Yikes. Status is False")
+                        except:
+                            store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
             
 
             if detail == True:
