@@ -372,7 +372,10 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             if a is not None and a.is_duplicate == True:
                                 if final_results[category][curr_page][item['title']].get('is_duplicate') != True:
                                     final_results[category][curr_page][item['title']]['is_duplicate'] = True
-                                    del listing[i]
+                                    try:
+                                        del listing[i]
+                                    except:
+                                        pass
                                     continue
                             
                             duplicate = True
