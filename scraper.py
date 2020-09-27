@@ -358,7 +358,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
                     duplicate = False
 
-                    for i, item in enumerate(listing[:]):
+                    t = listing
+
+                    for i, item in enumerate(t):
                         a = (item['small_title'] == small_title)
                         b = ((abs(item['total_ratings'] - total_ratings) / max(item['total_ratings'], total_ratings)) < 0.1 * (max(item['total_ratings'], total_ratings)))
                         c = ((abs(item['price'] - price) / max(item['price'], price)) < 0.1 * (max(item['price'], price)))
