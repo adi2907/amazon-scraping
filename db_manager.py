@@ -321,7 +321,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                     if result is None:
                         return True
                     else:
-                        update_fields = (field for field in tables[table])
+                        update_fields = (field for field in tables[table] if field != "product_id")
                         for field in update_fields:
                             setattr(result, field, row[field])
                         try:
