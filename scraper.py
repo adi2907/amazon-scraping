@@ -43,6 +43,8 @@ cookies = dict()
 
 cache = cache.Cache()
 
+today = datetime.today().strftime("%d-%m-%y")
+
 try:
     USE_REDIS = config('USE_REDIS')
     if USE_REDIS == 'True':
@@ -411,7 +413,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             if use_cache:
                 # Store to cache first
                 with SqliteDict(cache_file, autocommit=True) as mydict:
-                    mydict[f"LISTING_{category}_PAGE_{curr_page}"] = page_results
+                    mydict[f"LISTING_{category}_PAGE_{curr_page}_{today}"] = page_results
             
             if detail == False: 
                 if USE_DB == True:
@@ -421,7 +423,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             raise ValueError("Yikes. Status is False")
                     except Exception as ex:
                         print(f"Exception when trung to store to Listing: {ex}")
-                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", page_results)
                         
                 if no_listing == False:
                     # Dump the results of this page to the DB
@@ -431,7 +433,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             if not status:
                                 raise ValueError("Yikes. Status is False")
                         except:
-                            store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+                            store_to_cache(f"DAILYLISTING_{category}_PAGE_{curr_page}_{today}", page_results)
             
 
             if detail == True:
@@ -607,7 +609,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             if use_cache:
                 # Store to cache first
                 with SqliteDict(cache_file, autocommit=True) as mydict:
-                    mydict[f"LISTING_{category}_PAGE_{curr_page}"] = results
+                    mydict[f"LISTING_{category}_PAGE_{curr_page}_{today}"] = results
 
             if USE_DB == True:
                 # Insert to the DB
@@ -617,7 +619,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                         # Store to Cache
                         raise ValueError("Status is False")
                 except:
-                    store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", results)
+                    store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", results)
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
@@ -871,13 +873,13 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                             # Insert to cache
                             raise ValueError
                     except:
-                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", page_results)
                     try:
                         status = db_manager.insert_daily_product_listing(db_session, page_results)
                         if status == False:
                             raise ValueError
                     except:
-                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", page_results)
+                        store_to_cache(f"DAILYLISTING_{category}_PAGE_{curr_page}_{today}", page_results)
 
             if detail == True:
                 for title in final_results[category][curr_page]:
@@ -958,7 +960,7 @@ def scrape_category_listing(categories, pages=None, dump=False, detail=False, th
                 if status == False:
                     raise ValueError
             except:
-                store_to_cache(f"LISTING_{category}_PAGE_{curr_page}", results)
+                store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", results)
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
