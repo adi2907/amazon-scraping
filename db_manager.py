@@ -560,6 +560,24 @@ def alter_column(engine, table_name: str, column_name: str, new_name: str, data_
     engine.execute('ALTER TABLE %s CHANGE COLUMN %s %s %s' % (table_name, column_name, new_name, data_type))
 
 
+def dump_listing_from_cache(session, category, cache_file='cache.sqlite3'):
+    with SqliteDict(cache_file) as cache:
+        today = datetime.datetime.today().strftime("%d-%m-%y")
+        for page in range(1, 100):
+            key = f"LISTING_{category}_PAGE_{page}_{today}"
+            value = cache.get(key)
+            if value is None:
+                continue
+            try:
+                status = insert_product_listing(session, value, table='ProductListing')
+                if status == False:
+                    logger.warning(f"Status = False for category: {category}, page: {page}")
+                else:
+                    logger.info(f"Category: {category}, Inserted Page: {page}")
+            except Exception as ex:
+                print(ex)
+
+
 def dump_from_cache(session, category, cache_file='cache.sqlite3'):
     with SqliteDict(cache_file, autocommit=True) as cache:
         key = f"DETAILS_SET_{category}"
