@@ -311,6 +311,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                 try:
                     if row['product_id'] is not None:
                         obj = table_map[table]()
+                        row['is_duplicate'] = None
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
@@ -322,8 +323,10 @@ def insert_product_listing(session, data, table='ProductListing'):
                         return True
                     else:
                         update_fields = (field for field in tables[table] if field != "product_id")
+                        temp = getattr(result, 'is_duplicate')
                         for field in update_fields:
                             setattr(result, field, row[field])
+                        setattr(result, 'is_duplicate', temp)
                         try:
                             session.commit()
                             return True
