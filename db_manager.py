@@ -16,7 +16,7 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
                         MetaData, String, Table, Text, create_engine, exc)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, FlushError
 from sqlitedict import SqliteDict
 
 from utils import create_logger
@@ -315,7 +315,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                         session.add(obj)
                         session.commit()
                         return True
-                except exc.IntegrityError:
+                except (exc.IntegrityError, FlushError,):
                     session.rollback()
                     result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
                     if result is None:
@@ -411,7 +411,7 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
         session.add(obj)
         session.commit()
         return True
-    except exc.IntegrityError:
+    except (exc.IntegrityError, FlushError):
         session.rollback()
         result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]"))
