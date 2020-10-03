@@ -423,6 +423,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             raise ValueError("Yikes. Status is False")
                     except Exception as ex:
                         print(f"Exception when trung to store to Listing: {ex}")
+                    finally:
                         store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", page_results)
                         
                 if no_listing == False:
