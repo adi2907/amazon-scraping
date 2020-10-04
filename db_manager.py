@@ -876,11 +876,12 @@ def mark_duplicates(session, category, table='ProductListing'):
 
     _table = table_map[table]
     
-    queryset = session.query(_table).filter(_table.category == category, _table.is_duplicate != True, _table.total_ratings != None, _table.price != None, _table.title != None).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
+    queryset = session.query(_table).filter(_table.category == category, _table.is_duplicate == None, _table.total_ratings != None, _table.price != None, _table.title != None).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
     reviews = {}
     pids = {}
-
+    
+    """
     for obj in queryset:
         short_title = ' '.join(word.lower() for word in obj.title.split()[:6])
         if short_title not in reviews:
@@ -895,8 +896,11 @@ def mark_duplicates(session, category, table='ProductListing'):
                 pids[obj.product_id] = short_title
             
             reviews[short_title] = num_reviews
+    """
     
     prev = None
+
+    duplicates = set()
 
     for idx, obj in enumerate(queryset):
         if idx == 0:
@@ -915,24 +919,21 @@ def mark_duplicates(session, category, table='ProductListing'):
 
         if ((a & b) | (b & c) | (c & a)):
             # Majority Function
-            # Compare Reviews
-            if obj.product_id not in pids:
-                obj.is_duplicate = True
-                logger.info(f"Found duplicate - {obj.product_id} with eariler id {prev.product_id}")
+            duplicates.add(prev.product_id)
+            duplicates.add(obj.product_id)
+            if prev.product_id not in pids:
+                prev.is_duplicate = True
+                logger.info(f"Found duplicate - {prev.product_id} with later id {obj.product_id}")
                 try:
                     session.commit()
                 except:
                     session.rollback()
-                    logger.critical(f"Error during updating duplicate ID for product - {obj.product_id}")
-            else:
-                if prev.product_id not in pids:
-                    prev.is_duplicate = True
-                    logger.info(f"Found duplicate - {prev.product_id} with later id {obj.product_id}")
-                    try:
-                        session.commit()
-                    except:
-                        session.rollback()
-                        logger.critical(f"Error during updating duplicate ID for product - {prev.product_id}")
+                    logger.critical(f"Error during updating duplicate ID for product - {prev.product_id}")
+    
+    from sqlitedict import SqliteDict
+    
+    with SqliteDict('cache.sqlite3', autocommit=True) as mydict:
+        mydict[f'DUPLICATE_SET_{category}'] = duplicates
 
 
 if __name__ == '__main__':
