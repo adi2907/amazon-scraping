@@ -1005,7 +1005,7 @@ def mark_duplicate_reduced(session, category):
     reviews = {}
 
     for pid in duplicates:
-        obj = query_table('ProductListing', 'one', filter_cond=({'product_id': pid}))
+        obj = session.query(table_map['ProductListing']).filter(ProductListing.product_id == pid)
         if obj is None:
             continue
 
