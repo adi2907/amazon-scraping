@@ -942,7 +942,7 @@ def mark_duplicate_reduced(session, category):
     from sqlitedict import SqliteDict
 
     with SqliteDict('cache.sqlite3', autocommit=False) as mydict:
-        duplicates = mydict.get([f'DUPLICATE_SET_{category}'])
+        duplicates = mydict.get(f'DUPLICATE_SET_{category}')
     
     if duplicates is None:
         return
@@ -969,7 +969,7 @@ def mark_duplicate_reduced(session, category):
     with SqliteDict('cache.sqlite3', autocommit=True) as mydict:
         mydict[f'NON_DUPLICATE_SET_{category}'] = [pid for pid in pids]
     
-    # return
+    return
 
     count = 0
     
@@ -1051,6 +1051,7 @@ if __name__ == '__main__':
     #update_date(session)
     #update_product_listing_from_cache(session, "headphones")
     #mark_duplicates(session, "headphones")
+    mark_duplicate_reduced(session, "headphones")
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
