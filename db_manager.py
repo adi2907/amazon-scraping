@@ -289,6 +289,47 @@ table_map = {
 }
 
 
+def get_short_title(product_title):
+    if product_title is None:
+        return product_title
+    
+    if product_title.startswith('(Renewed)'):
+        product_title = product_title[9:].strip()
+    
+    result = product_title.lower()
+    # Order matters
+    DELIMITERS = ['tws', 'true', 'wired', 'wireless', 'in-ear', 'in ear', 'on-ear', 'on ear'] + ['with', '[', '{', '(', ',']
+    slen = len(result)
+    fin = result
+    temp = fin
+    for delim in DELIMITERS:
+        if result.startswith(delim):
+            result = result[len(delim):].strip()
+        bar = result.split(delim)
+        if len(bar) == 1:
+            # Empty
+            continue
+        short_title = bar[0].strip()
+        
+        if len(short_title) < slen:
+            temp = fin
+            fin = short_title.strip()
+            slen = len(short_title)
+    
+    fin = fin.strip()
+    if len(fin) == 0:
+        print(f"For title {product_title}, len = 0")
+    if len(fin.split()) <= 1:
+        # Let's take the second shortest one instead, as fin is too short
+        if len(temp.split()) <= 1:
+            pass
+        else:
+            fin = temp.strip()
+    if len(fin) > 0 and fin[-1] in [',']:
+        fin = fin[:-1]
+    return fin
+
+
 def insert_product_listing(session, data, table='ProductListing'):
     row = dict()
     for category in data:
@@ -296,6 +337,11 @@ def insert_product_listing(session, data, table='ProductListing'):
         for page_num in data[category]:
             for title in data[category][page_num]:
                 row['title'] = title
+                try:
+                    row['short_title'] = get_short_title(title)
+                except:
+                    row['short_title'] = None
+                
                 value = data[category][page_num][title]
                 for key in value:
                     if value[key] is not None:
@@ -325,9 +371,12 @@ def insert_product_listing(session, data, table='ProductListing'):
                     else:
                         update_fields = (field for field in tables[table] if field != "product_id")
                         temp = getattr(result, 'is_duplicate')
+                        short_title = getattr(result, 'short_title')
                         for field in update_fields:
                             setattr(result, field, row[field])
                         setattr(result, 'is_duplicate', temp)
+                        if short_title is not None:
+                            setattr(result, 'short_title', short_title)
                         try:
                             session.commit()
                             return True
