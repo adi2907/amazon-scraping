@@ -847,6 +847,24 @@ def update_date(session):
             continue
 
 
+def update_product_listing_from_cache(session, category, cache_file='cache.sqlite3'):
+    from sqlitedict import SqliteDict
+
+    with SqliteDict(cache_file, autocommit=False) as mydict:
+        today = datetime.datetime.today().strftime("%d-%m-%y")
+
+        for page in range(1, 100+1):
+            key = f"LISTING_{category}_PAGE_{page}_{today}"
+            listing = mydict.get(key)
+            if listing is None:
+                continue
+
+            # Update ProductListing
+            status = insert_product_listing(session, listing)
+            if not status:
+                logger.warning(f"Error when updating listing details for PAGE {page}")
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     from sqlalchemy import desc
@@ -906,6 +924,7 @@ if __name__ == '__main__':
     #column = Column('is_duplicate', Boolean())
     #add_column(engine, 'ProductDetails', column)
     #update_date(session)
+    #update_product_listing_from_cache(session, "headphones")
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
