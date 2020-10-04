@@ -963,12 +963,8 @@ def mark_duplicates(session, category, table='ProductListing'):
             prev = obj
             continue
 
-        a = (' '.join(word.lower() for word in prev.title.split()[:6]) == ' '.join(word.lower() for word in obj.title.split()[:6]))
         
-        if a == True:
-            short_title = ' '.join(word.lower() for word in prev.title.split()[:6])
-        else:
-            short_title = None
+        a = obj.short_title == prev.short_title
 
         b = ((abs(obj.total_ratings - prev.total_ratings) / max(obj.total_ratings, prev.total_ratings)) < 0.1)
         c = ((abs(obj.price - prev.price) / max(obj.price, prev.price)) < 0.1)
