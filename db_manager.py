@@ -871,6 +871,70 @@ def update_product_listing_from_cache(session, category, cache_file='cache.sqlit
     logger.info(f"Successfully updated {count} products for category = {category}")
 
 
+def mark_duplicates(session, category, table='ProductListing'):
+    from sqlalchemy import asc, desc
+
+    _table = table_map[table]
+    
+    queryset = session.query(_table).filter(_table.category == category, _table.is_duplicate != True, _table.total_ratings != None, _table.price != None, _table.title != None).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
+
+    reviews = {}
+    pids = {}
+
+    for obj in queryset:
+        short_title = ' '.join(word.lower() for word in obj.title.split()[:6])
+        if short_title not in reviews:
+            reviews[short_title] = session.query(table_map['Reviews']).filter(Reviews.product_id == obj.product_id, Reviews.is_duplicate != True).count()
+            pids[obj.product_id] = short_title 
+        else:
+            db_reviews = session.query(table_map['Reviews']).filter(Reviews.product_id == obj.product_id, Reviews.is_duplicate != True).count()
+            if reviews[short_title] >= db_reviews:
+                num_reviews = reviews[short_title]
+            else:
+                num_reviews = db_reviews
+                pids[obj.product_id] = short_title
+            
+            reviews[short_title] = num_reviews
+    
+    prev = None
+
+    for idx, obj in enumerate(queryset):
+        if idx == 0:
+            prev = obj
+            continue
+
+        a = (' '.join(word.lower() for word in prev.title.split()[:6]) == ' '.join(word.lower() for word in obj.title.split()[:6]))
+        
+        if a == True:
+            short_title = ' '.join(word.lower() for word in prev.title.split()[:6])
+        else:
+            short_title = None
+
+        b = ((abs(obj.total_ratings - prev.total_ratings) / max(obj.total_ratings, prev.total_ratings)) < 0.1)
+        c = ((abs(obj.price - prev.price) / max(obj.price, prev.price)) < 0.1)
+
+        if ((a & b) | (b & c) | (c & a)):
+            # Majority Function
+            # Compare Reviews
+            if obj.product_id not in pids:
+                obj.is_duplicate = True
+                logger.info(f"Found duplicate - {obj.product_id} with eariler id {prev.product_id}")
+                try:
+                    session.commit()
+                except:
+                    session.rollback()
+                    logger.critical(f"Error during updating duplicate ID for product - {obj.product_id}")
+            else:
+                if prev.product_id not in pids:
+                    prev.is_duplicate = True
+                    logger.info(f"Found duplicate - {prev.product_id} with later id {obj.product_id}")
+                    try:
+                        session.commit()
+                    except:
+                        session.rollback()
+                        logger.critical(f"Error during updating duplicate ID for product - {prev.product_id}")
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     from sqlalchemy import desc
