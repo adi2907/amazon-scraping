@@ -1026,8 +1026,6 @@ def mark_duplicate_reduced(session, category):
     with SqliteDict('cache.sqlite3', autocommit=True) as mydict:
         mydict[f'NON_DUPLICATE_SET_{category}'] = [pid for pid in pids]
     
-    return
-
     count = 0
     
     for pid in duplicates:
