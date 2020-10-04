@@ -983,6 +983,8 @@ def mark_duplicates(session, category, table='ProductListing'):
                 except:
                     session.rollback()
                     logger.critical(f"Error during updating duplicate ID for product - {obj.product_id}")
+        
+        prev = obj
     
     from sqlitedict import SqliteDict
 
