@@ -921,6 +921,8 @@ def mark_duplicates(session, category, table='ProductListing'):
             # Majority Function
             duplicates.add(prev.product_id)
             duplicates.add(obj.product_id)
+            continue
+
             if prev.product_id not in pids:
                 obj.is_duplicate = True
                 logger.info(f"Found duplicate - {obj.product_id} with prev id {prev.product_id}")
@@ -934,6 +936,58 @@ def mark_duplicates(session, category, table='ProductListing'):
 
     with SqliteDict('cache.sqlite3', autocommit=True) as mydict:
         mydict[f'DUPLICATE_SET_{category}'] = duplicates
+
+
+def mark_duplicate_reduced(session, category):
+    from sqlitedict import SqliteDict
+
+    with SqliteDict('cache.sqlite3', autocommit=False) as mydict:
+        duplicates = mydict.get([f'DUPLICATE_SET_{category}'])
+    
+    if duplicates is None:
+        return
+
+    pids = {}
+    reviews = {}
+
+    for pid in duplicates:
+        obj = query_table('ProductListing', 'one', filter_cond=({'product_id': pid}))
+        short_title = ' '.join(word.lower() for word in obj.title.split()[:6])
+        if short_title not in reviews:
+            reviews[short_title] = session.query(table_map['Reviews']).filter(Reviews.product_id == obj.product_id, Reviews.is_duplicate != True).count()
+            pids[obj.product_id] = short_title 
+        else:
+            db_reviews = session.query(table_map['Reviews']).filter(Reviews.product_id == obj.product_id, Reviews.is_duplicate != True).count()
+            if reviews[short_title] >= db_reviews:
+                num_reviews = reviews[short_title]
+            else:
+                num_reviews = db_reviews
+                pids[obj.product_id] = short_title
+            
+            reviews[short_title] = num_reviews
+
+    with SqliteDict('cache.sqlite3', autocommit=True) as mydict:
+        mydict[f'NON_DUPLICATE_SET_{category}'] = [pid for pid in pids]
+    
+    # return
+
+    count = 0
+    
+    for pid in duplicates:
+        if pid not in pids:
+            # Duplicate
+            obj = query_table('ProductListing', 'one', filter_cond=({'product_id': pid}))
+            setattr(obj, 'is_duplicate', True)
+            try:
+                session.commit()
+                logger.info(f"Marked {pid} as duplicate!")
+                count += 1
+            except:
+                session.rollback()
+                logger.critical(f"Error when marking {pid} as duplicate")
+    
+    logger.info(f"Marked {count} products as duplicate!")
+
 
 
 if __name__ == '__main__':
