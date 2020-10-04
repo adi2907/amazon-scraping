@@ -952,6 +952,9 @@ def mark_duplicate_reduced(session, category):
 
     for pid in duplicates:
         obj = query_table('ProductListing', 'one', filter_cond=({'product_id': pid}))
+        if obj is None:
+            continue
+
         short_title = ' '.join(word.lower() for word in obj.title.split()[:6])
         if short_title not in reviews:
             reviews[short_title] = session.query(table_map['Reviews']).filter(Reviews.product_id == obj.product_id, Reviews.is_duplicate != True).count()
@@ -1050,7 +1053,7 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductDetails', column)
     #update_date(session)
     #update_product_listing_from_cache(session, "headphones")
-    #mark_duplicates(session, "headphones")
+    mark_duplicates(session, "headphones")
     mark_duplicate_reduced(session, "headphones")
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
