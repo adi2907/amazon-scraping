@@ -1031,7 +1031,9 @@ def mark_duplicate_reduced(session, category):
     for pid in duplicates:
         if pid not in pids:
             # Duplicate
-            obj = query_table('ProductListing', 'one', filter_cond=({'product_id': pid}))
+            obj = session.query(table_map['ProductListing']).filter(ProductListing.product_id == pid).first()
+            if obj is None:
+                continue
             setattr(obj, 'is_duplicate', True)
             try:
                 session.commit()
