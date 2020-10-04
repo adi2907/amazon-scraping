@@ -46,6 +46,7 @@ tables = {
         'secondary_information': 'LONGTEXT',
         'image': 'TEXT(1000)',
         'is_duplicate': 'BOOLEAN',
+        'short_title': 'TEXT(100)',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -871,6 +872,61 @@ def update_product_listing_from_cache(session, category, cache_file='cache.sqlit
     logger.info(f"Successfully updated {count} products for category = {category}")
 
 
+def insert_short_titles(session):
+    def foo(product_title):
+        if product_title is None:
+            return product_title
+        
+        if product_title.startswith('(Renewed)'):
+            product_title = product_title[9:].strip()
+        
+        result = product_title.lower()
+        # Order matters
+        DELIMITERS = ['tws', 'true', 'wired', 'wireless', 'in-ear', 'in ear', 'on-ear', 'on ear'] + ['with', '[', '{', '(', ',']
+        slen = len(result)
+        fin = result
+        temp = fin
+        for delim in DELIMITERS:
+            if result.startswith(delim):
+                result = result[len(delim):].strip()
+            bar = result.split(delim)
+            if len(bar) == 1:
+                # Empty
+                continue
+            short_title = bar[0].strip()
+            
+            if len(short_title) < slen:
+                temp = fin
+                fin = short_title.strip()
+                slen = len(short_title)
+        
+        fin = fin.strip()
+        if len(fin) == 0:
+            print(f"For title {product_title}, len = 0")
+        if len(fin.split()) <= 1:
+            # Let's take the second shortest one instead, as fin is too short
+            if len(temp.split()) <= 1:
+                pass
+            else:
+                fin = temp.strip()
+        if len(fin) > 0 and fin[-1] in [',']:
+            fin = fin[:-1]
+        return fin
+    
+    queryset = session.query(ProductListing).all()
+
+    for obj in queryset:
+        if hasattr(obj, 'short_title'):
+            setattr(obj, 'short_title', foo(obj.title))
+    
+    try:
+        session.commit()
+        logger.info("Updated short_title field!")
+    except:
+        session.rollback()
+        logger.critical(f"Error during updating short_title field")
+
+
 def mark_duplicates(session, category, table='ProductListing'):
     from sqlalchemy import asc, desc
 
@@ -1053,6 +1109,8 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductDetails', column)
     #update_date(session)
     #update_product_listing_from_cache(session, "headphones")
+    #column = Column('short_title', String(100))
+    #add_column(engine, 'ProductListing', column)
     mark_duplicates(session, "headphones")
     mark_duplicate_reduced(session, "headphones")
     exit(0)
