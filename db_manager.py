@@ -922,16 +922,16 @@ def mark_duplicates(session, category, table='ProductListing'):
             duplicates.add(prev.product_id)
             duplicates.add(obj.product_id)
             if prev.product_id not in pids:
-                prev.is_duplicate = True
-                logger.info(f"Found duplicate - {prev.product_id} with later id {obj.product_id}")
+                obj.is_duplicate = True
+                logger.info(f"Found duplicate - {obj.product_id} with prev id {prev.product_id}")
                 try:
                     session.commit()
                 except:
                     session.rollback()
-                    logger.critical(f"Error during updating duplicate ID for product - {prev.product_id}")
+                    logger.critical(f"Error during updating duplicate ID for product - {obj.product_id}")
     
     from sqlitedict import SqliteDict
-    
+
     with SqliteDict('cache.sqlite3', autocommit=True) as mydict:
         mydict[f'DUPLICATE_SET_{category}'] = duplicates
 
@@ -996,6 +996,7 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductDetails', column)
     #update_date(session)
     #update_product_listing_from_cache(session, "headphones")
+    #mark_duplicates(session, "headphones")
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
