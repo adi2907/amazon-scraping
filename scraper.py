@@ -381,13 +381,14 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                     except:
                                         pass
                                     continue
+                            else:
+                                if a is None:
+                                    final_results[category][curr_page][item['title']]['is_duplicate'] = True
                             
                             duplicate = True
                             break
                     
-                    if duplicate == True:
-                        final_results[category][curr_page][title]['is_duplicate'] = True
-                    else:
+                    if duplicate != True:
                         listing.append({'product_id': product_id, 'title': title, 'small_title': small_title, 'total_ratings': total_ratings, 'price': price})
                 
                 # Reset it
