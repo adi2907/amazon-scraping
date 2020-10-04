@@ -850,6 +850,8 @@ def update_date(session):
 def update_product_listing_from_cache(session, category, cache_file='cache.sqlite3'):
     from sqlitedict import SqliteDict
 
+    count = 0
+
     with SqliteDict(cache_file, autocommit=False) as mydict:
         today = datetime.datetime.today().strftime("%d-%m-%y")
 
@@ -863,6 +865,10 @@ def update_product_listing_from_cache(session, category, cache_file='cache.sqlit
             status = insert_product_listing(session, listing)
             if not status:
                 logger.warning(f"Error when updating listing details for PAGE {page}")
+            else:
+                count += 1
+    
+    logger.info(f"Successfully updated {count} products for category = {category}")
 
 
 if __name__ == '__main__':
