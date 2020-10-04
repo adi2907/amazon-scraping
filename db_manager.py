@@ -1007,7 +1007,7 @@ def mark_duplicate_reduced(session, category):
         if obj is None:
             continue
 
-        short_title = ' '.join(word.lower() for word in obj.title.split()[:6])
+        short_title = obj.short_title
         if short_title not in reviews:
             reviews[short_title] = session.query(table_map['Reviews']).filter(Reviews.product_id == obj.product_id, Reviews.is_duplicate != True).count()
             pids[obj.product_id] = short_title 
