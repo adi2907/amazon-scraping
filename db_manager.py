@@ -1323,6 +1323,13 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
         logger.info(f"Finished inserting!")
 
 
+def update_active_products(engine, pids, table='ProductListing', insert=True):
+    engine.execute('UPDATE %s SET %s = %s' % (table, "is_active", "False"))
+    
+    for pid in pids:
+        engine.execute('UPDATE %s SET %s = %s WHERE product_id = %s' % (table, "is_active", "True", pid))
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     from sqlalchemy import desc

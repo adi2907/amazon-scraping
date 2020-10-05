@@ -1674,6 +1674,14 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             logger.info("Updated indexes!")
         except Exception as ex:
             logger.critical(f"Error when updating listing indexes: {ex}")
+        
+        # Update active product IDs
+        try:
+            logger.info("Updating active PIDS...")
+            db_manager.update_active_products(engine, pids, table='ProductListing', insert=True)
+            logger.info("Updated Active PIDS!")
+        except Exception as ex:
+            logger.critical(f"Erro when updating active PIDS: {ex}")
 
     return final_results
 
