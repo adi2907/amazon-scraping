@@ -1109,11 +1109,14 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
         logger.critical(f"Exception during fetching maximum value: {ex}")
         return
 
-    queryset = session.query(_table).filter(ProductListing.is_duplicate != True).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
+    queryset = session.query(_table).filter(ProductListing.duplicate_set != None, ProductListing.is_duplicate != True).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
     null_queryset = session.query(_table).filter(ProductListing.duplicate_set == None).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
     temp = {}
+
+    inserted_items = []
+    inserted_idxs = []
     
     with SqliteDict('cache.sqlite3', autocommit=True) as cache:
         idxs = cache.get(f'PRODUCTLISTING_DUPLICATE_INDEXES')
@@ -1127,8 +1130,6 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
         
         for instance in null_queryset:
             for obj in queryset:
-                if obj.product_id == instance.product_id:
-                    continue
 
                 # TODO: Set this back to 0
                 DELTA = 0
@@ -1159,14 +1160,53 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     # No match
                     continue
                 else:
-                    idxs[instance.product_id] = idx
-                    temp[instance.product_id] = idx
+                    idxs[instance.product_id] = obj.duplicate_set
+                    temp[instance.product_id] = obj.duplicate_set
                     break
             
             if flag == False:
-                idx += 1
-                idxs[instance.product_id] = idx
-                temp[instance.product_id] = idx
+                # Check with the previously inserted items
+                dup = False
+                for _obj in inserted_items:
+                    # TODO: Set this back to 0
+                    DELTA = 0
+
+                    # Find duplicate set
+                    a = (_obj.short_title == instance.short_title)
+                    b = ((_obj.price == instance.price) or (_obj.price is not None and instance.price is not None and abs(_obj.price - instance.price) <= (0.1 + DELTA) * (max(_obj.price, instance.price))))
+                    c = ((_obj.total_ratings == instance.total_ratings) or (instance.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(_obj.total_ratings, instance.total_ratings))))
+
+                    dup = ((a & b) | (b & c) | (c & a))
+
+                    if dup and not a:
+                        # Be a bit careful
+                        if ''.join(_obj.short_title.split(' ')[:2]) != ''.join(instance.short_title.split(' ')[:2]):
+                            # Check ProductDetails brand
+                            obj1 = session.query(ProductDetails).filter(ProductDetails.product_id == _obj.product_id).first()
+                            obj2 = session.query(ProductDetails).filter(ProductDetails.product_id == instance.product_id).first()
+
+                            if obj1 is not None and obj2 is not None and obj1.brand == obj2.brand:
+                                pass
+                            else:
+                                # False positive
+                                logger.warning(f"WARNING: PIDS {_obj.product_id} and {instance.product_id} were FALSE positives")
+                                logger.warning(f"WARNING: Titles {_obj.short_title} and {instance.short_title} didn't match")
+                                dup = False
+                    
+                    if not dup:
+                        # No match
+                        continue
+                    else:
+                        idxs[instance.product_id] = _obj.duplicate_set
+                        temp[instance.product_id] = _obj.duplicate_set
+                        break
+                
+                if dup == False:
+                    idx += 1
+                    idxs[instance.product_id] = idx
+                    temp[instance.product_id] = idx
+                    inserted_items.append(instance)
+                    inserted_idxs.append(idx)
         
         cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
 
