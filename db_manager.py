@@ -47,6 +47,7 @@ tables = {
         'image': 'TEXT(1000)',
         'is_duplicate': 'BOOLEAN',
         'short_title': 'TEXT(100)',
+        'duplicate_set': 'INTEGER',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -1152,14 +1153,16 @@ if __name__ == '__main__':
 
     #column = Column('category', String(100))
     #add_column(engine, 'DailyProductListing', column)
+    #column = Column('duplicate_set', Integer())
+    #add_column(engine, 'ProductListing', column)
     #column = Column('is_duplicate', Boolean())
     #add_column(engine, 'ProductDetails', column)
     #update_date(session)
     #update_product_listing_from_cache(session, "headphones")
     #column = Column('short_title', String(100))
     #add_column(engine, 'ProductListing', column)
-    mark_duplicates(session, "headphones")
-    mark_duplicate_reduced(session, "headphones")
+    #mark_duplicates(session, "headphones")
+    #mark_duplicate_reduced(session, "headphones")
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
