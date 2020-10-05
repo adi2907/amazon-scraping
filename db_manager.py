@@ -1130,10 +1130,17 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
             if flag and not a:
                 # Be a bit careful
                 if ''.join(obj.short_title.split(' ')[:2]) != ''.join(prev.short_title.split(' ')[:2]):
-                    # False positive
-                    logger.warning(f"WARNING: PIDS {obj.product_id} and {prev.product_id} were FALSE positives")
-                    logger.warning(f"WARNING: Titles {obj.short_title} and {prev.short_title} didn't match")
-                    flag = False
+                    # Check ProductDetails brand
+                    obj1 = session.query(ProductDetails).filter(ProductDetails.product_id == obj.product_id).first()
+                    obj2 = session.query(ProductDetails).filter(ProductDetails.product_id == prev.product_id).first()
+
+                    if obj1.brand == obj2.brand:
+                        pass
+                    else:
+                        # False positive
+                        logger.warning(f"WARNING: PIDS {obj.product_id} and {prev.product_id} were FALSE positives")
+                        logger.warning(f"WARNING: Titles {obj.short_title} and {prev.short_title} didn't match")
+                        flag = False
             
             if not flag:
                 # No match
