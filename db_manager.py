@@ -1096,6 +1096,57 @@ def mark_duplicate_reduced(session, category):
     logger.info(f"Marked {count} products as duplicate!")
 
 
+def index_duplicate_sets(session, table='ProductListing'):
+    from sqlalchemy import asc, desc
+    from sqlitedict import SqliteDict
+
+    _table = table_map[table]
+
+    queryset = session.query(_table).all().order_by(asc('category')).order_by(asc('title')).order_by(asc('short_title')).order_by(desc('total_ratings')).order_by(desc('price'))
+
+    with SqliteDict('cache.sqlite3', autocommit=True) as cache:
+        idxs = {}
+        prev = None
+
+        idx = 1
+        
+        for obj in queryset:
+            if prev is None:
+                prev = obj
+                continue
+
+            product_id = obj.product_id
+
+            # TODO: Set this back to 0
+            DELTA = 0.1
+
+            # Find duplicate set
+            a = (obj.short_title == prev.short_title)
+            b = ((obj.price == prev.price) or (obj.price is not None and prev.price is not None and abs(obj.price - prev.price) <= (0.1 + DELTA) * (max(obj.price, prev.price))))
+            c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, prev.total_ratings))))
+
+            flag = ((a & b) | (b & c) | (c & a))
+
+            if flag and not a:
+                # Be a bit careful
+                if ''.join(obj.short_title.split(' ')[:2]) != ''.join(prev.short_title.split(' ')[:2]):
+                    # False positive
+                    logger.warning(f"WARNING: PIDS {obj.product_id} and {prev.product_id} were FALSE positives")
+                    logger.warning(f"WARNING: Titles {obj.short_title} and {prev.short_title} didn't match")
+                    flag = False
+            
+            if not flag:
+                # No match
+                idx += 1
+            
+            idxs[product_id] = idx
+
+            prev = obj
+        
+        cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
+
+    logger.info(f"Finished indexing all duplicate sets!")
+
 
 if __name__ == '__main__':
     # Start a session using the existing engine
@@ -1163,6 +1214,7 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductListing', column)
     #mark_duplicates(session, "headphones")
     #mark_duplicate_reduced(session, "headphones")
+    #index_duplicate_sets(session)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
