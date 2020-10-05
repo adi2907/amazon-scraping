@@ -636,12 +636,6 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             # Session.remove()
         if detail == True:
             remove_from_cache(category)
-        else:
-            # Update set indexes
-            try:
-                db_manager.update_duplicate_set(db_session, table='ProductListing', insert=True)
-            except Exception as ex:
-                logger.critical(f"Error when updating listing indexes: {ex}")
 
 
 def scrape_category_listing(categories, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False):
@@ -1671,6 +1665,15 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
                     exception_logger.critical("".join(traceback.TracebackException.from_exception(exc).format()))
                 else:
                     logger.info(f"Category {category} is done!")
+    
+    if detail == False:
+        logger.info(f"Updating duplicate indices...")
+        # Update set indexes
+        try:
+            db_manager.update_duplicate_set(db_session, table='ProductListing', insert=True)
+            logger.info("Updated indexes!")
+        except Exception as ex:
+            logger.critical(f"Error when updating listing indexes: {ex}")
 
     return final_results
 
