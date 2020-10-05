@@ -1161,7 +1161,8 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     break
             
             if flag == False:
-                idxs[instance.product_id] = idx + 1
+                idx += 1
+                idxs[instance.product_id] = idx
         
         cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
 
