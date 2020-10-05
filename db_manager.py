@@ -1134,7 +1134,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
                     obj1 = session.query(ProductDetails).filter(ProductDetails.product_id == obj.product_id).first()
                     obj2 = session.query(ProductDetails).filter(ProductDetails.product_id == prev.product_id).first()
 
-                    if obj1.brand == obj2.brand:
+                    if obj1 is not None and obj2 is not None obj1.brand == obj2.brand:
                         pass
                     else:
                         # False positive
