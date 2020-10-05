@@ -1109,7 +1109,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
         logger.critical(f"Exception during fetching maximum value: {ex}")
         return
 
-    queryset = session.query(_table).filter(ProductListing.duplicate_set != None, ProductListing.is_duplicate != True).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
+    queryset = session.query(_table).filter(ProductListing.duplicate_set.isnot(None), ProductListing.is_duplicate != True).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
     null_queryset = session.query(_table).filter(ProductListing.duplicate_set == None).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
