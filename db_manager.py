@@ -1113,6 +1113,8 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
 
     null_queryset = session.query(_table).filter(ProductListing.duplicate_set == None).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
+    temp = {}
+    
     with SqliteDict('cache.sqlite3', autocommit=True) as cache:
         idxs = cache.get(f'PRODUCTLISTING_DUPLICATE_INDEXES')
         
@@ -1158,26 +1160,23 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     continue
                 else:
                     idxs[instance.product_id] = idx
+                    temp[instance.product_id] = idx
                     break
             
             if flag == False:
                 idx += 1
                 idxs[instance.product_id] = idx
+                temp[instance.product_id] = idx
         
         cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
 
     if insert == True:
         logger.info(f"Inserting indexes into the DB...")
         
-        with SqliteDict('cache.sqlite3', autocommit=False) as cache:
-            idxs = cache.get(f"PRODUCTLISTING_DUPLICATE_INDEXES")
-            if not idxs:
-                logger.warning("idxs is None")
-            else:
-                for product_id in idxs:
-                    instance = session.query(_table).filter(_table.product_id == product_id).first()
-                    if instance:
-                        setattr(instance, 'duplicate_set', idxs[product_id])
+        for product_id in temp:
+            instance = session.query(_table).filter(_table.product_id == product_id).first()
+            if instance:
+                setattr(instance, 'duplicate_set', temp[product_id])
 
         try:
             session.commit()
