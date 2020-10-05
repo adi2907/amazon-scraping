@@ -1154,7 +1154,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
                 if flag == True:
                     info[idx].extend([{'id': prev.product_id, 'title': prev.short_title}, {'id': obj.product_id, 'title': obj.short_title}])
                 else:
-                    info[idx].extend([{'id': prev.product_id}])
+                    info[idx].extend([{'id': prev.product_id, 'title': prev.short_title}])
                     info[idx + 1] = [{'id': obj.product_id, 'title': obj.short_title}]
 
             prev = obj
