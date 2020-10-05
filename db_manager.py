@@ -1106,6 +1106,8 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
 
     with SqliteDict('cache.sqlite3', autocommit=True) as cache:
         idxs = {}
+        info = {}
+
         prev = None
 
         idx = 1
@@ -1114,8 +1116,6 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
             if prev is None:
                 prev = obj
                 continue
-
-            product_id = obj.product_id
 
             # TODO: Set this back to 0
             DELTA = 0.1
@@ -1137,13 +1137,30 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
             
             if not flag:
                 # No match
+                idxs[prev.product_id] = idx
                 idx += 1
+                idxs[obj.product_id] = idx
+            else:
+                idxs[prev.product_id] = idx
+                idxs[obj.product_id] = idx
             
-            idxs[product_id] = idx
+            if idx not in info:
+                if flag == True:
+                    info[idx] = [{'id': prev.product_id, 'title': prev.short_title}, {'id': obj.product_id, 'title': obj.short_title}]
+                else:
+                    info[idx] = [{'id': prev.product_id}]
+                    info[idx + 1] = [{'id': obj.product_id, 'title': obj.short_title}]
+            else:
+                if flag == True:
+                    info[idx].extend([{'id': prev.product_id, 'title': prev.short_title}, {'id': obj.product_id, 'title': obj.short_title}])
+                else:
+                    info[idx].extend([{'id': prev.product_id}])
+                    info[idx + 1].extend([{'id': obj.product_id, 'title': obj.short_title}])
 
             prev = obj
         
         cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
+        cache[f'PRODUCTLISTING_DUPLICATE_INFO'] = info
 
     logger.info(f"Got {idx} number of sets. Finished indexing all duplicate sets!")
 
