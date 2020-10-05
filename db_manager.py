@@ -1102,7 +1102,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
 
     _table = table_map[table]
 
-    queryset = session.query(_table).all().order_by(asc('category')).order_by(asc('title')).order_by(asc('short_title')).order_by(desc('total_ratings')).order_by(desc('price'))
+    queryset = session.query(_table).order_by(asc('category')).order_by(asc('title')).order_by(asc('short_title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
     with SqliteDict('cache.sqlite3', autocommit=True) as cache:
         idxs = {}
