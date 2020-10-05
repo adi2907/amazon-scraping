@@ -1096,7 +1096,7 @@ def mark_duplicate_reduced(session, category):
     logger.info(f"Marked {count} products as duplicate!")
 
 
-def index_duplicate_sets(session, table='ProductListing'):
+def index_duplicate_sets(session, table='ProductListing', insert=False):
     from sqlalchemy import asc, desc
     from sqlitedict import SqliteDict
 
@@ -1145,7 +1145,28 @@ def index_duplicate_sets(session, table='ProductListing'):
         
         cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
 
-    logger.info(f"Finished indexing all duplicate sets!")
+    logger.info(f"Got {idx} number of sets. Finished indexing all duplicate sets!")
+
+    if insert == True:
+        logger.info(f"Inserting indexes into the DB...")
+        
+        with SqliteDict('cache.sqlite3', autocommit=False) as cache:
+            idxs = cache.get(f"PRODUCTLISTING_DUPLICATE_INDEXES")
+            if not idxs:
+                logger.warning("idxs is None")
+            else:
+                for product_id in idxs:
+                    instance = session.query(_table).filter(_table.product_id == product_id).first()
+                    if instance:
+                        setattr(instance, 'duplicate_set', idxs[product_id])
+
+        try:
+            session.commit()
+        except Exception as ex:
+            session.rollback()
+            logger.critical(f"Exception: {ex} when trying to commit idxs")
+        
+        logger.info(f"Finished inserting!")
 
 
 if __name__ == '__main__':
@@ -1214,7 +1235,7 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductListing', column)
     #mark_duplicates(session, "headphones")
     #mark_duplicate_reduced(session, "headphones")
-    #index_duplicate_sets(session)
+    #index_duplicate_sets(session, insert=False)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
