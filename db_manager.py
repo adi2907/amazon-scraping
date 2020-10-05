@@ -1109,7 +1109,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
         logger.critical(f"Exception during fetching maximum value: {ex}")
         return
 
-    queryset = session.query(_table).filter(ProductListing.duplicate_set.isnot(None), ProductListing.is_duplicate != True).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
+    queryset = session.query(_table).filter(ProductListing.duplicate_set.isnot(None), ~(ProductListing.is_duplicate.is_(True))).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
     null_queryset = session.query(_table).filter(ProductListing.duplicate_set == None).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
 
@@ -1130,14 +1130,13 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
         
         for instance in null_queryset:
             for obj in queryset:
-
                 # TODO: Set this back to 0
                 DELTA = 0
 
                 # Find duplicate set
                 a = (obj.short_title == instance.short_title)
                 b = ((obj.price == instance.price) or (obj.price is not None and instance.price is not None and abs(obj.price - instance.price) <= (0.1 + DELTA) * (max(obj.price, instance.price))))
-                c = ((obj.total_ratings == instance.total_ratings) or (instance.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, instance.total_ratings))))
+                c = ((obj.total_ratings == instance.total_ratings) or (obj.total_ratings is not None and instance.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, instance.total_ratings))))
 
                 flag = ((a & b) | (b & c) | (c & a))
 
@@ -1391,6 +1390,7 @@ if __name__ == '__main__':
     #mark_duplicates(session, "headphones")
     #mark_duplicate_reduced(session, "headphones")
     #index_duplicate_sets(session, insert=False)
+    #update_duplicate_set(session, table='ProductListing', insert=True)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
