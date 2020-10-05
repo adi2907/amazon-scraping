@@ -48,6 +48,7 @@ tables = {
         'is_duplicate': 'BOOLEAN',
         'short_title': 'TEXT(100)',
         'duplicate_set': 'INTEGER',
+        'is_active': 'BOOLEAN',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -1094,6 +1095,96 @@ def mark_duplicate_reduced(session, category):
                 logger.critical(f"Error when marking {pid} as duplicate")
     
     logger.info(f"Marked {count} products as duplicate!")
+
+
+def update_duplicate_set(session, table='ProductListing', insert=False):
+    from sqlalchemy import asc, desc, func
+    from sqlitedict import SqliteDict
+
+    _table = table_map[table]
+
+    try:
+        num_sets = session.query(func.max(ProductListing.duplicate_set)).scalar()
+    except Exception as ex:
+        logger.critical(f"Exception during fetching maximum value: {ex}")
+        return
+
+    queryset = session.query(_table).filter(ProductListing.is_duplicate != True).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
+
+    null_queryset = session.query(_table).filter(ProductListing.duplicate_set == None).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('title')).order_by(desc('total_ratings')).order_by(desc('price'))
+
+    with SqliteDict('cache.sqlite3', autocommit=True) as cache:
+        idxs = cache.get(f'PRODUCTLISTING_DUPLICATE_INDEXES')
+        
+        if idxs is None:
+            idxs = {}
+        
+        idx = num_sets
+
+        flag = False
+        
+        for instance in null_queryset:
+            for obj in queryset:
+                if obj.product_id == instance.product_id:
+                    continue
+
+                # TODO: Set this back to 0
+                DELTA = 0
+
+                # Find duplicate set
+                a = (obj.short_title == instance.short_title)
+                b = ((obj.price == instance.price) or (obj.price is not None and instance.price is not None and abs(obj.price - instance.price) <= (0.1 + DELTA) * (max(obj.price, instance.price))))
+                c = ((obj.total_ratings == instance.total_ratings) or (instance.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, instance.total_ratings))))
+
+                flag = ((a & b) | (b & c) | (c & a))
+
+                if flag and not a:
+                    # Be a bit careful
+                    if ''.join(obj.short_title.split(' ')[:2]) != ''.join(instance.short_title.split(' ')[:2]):
+                        # Check ProductDetails brand
+                        obj1 = session.query(ProductDetails).filter(ProductDetails.product_id == obj.product_id).first()
+                        obj2 = session.query(ProductDetails).filter(ProductDetails.product_id == instance.product_id).first()
+
+                        if obj1 is not None and obj2 is not None and obj1.brand == obj2.brand:
+                            pass
+                        else:
+                            # False positive
+                            logger.warning(f"WARNING: PIDS {obj.product_id} and {instance.product_id} were FALSE positives")
+                            logger.warning(f"WARNING: Titles {obj.short_title} and {instance.short_title} didn't match")
+                            flag = False
+                
+                if not flag:
+                    # No match
+                    continue
+                else:
+                    idxs[instance.product_id] = idx
+                    break
+            
+            if flag == False:
+                idxs[instance.product_id] = idx + 1
+        
+        cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
+
+    if insert == True:
+        logger.info(f"Inserting indexes into the DB...")
+        
+        with SqliteDict('cache.sqlite3', autocommit=False) as cache:
+            idxs = cache.get(f"PRODUCTLISTING_DUPLICATE_INDEXES")
+            if not idxs:
+                logger.warning("idxs is None")
+            else:
+                for product_id in idxs:
+                    instance = session.query(_table).filter(_table.product_id == product_id).first()
+                    if instance:
+                        setattr(instance, 'duplicate_set', idxs[product_id])
+
+        try:
+            session.commit()
+        except Exception as ex:
+            session.rollback()
+            logger.critical(f"Exception: {ex} when trying to commit idxs")
+        
+        logger.info(f"Finished inserting!")
 
 
 def index_duplicate_sets(session, table='ProductListing', insert=False):
