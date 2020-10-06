@@ -1459,7 +1459,7 @@ if __name__ == '__main__':
     #update_active_products(engine, ['B07X1KSWZ3'], table='ProductListing', insert=True)
     #index_qandas(engine)
     #index_reviews(engine)
-    update_product_data(engine, dump=False)
+    #update_product_data(engine, dump=False)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
