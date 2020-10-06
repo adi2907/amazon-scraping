@@ -102,6 +102,7 @@ tables = {
         'answer': 'LONGTEXT',
         'date': 'DATETIME',
         'page_num': 'INTEGER',
+        'is_duplicate': 'BOOLEAN',
         'duplicate_set': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
@@ -497,6 +498,7 @@ def insert_product_qanda(session, qanda, product_id, table='QandA', duplicate_se
         # Add product id
         row['product_id'] = product_id
         row['duplicate_set'] = duplicate_set
+        row['is_duplicate'] = False
         obj = table_map[table]()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
@@ -1365,11 +1367,33 @@ def update_product_data(engine, dump=False):
             "SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set FROM Reviews 
             ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc" | sed 's/\t/","/g;s/^/"/;s/$/"/;s/\n//g' > Reviews.csv
             """
-        else:
-            dump_command = """
+        
+            subprocess.Popen(dump_command)
+
+            dump_command = f"""
+            mysql -u {db_user} -p --database={db_name} --host={db_host} --port={db_port} --batch -e 
+            "SELECT QandA.id, QandA.product_id, QandA.question, QandA.answer, QandA.date, QandA.is_duplicate, QandA.duplicate_set FROM QandA 
+            ORDER BY QandA.duplicate_set asc, QandA.question ASC, QandA.answer ASC" | sed 's/\t/","/g;s/^/"/;s/$/"/;s/\n//g' > QandA.csv
             """
         
-        subprocess.Popen(dump_command)
+            subprocess.Popen(dump_command)
+
+
+    QANDA_COMPRESSED = os.path.join(os.getcwd(), 'QandA.csv')
+
+    if not os.path.exists(QANDA_COMPRESSED):
+        raise ValueError("File not found")
+
+    df = pd.read_csv(QANDA_COMPRESSED, sep=",", encoding="utf-8", usecols=["id", "date", "question", "answer", "rating", "is_duplicate", "duplicate_set"])
+
+    cleaned_df = df.drop_duplicates(subset=['date', 'question', 'answer', 'duplicate_set'], keep='first')
+
+    cleaned_df['id'].to_csv(os.path.join(os.getcwd(), 'QandA_cleaned_ids.csv'), index=False)
+
+    ids = ','.join(['"' + str(_id) + '"' for _id in cleaned_df['id']])
+
+    engine.execute('UPDATE QandA SET is_duplicate = True')
+    engine.execute('UPDATE QandA SET is_duplicate = False WHERE id in (%s)' % (ids))
 
     REVIEWS_COMPRESSED = os.path.join(os.getcwd(), 'Reviews.csv')
 
