@@ -1334,6 +1334,14 @@ def update_active_products(engine, pids, table='ProductListing', insert=True):
         engine.execute('UPDATE %s SET %s = %s WHERE %s.product_id = "%s"' % (table, "is_active", "True", table, pid))
 
 
+def index_qandas(engine, table='QandA'):
+    engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, duplicate_set FROM ProductListing) as t2 SET t1.duplicate_set = t2.duplicate_set WHERE t1.product_id = t2.product_id' % (table))
+
+
+def index_reviews(engine, table='Reviews'):
+    engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, duplicate_set FROM ProductListing) as t2 SET t1.duplicate_set = t2.duplicate_set WHERE t1.product_id = t2.product_id' % (table))
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     from sqlalchemy import desc
@@ -1403,6 +1411,8 @@ if __name__ == '__main__':
     #index_duplicate_sets(session, insert=False)
     #update_duplicate_set(session, table='ProductListing', insert=True)
     #update_active_products(engine, ['B07X1KSWZ3'], table='ProductListing', insert=True)
+    #index_qandas(engine)
+    #index_reviews(engine)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
