@@ -1331,7 +1331,7 @@ def update_active_products(engine, pids, table='ProductListing', insert=True):
     engine.execute('UPDATE %s SET %s = %s' % (table, "is_active", "False"))
     
     for pid in pids:
-        engine.execute('UPDATE %s SET %s = %s WHERE product_id = %s' % (table, "is_active", "True", pid))
+        engine.execute('UPDATE %s SET %s = %s WHERE %s.product_id = "%s"' % (table, "is_active", "True", table, pid))
 
 
 if __name__ == '__main__':
@@ -1402,6 +1402,7 @@ if __name__ == '__main__':
     #mark_duplicate_reduced(session, "headphones")
     #index_duplicate_sets(session, insert=False)
     #update_duplicate_set(session, table='ProductListing', insert=True)
+    #update_active_products(engine, ['B07X1KSWZ3'], table='ProductListing', insert=True)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
