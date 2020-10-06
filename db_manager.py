@@ -102,6 +102,7 @@ tables = {
         'answer': 'LONGTEXT',
         'date': 'DATETIME',
         'page_num': 'INTEGER',
+        'duplicate_set': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'Reviews': {
@@ -117,6 +118,7 @@ tables = {
         'helpful_votes': 'INTEGER',
         'page_num': 'INTEGER',
         'is_duplicate': 'BOOLEAN',
+        'duplicate_set': 'INTEGER',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'DailyProductListing': {
@@ -489,11 +491,12 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
         return False
 
 
-def insert_product_qanda(session, qanda, product_id, table='QandA'):
+def insert_product_qanda(session, qanda, product_id, table='QandA', duplicate_set=None):
     for pair in qanda:
         row = {key: (value if not isinstance(value, list) and not isinstance(value, dict) else json.dumps(value)) for key, value in pair.items()}
         # Add product id
         row['product_id'] = product_id
+        row['duplicate_set'] = duplicate_set
         obj = table_map[table]()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
@@ -509,7 +512,7 @@ def insert_product_qanda(session, qanda, product_id, table='QandA'):
         return False
 
 
-def insert_product_reviews(session, reviews, product_id, table='Reviews'):
+def insert_product_reviews(session, reviews, product_id, table='Reviews', duplicate_set=None):
     for review in reviews['reviews']:
         row = dict()
         # Add product id
@@ -527,6 +530,7 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews'):
         row['helpful_votes'] = review['helpful_votes']
         row['page_num'] = review['page_num']
         row['is_duplicate'] = False
+        row['duplicate_set'] = duplicate_set
         obj = table_map[table]()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)

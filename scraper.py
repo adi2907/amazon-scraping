@@ -986,6 +986,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     product_id = parse_data.get_product_id(product_url)
 
+    obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
+
+    if obj is None:
+        logger.critical(f"Row with PID {product_id} doesn't exist in ProductListing. Returning....")
+        return {}
+    
+    duplicate_set = obj.duplicate_set
+
     dont_update = False
 
     # Store to cache first
@@ -1192,7 +1200,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     if curr == 0:
                         store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
                     else:
-                        status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id)
+                        status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id, duplicate_set=duplicate_set)
                         if status == False:
                             store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
                 except:
@@ -1404,7 +1412,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             if first_request == True:
                                 store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                             else:
-                                status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+                                status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
                                 if not status:
                                     store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                         except:
@@ -1417,7 +1425,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                 pass
                         else:
                             try:
-                                status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+                                status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
                                 if not status:
                                     store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                             except:
