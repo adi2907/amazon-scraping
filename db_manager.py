@@ -1342,6 +1342,52 @@ def index_reviews(engine, table='Reviews'):
     engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, duplicate_set FROM ProductListing) as t2 SET t1.duplicate_set = t2.duplicate_set WHERE t1.product_id = t2.product_id' % (table))
 
 
+def update_product_data(engine, dump=False):
+    from decouple import config
+    import os
+    import pandas as pd
+    import subprocess
+
+    if dump == True:
+        db_user = config('DB_USER')
+        db_name = config('DB_NAME')
+        db_host = config('DB_SERVER')
+        db_port = config('DB_PORT')
+        db_type = config('DB_TYPE')
+
+        if db_type.startswith('mysql'):
+            db_type = 'mysql'
+
+        if db_type == 'mysql':
+            # TODO: Remove the -p option and place the password under .my.cnf
+            dump_command = f"""
+            mysql -u {db_user} -p --database={db_name} --host={db_host} --port={db_port} --batch -e 
+            "SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set FROM Reviews 
+            ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc" | sed 's/\t/","/g;s/^/"/;s/$/"/;s/\n//g' > Reviews.csv
+            """
+        else:
+            dump_command = """
+            """
+        
+        subprocess.Popen(dump_command)
+
+    REVIEWS_COMPRESSED = os.path.join(os.getcwd(), 'Reviews.csv')
+
+    if not os.path.exists(REVIEWS_COMPRESSED):
+        raise ValueError("File not found")
+
+    df = pd.read_csv(REVIEWS_COMPRESSED, sep=",", encoding="utf-8", usecols=["id", "review_date", "title", "body", "rating", "helpful_votes", "is_duplicate", "duplicate_set"])
+
+    cleaned_df = df.drop_duplicates(subset=['review_date', 'title', 'body', 'rating', 'helpful_votes', 'duplicate_set'], keep='first')
+
+    cleaned_df['id'].to_csv(os.path.join(os.getcwd(), 'Reviews_cleaned_ids.csv'), index=False)
+
+    ids = ','.join(['"' + _id + '"' for _id in cleaned_df['id']])
+
+    engine.execute('UPDATE Reviews SET is_duplicate = True')
+    engine.execute('UPDATE Reviews SET is_duplicate = False WHERE id in (%s)' % (ids))
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     from sqlalchemy import desc
@@ -1413,6 +1459,7 @@ if __name__ == '__main__':
     #update_active_products(engine, ['B07X1KSWZ3'], table='ProductListing', insert=True)
     #index_qandas(engine)
     #index_reviews(engine)
+    #update_product_data(engine, dump=False)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
