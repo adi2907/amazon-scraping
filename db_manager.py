@@ -1382,7 +1382,7 @@ def update_product_data(engine, dump=False):
 
     cleaned_df['id'].to_csv(os.path.join(os.getcwd(), 'Reviews_cleaned_ids.csv'), index=False)
 
-    ids = ','.join(['"' + _id + '"' for _id in cleaned_df['id']])
+    ids = ','.join(['"' + str(_id) + '"' for _id in cleaned_df['id']])
 
     engine.execute('UPDATE Reviews SET is_duplicate = True')
     engine.execute('UPDATE Reviews SET is_duplicate = False WHERE id in (%s)' % (ids))
@@ -1459,7 +1459,7 @@ if __name__ == '__main__':
     #update_active_products(engine, ['B07X1KSWZ3'], table='ProductListing', insert=True)
     #index_qandas(engine)
     #index_reviews(engine)
-    #update_product_data(engine, dump=False)
+    update_product_data(engine, dump=False)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
@@ -1481,7 +1481,7 @@ if __name__ == '__main__':
     with open('dumps/headphones.pkl', 'rb') as f:
         product_listing = pickle.load(f)
 
-    insert_daily_product_listing(session, product_listing)
+    #insert_daily_product_listing(session, product_listing)
     #insert_product_listing(session, product_listing)
 
     #with open('dumps/dump_B07DJLVJ5M.pkl', 'rb') as f:
