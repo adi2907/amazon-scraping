@@ -966,7 +966,7 @@ def insert_short_titles(session):
                 pass
             else:
                 fin = temp.strip()
-        if len(fin) > 0 and fin[-1] in [',']:
+        if len(fin) > 0 and fin[-1] in [',', '.', ':', '-']:
             fin = fin[:-1]
         return fin
     
