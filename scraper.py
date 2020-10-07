@@ -19,6 +19,7 @@ from string import Template
 import requests
 from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
+from sqlalchemy import asc, desc
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from sqlitedict import SqliteDict
@@ -467,6 +468,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             if product_id is not None:
                                 _date = threshold_date
                                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                                
+                                recent_date = None
+
                                 if obj is not None:
                                     if obj.completed == True:
                                         a = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
@@ -474,10 +478,35 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                             error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
                                             continue
                                         else:
-                                            if hasattr(a, 'is_duplicate') and getattr(a, 'is_duplicate') == True:
+                                            recent_obj = db_session.query(db_manager.tables['ProductListing']).filter(db_manager.tables['ProductListing'].duplicate_set == a.duplicate_set).order_by(desc('date_completed')).first()
+                                            if recent_obj is None:
+                                                error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
+                                                continue
+                                            
+                                            instances = db_manager.query_table(db_session, 'ProductListing', 'all', filter_cond=({'duplicate_set': f'{a.duplicate_set}'}))
+                                            
+                                            if cache.sismember("DUPLICATE_SETS", str(recent_obj.duplicate_set)):
                                                 error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
                                                 continue
-                                        if hasattr(obj, 'date_completed') and obj.date_completed is not None:
+
+                                            #if hasattr(a, 'is_duplicate') and getattr(a, 'is_duplicate') == True:
+                                            #    error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
+                                            #    continue
+
+                                            if recent_obj.duplicate_set is not None:
+                                                cache.sadd(f"DUPLICATE_SETS", str(recent_obj.duplicate_set))
+                                            
+                                            recent_date = recent_obj.date_completed
+
+                                        if recent_date is not None:
+                                            _date = recent_date
+                                            logger.info(f"Set date as {_date}")
+                                            delta = datetime.now() - _date
+                                            if delta.days < 6:
+                                                logger.info(f"Skipping this product. within the last week")
+                                                continue
+                                            
+                                        elif hasattr(obj, 'date_completed') and obj.date_completed is not None:
                                             # Go until this point only
                                             _date = obj.date_completed
                                             logger.info(f"Set date as {_date}")
