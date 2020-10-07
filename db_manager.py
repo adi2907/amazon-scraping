@@ -330,7 +330,7 @@ def get_short_title(product_title):
             pass
         else:
             fin = temp.strip()
-    if len(fin) > 0 and fin[-1] in [',']:
+    if len(fin) > 0 and fin[-1] in [',', '.', ':', '-']:
         fin = fin[:-1]
     return fin
 
