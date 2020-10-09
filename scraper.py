@@ -64,6 +64,11 @@ try:
 except UndefinedValueError:
     OS = 'Windows'
 
+try:
+    DEVELOPMENT = config('DEVELOPMENT', cast=bool)
+except:
+    DEVELOPMENT = False
+
 
 try:
     speedup = config('speedup')
@@ -291,6 +296,14 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             time.sleep(6) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             html = response.content
             soup = BeautifulSoup(html, 'lxml')
+
+            if DEVELOPMENT == True and category == 'headphones':
+                DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
+                if not os.path.exists(DUMP_DIR):
+                    os.mkdir(DUMP_DIR)
+                
+                with open(os.path.join(DUMP_DIR, f'LISTING_{category}_PAGE_{curr_page}.html', 'wb')) as f:
+                    f.write(html)
 
             product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
 
