@@ -378,7 +378,8 @@ def insert_product_listing(session, data, table='ProductListing'):
                         temp = getattr(result, 'is_duplicate')
                         short_title = getattr(result, 'short_title')
                         for field in update_fields:
-                            setattr(result, field, row[field])
+                            if field in row:
+                                setattr(result, field, row[field])
                         setattr(result, 'is_duplicate', temp)
                         if short_title is not None:
                             setattr(result, 'short_title', short_title)
@@ -433,7 +434,8 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                     else:
                         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]"))
                         for field in update_fields:
-                            setattr(result, field, row[field])
+                            if field in row:
+                                setattr(result, field, row[field])
                         # Update the date
                         date = datetime.datetime.now(timezone('Asia/Kolkata'))#.date()
                         setattr(result, 'date', date)
@@ -474,7 +476,8 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
         result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]"))
         for field in update_fields:
-            setattr(result, field, row[field])
+            if field in row:
+                setattr(result, field, row[field])
         try:
             session.commit()
             return True
