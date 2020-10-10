@@ -373,16 +373,12 @@ def insert_product_listing(session, data, table='ProductListing'):
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
-                        return True
+                        continue
                 except (exc.IntegrityError, FlushError,):
-                    if DEVELOPMENT == True:
-                        logger.warning(f"For PID {row['product_id']}, there is IntegrityError")
                     session.rollback()
                     result = session.query(table_map[table]).filter(ProductListing.product_id == row['product_id']).first()
                     if result is None:
-                        if DEVELOPMENT == True:
-                            logger.warning(f"For PID {row['product_id']}, there is no other product. Returning True....")
-                        return True
+                        continue
                     else:
                         update_fields = [field for field in tables[table] if field != "product_id"]
                         temp = getattr(result, 'is_duplicate')
@@ -395,18 +391,18 @@ def insert_product_listing(session, data, table='ProductListing'):
                             setattr(result, 'short_title', short_title)
                         try:
                             session.commit()
-                            return True
+                            continue
                         except:
                             session.rollback()
                             logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                             logger.newline()
-                            return False
+                            continue
                 except Exception as ex:
                     session.rollback()
                     productlisting_logger.critical(f"{row['product_id']}-> Exception: {ex}")
                     logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                     logger.newline()
-                    return False
+                    continue
 
 
 def insert_daily_product_listing(session, data, table='DailyProductListing'):
@@ -435,7 +431,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
-                        return True
+                        continue
                 except exc.IntegrityError:
                     session.rollback()
                     result = session.query(table_map[table]).filter(ProductListing.product_id == row['product_id']).first()
@@ -451,18 +447,18 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                         setattr(result, 'date', date)
                         try:
                             session.commit()
-                            return True
+                            continue
                         except:
                             session.rollback()
                             logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                             logger.newline()
-                            return False
+                            continue
                 except Exception as ex:
                     session.rollback()
                     productlisting_logger.critical(f"{row['product_id']} -> Exception: {ex}")
                     logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                     logger.newline()
-                    return False
+                    continue
 
 
 def insert_product_details(session, data, table='ProductDetails', is_sponsored=False):
