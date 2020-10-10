@@ -635,6 +635,16 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 else:
                     response = my_proxy.get(server_url + page_url, referer=curr_url, ref_count='constant')
                 
+                if DEVELOPMENT == True and detail == False and category == 'headphones':
+                    logger.info(f"CURR PAGE: {curr_page}, next URL = {server_url + page_url}")
+                    
+                    DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
+                    if not os.path.exists(DUMP_DIR):
+                        os.mkdir(DUMP_DIR)
+                    
+                    with open(os.path.join(DUMP_DIR, f'LISTING_{category}_PAGE_{curr_page}.html'), 'wb') as f:
+                        f.write(response.content)
+
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
                 next_url = server_url + page_url
