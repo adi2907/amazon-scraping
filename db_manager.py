@@ -370,7 +370,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                         return True
                 except (exc.IntegrityError, FlushError,):
                     session.rollback()
-                    result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
+                    result = session.query(table_map[table]).filter(ProductListing.product_id == row['product_id']).first()
                     if result is None:
                         return True
                     else:
@@ -428,7 +428,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                         return True
                 except exc.IntegrityError:
                     session.rollback()
-                    result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
+                    result = session.query(table_map[table]).filter(ProductListing.product_id == row['product_id']).first()
                     if result is None:
                         pass
                     else:
@@ -473,7 +473,7 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
         return True
     except (exc.IntegrityError, FlushError):
         session.rollback()
-        result = session.query(table_map[table]).filter_by(product_id=row['product_id']).first()
+        result = session.query(table_map[table]).filter(ProductDetails.product_id == row['product_id']).first()
         update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]"))
         for field in update_fields:
             if field in row:
