@@ -279,6 +279,10 @@ def insert_category_to_db(category):
         page_results[category] = dict()
         page_results[category][idx + 1] = final_results[category][idx + 1]
 
+        #if idx + 1 == 28:
+        #    print(page_results)
+        #continue
+
         status = db_manager.insert_product_listing(session, page_results)
 
         if not status:
@@ -299,7 +303,11 @@ if __name__ == '__main__':
             if len(sys.argv) == 3:
                 category = sys.argv[2]
                 print("Inserting listing")
-                insert_category_to_db(category)
+                if category == 'all':
+                    for category in ["headphones", "smartphones", "washing machine", "refrigerator", "ceiling fan"]:
+                        insert_category_to_db(category)
+                else:
+                    insert_category_to_db(category)
             else:
                 print("Need to specify category")
         else:
