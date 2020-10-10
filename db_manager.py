@@ -186,6 +186,12 @@ except UndefinedValueError:
 metadata = MetaData(bind=engine)
 
 
+try:
+    DEVELOPMENT = config('DEVELOPMENT', cast=bool)
+except:
+    DEVELOPMENT = False
+
+
 def apply_schema(cls):
     # Refer https://stackoverflow.com/a/2575016
     table = tables[cls.__name__]
@@ -369,12 +375,16 @@ def insert_product_listing(session, data, table='ProductListing'):
                         session.commit()
                         return True
                 except (exc.IntegrityError, FlushError,):
+                    if DEVELOPMENT == True:
+                        logger.warning(f"For PID {row['product_id']}, there is IntegrityError")
                     session.rollback()
                     result = session.query(table_map[table]).filter(ProductListing.product_id == row['product_id']).first()
                     if result is None:
+                        if DEVELOPMENT == True:
+                            logger.warning(f"For PID {row['product_id']}, there is no other product. Returning True....")
                         return True
                     else:
-                        update_fields = (field for field in tables[table] if field != "product_id")
+                        update_fields = [field for field in tables[table] if field != "product_id"]
                         temp = getattr(result, 'is_duplicate')
                         short_title = getattr(result, 'short_title')
                         for field in update_fields:
@@ -432,7 +442,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                     if result is None:
                         pass
                     else:
-                        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]"))
+                        update_fields = [field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]")]
                         for field in update_fields:
                             if field in row:
                                 setattr(result, field, row[field])
