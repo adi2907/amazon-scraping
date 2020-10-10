@@ -242,7 +242,18 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         db_session = Session()
         #db_session = scoped_session(Session)
     else:
-        pass
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=False) # Separate Proxy per thread
+        try:
+            my_proxy.change_identity()
+        except:
+            logger.warning('No Proxy available via Tor relay. Mode = Normal')
+            logger.newline()
+            my_proxy = None
+
+        if my_proxy is None:
+            session = requests.Session()
+        
+        db_session = Session()
     
     try:
         logger.info(f"Now at category {category}, with num_pages {num_pages}")
@@ -298,11 +309,12 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             soup = BeautifulSoup(html, 'lxml')
 
             if DEVELOPMENT == True and category == 'headphones':
+                logger.info(f"Dumping page {curr_page} for headphones")
                 DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
                 if not os.path.exists(DUMP_DIR):
                     os.mkdir(DUMP_DIR)
                 
-                with open(os.path.join(DUMP_DIR, f'LISTING_{category}_PAGE_{curr_page}.html', 'wb')) as f:
+                with open(os.path.join(DUMP_DIR, f'LISTING_{category}_PAGE_{curr_page}.html'), 'wb') as f:
                     f.write(html)
 
             product_info, curr_serial_no = parse_data.get_product_info(soup, curr_serial_no=curr_serial_no)
