@@ -403,6 +403,7 @@ def insert_product_listing(session, data, table='ProductListing'):
                     logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                     logger.newline()
                     continue
+    return True
 
 
 def insert_daily_product_listing(session, data, table='DailyProductListing'):
@@ -459,6 +460,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                     logger.warning(f"For Product {row['product_id']}, there is an error with the data.")
                     logger.newline()
                     continue
+    return True
 
 
 def insert_product_details(session, data, table='ProductDetails', is_sponsored=False):
