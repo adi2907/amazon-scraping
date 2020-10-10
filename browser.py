@@ -260,7 +260,7 @@ def insert_category_to_db(category):
     Session = sessionmaker(bind=db_manager.engine, autocommit=False, autoflush=True)
     session = Session()
 
-    files = sorted(glob.glob(f"{DUMP_DIR}/listing_{category}_"), key=lambda x: int(x.split('_')[-1]))
+    files = sorted(glob.glob(os.path.join(DUMP_DIR, f"listing_{category}_*")), key=lambda x: int(x.split('.')[0].split('_')[-1]))
 
     final_results = dict()
 
@@ -273,7 +273,7 @@ def insert_category_to_db(category):
         soup = BeautifulSoup(html, 'lxml')
         product_info, _ = parse_data.get_product_info(soup)
 
-        final_results[category][idx] = product_info
+        final_results[category][idx + 1] = product_info
 
         page_results = dict()
         page_results[category] = dict()
