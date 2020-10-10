@@ -305,10 +305,16 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
         while curr_page <= num_pages:
             time.sleep(6) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-            html = response.content
+            if (detail == False) or (detail == True and DEVELOPMENT == False):
+                html = response.content
+            else:
+                # Open from the dump directory (Listing files are here)
+                DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
+                with open(os.path.join(DUMP_DIR), f"listing_{category}_{curr_page}.html", "rb") as f
+                    html = f.read()
             soup = BeautifulSoup(html, 'lxml')
 
-            if DEVELOPMENT == True and category == 'headphones':
+            if DEVELOPMENT == True and category == 'headphones' and detail == False:
                 logger.info(f"Dumping page {curr_page} for headphones")
                 DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
                 if not os.path.exists(DUMP_DIR):
