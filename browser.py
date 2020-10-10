@@ -1,13 +1,20 @@
+import glob
 import os
 import time
+from copy import deepcopy
 from string import Template
 
+import lxml
+from bs4 import BeautifulSoup
+from decouple import UndefinedValueError, config
 from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.firefox.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 
+import db_manager
+import parse_data
 from utils import listing_categories, listing_templates
 
 ENTRY_URL = "https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_thirteen_browse-bin%3A2753043031&dc&qid=1599327930&rnid=2753038031&ref=sr_nr_p_n_feature_thirteen_browse-bin_2"
@@ -242,6 +249,43 @@ def run_subcategory(browser='Firefox'):
         print(ex)
         driver.quit()
 
+
+def insert_category_to_db(category):
+    DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
+    if not os.path.exists(DUMP_DIR):
+        raise ValueError("Dump Directory not present")
+
+    from sqlalchemy.orm import sessionmaker
+
+    Session = sessionmaker(bind=db_manager.engine, autocommit=False, autoflush=True)
+    session = Session()
+
+    files = sorted(glob.glob(f"{DUMP_DIR}/listing_{category}_"), key=lambda x: int(x.split('_')[-1]))
+
+    final_results = dict()
+
+    final_results[category] = dict()
+
+    for idx, filename in enumerate(files):
+        with open(filename, 'rb') as f:
+            html = f.read()
+
+        soup = BeautifulSoup(html, 'lxml')
+        product_info, _ = parse_data.get_product_info(soup)
+
+        final_results[category][idx] = product_info
+
+        page_results = dict()
+        page_results[category] = dict()
+        page_results[category][idx] = final_results[category][idx]
+
+        status = db_manager.insert_product_listing(session, page_results)
+
+        if not status:
+            print(f"Error while inserting Page {idx} of category - {category}")
+            continue
+
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) > 1:
@@ -251,6 +295,13 @@ if __name__ == '__main__':
         elif sys.argv[1] == 'category':
             print("Category")
             run_category()
+        elif sys.argv[1] == 'listing':
+            if len(sys.argv) == 3:
+                category = sys.argv[2]
+                print("Inserting listing")
+                insert_category_to_db(category)
+            else:
+                print("Need to specify category")
         else:
             print("Invalid argument")
     else:
