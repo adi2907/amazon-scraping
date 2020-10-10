@@ -277,12 +277,12 @@ def insert_category_to_db(category):
 
         page_results = dict()
         page_results[category] = dict()
-        page_results[category][idx] = final_results[category][idx]
+        page_results[category][idx + 1] = final_results[category][idx + 1]
 
         status = db_manager.insert_product_listing(session, page_results)
 
         if not status:
-            print(f"Error while inserting Page {idx} of category - {category}")
+            print(f"Error while inserting Page {idx + 1} of category - {category}")
             continue
 
 
