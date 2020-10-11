@@ -233,7 +233,7 @@ class Proxy():
             str: An IP Address
         """
         retries = 0
-        limit = 5
+        limit = 20
         urls = [to_http("https://ident.me", use_tor=self.use_tor), to_http("http://myip.dnsomatic.com", use_tor=self.use_tor), to_http("https://checkip.amazonaws.com", use_tor=self.use_tor)]
         for url in itertools.cycle(urls):
             try:
