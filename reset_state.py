@@ -9,6 +9,7 @@ def main():
 
     for category in listing_categories:
         # Take a backup first
+        cache.delete(f"{category}_PIDS_BACKUP")
         pids = cache.smembers(f"{category}_PIDS")
         for pid in pids:
             cache.sadd(f"{category}_PIDS_BACKUP", pid)

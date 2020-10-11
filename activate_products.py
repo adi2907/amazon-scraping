@@ -23,6 +23,8 @@ def main():
     categories = listing_categories
     for category in categories:
         old_pids = cache.smembers(f"LISTING_{category}_PIDS")
+
+        cache.delete(f"LISTING_{category}_PIDS_BACKUP")
         
         # Take a backup
         for pid in old_pids:
