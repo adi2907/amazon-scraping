@@ -49,6 +49,7 @@ tables = {
         'short_title': 'TEXT(100)',
         'duplicate_set': 'INTEGER',
         'is_active': 'BOOLEAN',
+        'date_completed': 'DATETIME',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -1355,6 +1356,10 @@ def index_reviews(engine, table='Reviews'):
     engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, duplicate_set FROM ProductListing) as t2 SET t1.duplicate_set = t2.duplicate_set WHERE t1.product_id = t2.product_id' % (table))
 
 
+def update_listing_completed(engine, table='ProductListing'):
+    engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, date_completed FROM ProductDetails) as t2 SET t1.date_completed = t2.date_completed WHERE t1.product_id = t2.product_id' % (table))
+
+
 def update_product_data(engine, dump=False):
     from decouple import config
     import os
@@ -1495,6 +1500,8 @@ if __name__ == '__main__':
     #index_qandas(engine)
     #index_reviews(engine)
     #update_product_data(engine, dump=False)
+    #column = Column('date_completed', DateTime())
+    #add_column(engine, 'ProductListing', column)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
