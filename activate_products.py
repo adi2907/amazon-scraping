@@ -4,7 +4,7 @@ import os
 from bs4 import BeautifulSoup
 
 import parse_data
-import cache
+from cache import Cache
 from utils import listing_categories
 
 
@@ -15,7 +15,7 @@ def main():
     if not os.path.exists(DUMP_DIR):
         raise ValueError("Dump Directory doesn't exist")
 
-    cache = cache.Cache()
+    cache = Cache()
     cache.connect('master', use_redis=True)
 
     categories = listing_categories
