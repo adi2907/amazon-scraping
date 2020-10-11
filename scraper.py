@@ -341,8 +341,49 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
                             continue
                 else:
-                    error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Skipping this, as this may be a duplicate")
-                    continue
+                    error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping this from scratch")
+                    rescrape = 0
+                    a = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                    if a is None:
+                        error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
+                        continue
+                    else:
+                        recent_obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc(text('date_completed'))).first()
+                        if recent_obj is None:
+                            error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
+                            continue
+                        
+                        instances = db_manager.query_table(db_session, 'ProductListing', 'all', filter_cond=({'duplicate_set': f'{a.duplicate_set}'}))
+                        
+                        if cache.sismember("DUPLICATE_SETS", str(recent_obj.duplicate_set)):
+                            error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
+                            continue
+
+                        if recent_obj.duplicate_set is not None:
+                            cache.sadd(f"DUPLICATE_SETS", str(recent_obj.duplicate_set))
+                        
+                        product_url = recent_obj.product_url
+                        
+                        recent_date = recent_obj.date_completed
+
+                    if recent_date is not None:
+                        _date = recent_date
+                        logger.info(f"Set date as {_date}")
+                        delta = datetime.now() - _date
+                        if delta.days < 6:
+                            logger.info(f"Skipping this product. within the last week")
+                            continue
+                        
+                    elif hasattr(obj, 'date_completed') and obj.date_completed is not None:
+                        # Go until this point only
+                        _date = obj.date_completed
+                        logger.info(f"Set date as {_date}")
+                        delta = datetime.now() - _date
+                        if delta.days < 6:
+                            logger.info(f"Skipping this product. within the last week")
+                            continue
+                    else:
+                        _date = threshold_date
             
             if rescrape == 0:
                 _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=0)
