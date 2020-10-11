@@ -1941,6 +1941,12 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             logger.info("Updated Active PIDS!")
         except Exception as ex:
             logger.critical(f"Erro when updating active PIDS: {ex}")
+    else:
+        try:
+            logger.info(f"Updating date_completed for PIDS....")
+            db_manager.update_listing_completed(engine, table='ProductListing')
+        except Exception as ex:
+            logger.critical(f"Error when updating date_completed for listing: {ex}")
 
     return final_results
 
