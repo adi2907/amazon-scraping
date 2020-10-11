@@ -288,7 +288,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
                             continue
                         else:
-                            recent_obj = db_session.query(db_manager.tables['ProductListing']).filter(db_manager.tables['ProductListing'].duplicate_set == a.duplicate_set).order_by(desc('date_completed')).first()
+                            recent_obj = db_session.query(db_manager.tables['ProductListing']).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc('date_completed')).first()
                             if recent_obj is None:
                                 error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
                                 continue
