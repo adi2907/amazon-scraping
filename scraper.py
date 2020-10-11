@@ -355,6 +355,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
 
             idx += 1
         except Exception as ex:
+            traceback.print_exc()
             if product_id is not None:
                 logger.critical(f"During scraping product details for ID {product_id}, got exception: {ex}")
             else:
