@@ -216,7 +216,7 @@ def remove_from_cache(category):
         cache.delete(f"{category}_PIDS")
 
 
-def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None:
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None):
     global cache
     global headers, cookies
     global last_product_detail
