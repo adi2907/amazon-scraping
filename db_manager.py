@@ -1153,6 +1153,9 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
 
                 # Find duplicate set
                 a = (obj.short_title == instance.short_title)
+                A_PRICE = obj.old_price if obj.old_price is not None else obj.price
+                B_PRICE = instance.old_price if instance.old_price is not None else instance.price
+                b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (0.1 + DELTA) * (max(A_PRICE, B_PRICE))))
                 b = ((obj.price == instance.price) or (obj.price is not None and instance.price is not None and abs(obj.price - instance.price) <= (0.1 + DELTA) * (max(obj.price, instance.price))))
                 c = ((obj.total_ratings == instance.total_ratings) or (obj.total_ratings is not None and instance.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, instance.total_ratings))))
 
@@ -1190,7 +1193,9 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
 
                     # Find duplicate set
                     a = (_obj.short_title == instance.short_title)
-                    b = ((_obj.price == instance.price) or (_obj.price is not None and instance.price is not None and abs(_obj.price - instance.price) <= (0.1 + DELTA) * (max(_obj.price, instance.price))))
+                    A_PRICE = _obj.old_price if _obj.old_price is not None else _obj.price
+                    B_PRICE = instance.old_price if instance.old_price is not None else instance.price
+                    b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (0.1 + DELTA) * (max(A_PRICE, B_PRICE))))
                     c = ((_obj.total_ratings == instance.total_ratings) or (instance.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(_obj.total_ratings, instance.total_ratings))))
 
                     dup = ((a & b) | (b & c) | (c & a))
@@ -1244,7 +1249,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
         logger.info(f"Finished inserting!")
 
 
-def index_duplicate_sets(session, table='ProductListing', insert=False):
+def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False):
     from sqlalchemy import asc, desc
     from sqlitedict import SqliteDict
 
@@ -1266,11 +1271,16 @@ def index_duplicate_sets(session, table='ProductListing', insert=False):
                 continue
 
             # TODO: Set this back to 0
-            DELTA = 0.1
+            if strict == False:
+                DELTA = 0.1
+            else:
+                DELTA = 0
 
             # Find duplicate set
             a = (obj.short_title == prev.short_title)
-            b = ((obj.price == prev.price) or (obj.price is not None and prev.price is not None and abs(obj.price - prev.price) <= (0.1 + DELTA) * (max(obj.price, prev.price))))
+            A_PRICE = obj.old_price if obj.old_price is not None else obj.price
+            B_PRICE = prev.old_price if prev.old_price is not None else prev.price
+            b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (0.1 + DELTA) * (max(A_PRICE, B_PRICE))))
             c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, prev.total_ratings))))
 
             flag = ((a & b) | (b & c) | (c & a))
@@ -1494,7 +1504,7 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductListing', column)
     #mark_duplicates(session, "headphones")
     #mark_duplicate_reduced(session, "headphones")
-    #index_duplicate_sets(session, insert=False)
+    #index_duplicate_sets(session, insert=False, strict=True)
     #update_duplicate_set(session, table='ProductListing', insert=True)
     #update_active_products(engine, ['B07X1KSWZ3'], table='ProductListing', insert=True)
     #index_qandas(engine)
