@@ -167,6 +167,14 @@ def run_category(browser='Firefox'):
     finally:
         driver.quit()
 
+        logger.info(f"Updating duplicate indices...")
+        # Update set indexes
+        try:
+            db_manager.update_duplicate_set(session, table='ProductListing', insert=True)
+            logger.info("Updated indexes!")
+        except Exception as ex:
+            logger.critical(f"Error when updating listing indexes: {ex}")
+
 
 def run_subcategory(browser='Firefox'):
     #from pyvirtualdisplay import Display
