@@ -1,7 +1,9 @@
 import glob
 import os
 import time
+import traceback
 from copy import deepcopy
+from datetime import datetime
 from string import Template
 
 import lxml
@@ -15,7 +17,9 @@ from webdriver_manager.firefox import GeckoDriverManager
 
 import db_manager
 import parse_data
-from utils import listing_categories, listing_templates
+from utils import create_logger, listing_categories, listing_templates
+
+logger = create_logger('browser')
 
 ENTRY_URL = "https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_thirteen_browse-bin%3A2753043031&dc&qid=1599327930&rnid=2753038031&ref=sr_nr_p_n_feature_thirteen_browse-bin_2"
 
@@ -63,7 +67,6 @@ def run_category(browser='Firefox'):
 
                 html = driver.page_source.encode('utf-8', errors='ignore')
 
-
                 try:
                     captcha = driver.find_element_by_id("captchacharacters")
                     print("Fuck. Captcha")
@@ -72,6 +75,32 @@ def run_category(browser='Firefox'):
                     continue
                 except:
                     pass
+
+                try:
+                    today = datetime.today().strftime("%d-%m-%y")
+
+                    soup = BeautifulSoup(html, 'lxml')
+                    product_info, _ = parse_data.get_product_info(soup)
+
+                    final_results[category][idx + 1] = product_info
+
+                    page_results = dict()
+                    page_results[category] = dict()
+                    page_results[category][idx + 1] = final_results[category][idx + 1]
+
+                    status = db_manager.insert_product_listing(session, page_results)
+
+                    if not status:
+                        logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
+
+                    status = db_manager.insert_daily_product_listing(session, page_results)
+
+                    if not status:
+                        logger.warning(f"Error while inserting DAILY LISTING Page {curr} of category - {category}")
+
+                except Exception as ex:
+                    traceback.print_exc()
+                    logger.info(f"Exception during storing daily listing: {ex}")
 
                 with open(f'dumps/listing_{category}_{curr}.html', 'wb') as f:
                     f.write(html)
