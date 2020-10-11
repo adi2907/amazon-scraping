@@ -1226,6 +1226,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     product_id = parse_data.get_product_id(product_url)
 
+    logger.info(f"Going to Details page for PID {product_id}")
+
     obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
 
     if obj is None:
