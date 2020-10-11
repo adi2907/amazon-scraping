@@ -310,7 +310,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             else:
                 # Open from the dump directory (Listing files are here)
                 DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
-                with open(os.path.join(DUMP_DIR), f"listing_{category}_{curr_page}.html", "rb") as f
+                with open(os.path.join(DUMP_DIR), f"listing_{category}_{curr_page}.html", "rb") as f:
                     html = f.read()
             soup = BeautifulSoup(html, 'lxml')
 
