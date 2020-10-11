@@ -216,7 +216,7 @@ def remove_from_cache(category):
         cache.delete(f"{category}_PIDS")
 
 
-def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None):
+def process_product_detail(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None):
     global cache
     global headers, cookies
     global last_product_detail
@@ -1887,6 +1887,8 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         logger.info(f"Have {len(listing_categories)} categories. Splitting work into {num_workers} threads")
 
         if detail == True:
+            logger.info(f"Detail: Scraping ONLY category {categories[0]}")
+            category = categories[0]
             total_listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
             total_listing_pids = [pid.decode() for pid in total_listing_pids]
             listing_partition = [total_listing_pids[(i*len(total_listing_pids))//num_workers:((i+1)*len(total_listing_pids)) // num_workers] for i in range(num_workers)]
