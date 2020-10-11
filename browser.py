@@ -49,6 +49,15 @@ def run_category(browser='Firefox'):
     server_url = 'https://www.amazon.in'
     
     try:
+        from sqlalchemy.orm import sessionmaker
+
+        Session = sessionmaker(bind=db_manager.engine, autocommit=False, autoflush=True)
+        session = Session()
+    except Exception as ex:
+        traceback.print_exc()
+        logger.critical(f"Error during initiation session: {ex}")
+
+    try:
 
         assert len(listing_categories) == len(listing_templates)
 
@@ -77,17 +86,12 @@ def run_category(browser='Firefox'):
                     pass
 
                 try:
-                    today = datetime.today().strftime("%d-%m-%y")
-
                     soup = BeautifulSoup(html, 'lxml')
                     product_info, _ = parse_data.get_product_info(soup)
 
-                    final_results[category][idx + 1] = product_info
-
                     page_results = dict()
                     page_results[category] = dict()
-                    page_results[category][idx + 1] = final_results[category][idx + 1]
-
+                    page_results[category][curr] = product_info
                     status = db_manager.insert_product_listing(session, page_results)
 
                     if not status:
