@@ -12,19 +12,21 @@ nltk.download('stopwords')
 
 
 def remove_stop_words(text):
-    blob = TextBlob(str(text)).words
+    brand = ''.join([i for i in str(text).split()[:1]])
+    blob = TextBlob(''.join([i for i in str(text).split()[1:]])).words
     outputlist = []
-    MAX_WORDS = 4
+    MAX_WORDS = 3
     
     for idx, word in enumerate(blob):
         if word in stopwords.words('english'):
-            if idx <= 2:
-                pass
-            else:
-                continue
+            #if idx <= 2:
+            #    pass
+            #else:
+            #    continue
+            continue
         outputlist.append(word)
     
-    return(' '.join(word.lower() for word in outputlist[:MAX_WORDS]))
+    return(brand + ' '.join(word.lower() for word in outputlist[:MAX_WORDS]))
 
 
 def tokenize_titles():
