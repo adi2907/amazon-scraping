@@ -5,7 +5,9 @@ from bs4 import BeautifulSoup
 
 import parse_data
 from cache import Cache
-from utils import listing_categories
+from utils import create_logger, listing_categories
+
+logger = create_logger('activate_products')
 
 
 def main():
