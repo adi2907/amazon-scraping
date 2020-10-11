@@ -257,7 +257,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
 
     #listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
     
-    for product_id in listing_pids:
+    for idx, product_id in enumerate(listing_pids):
         curr_page = 1
         curr_url = base_url
 
