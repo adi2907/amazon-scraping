@@ -216,7 +216,142 @@ def remove_from_cache(category):
         cache.delete(f"{category}_PIDS")
 
 
-def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False):
+def process_product_detail(db_session, category, base_url, num_pages, server_url='https://amazon.in', change=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None):
+    global cache
+    global pids
+
+    listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
+    
+    for product_id in listing_pids:
+        curr_page = 1
+        curr_url = base_url
+
+        factor = 0
+        cooldown = False
+
+        rescrape = 0
+
+        try:
+            if (product_id not in pids) and (cache.sismember(f"{category}_PIDS", product_id) == False):
+                logger.info(f"PID {product_id} not in set")
+                pids.add(product_id)
+                cache.atomic_set_add(f"{category}_PIDS", product_id)
+            else:
+                logger.info(f"PID {product_id} in set. Skipping this product")
+                continue
+
+            if product_id is not None:
+                _date = threshold_date
+                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                
+                recent_date = None
+
+                if obj is not None:
+                    if obj.completed == True:
+                        a = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                        if a is None:
+                            error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
+                            continue
+                        else:
+                            recent_obj = db_session.query(db_manager.tables['ProductListing']).filter(db_manager.tables['ProductListing'].duplicate_set == a.duplicate_set).order_by(desc('date_completed')).first()
+                            if recent_obj is None:
+                                error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
+                                continue
+                            
+                            instances = db_manager.query_table(db_session, 'ProductListing', 'all', filter_cond=({'duplicate_set': f'{a.duplicate_set}'}))
+                            
+                            if cache.sismember("DUPLICATE_SETS", str(recent_obj.duplicate_set)):
+                                error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
+                                continue
+
+                            if recent_obj.duplicate_set is not None:
+                                cache.sadd(f"DUPLICATE_SETS", str(recent_obj.duplicate_set))
+                            
+                            product_url = recent_obj.product_url
+                            
+                            recent_date = recent_obj.date_completed
+
+                        if recent_date is not None:
+                            _date = recent_date
+                            logger.info(f"Set date as {_date}")
+                            delta = datetime.now() - _date
+                            if delta.days < 6:
+                                logger.info(f"Skipping this product. within the last week")
+                                continue
+                            
+                        elif hasattr(obj, 'date_completed') and obj.date_completed is not None:
+                            # Go until this point only
+                            _date = obj.date_completed
+                            logger.info(f"Set date as {_date}")
+                            delta = datetime.now() - _date
+                            if delta.days < 6:
+                                logger.info(f"Skipping this product. within the last week")
+                                continue
+                        else:
+                            _date = threshold_date
+
+                    if hasattr(obj, 'product_details') and obj.product_details in (None, {}, '{}'):
+                        rescrape = 1
+                        error_logger.info(f"Product ID {product_id} has NULL product_details. Scraping it again...")
+                        product_url = obj.product_url
+                        if hasattr(obj, 'completed') and obj.completed is None:
+                            rescrape = 2
+                    else:
+                        product_url = obj.product_url
+                        if _date != threshold_date:
+                            rescrape = 0
+                        else:
+                            rescrape = 2
+                            logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                            error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                            continue
+                else:
+                    error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Skipping this, as this may be a duplicate")
+                    continue
+            
+            if rescrape == 0:
+                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=0)
+            elif rescrape == 1:
+                # Only details
+                _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=_date, listing_url=curr_url, total_ratings=0, incomplete=True)
+            elif rescrape == 2:
+                # Whole thing again
+                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=0, incomplete=True, jump_page=jump_page)
+
+            idx += 1
+        except Exception as ex:
+            if product_id is not None:
+                logger.critical(f"During scraping product details for ID {product_id}, got exception: {ex}")
+            else:
+                logger.critical(f"Product ID is None, got exception: {ex}")
+
+        if last_product_detail == True:
+            logger.info("Completed pending products. Exiting...")
+            return
+
+        if my_proxy is not None and no_refer == False:
+            if num_products is None or idx <= num_products:
+                response = my_proxy.get(curr_url, referer=server_url + product_url)
+                time.sleep(random.randint(3, 5)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
+            elif num_products is not None and idx > num_products:
+                # We're done for this product
+                logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
+                error_logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
+                overflow = True
+                break
+        
+        cooldown = False
+
+        if overflow == True:
+            overflow = False
+            break
+
+        time.sleep(4)
+
+        change = True
+
+
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None):
     # global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -1721,15 +1856,15 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
             if no_sub == False:
-                future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
+                future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, threshold_date): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             else:
-                future_to_category = {executor.submit(fetch_category, category, category_template, num_pages, change, server_url, no_listing, detail): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
+                future_to_category = {executor.submit(fetch_category, category, category_template, num_pages, change, server_url, no_listing, detail, threshold_date): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             
             try:
                 if concurrent_jobs == True:
                     if detail == True:
                         # Add pure listing jobs too
-                        future_to_category[executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, True, False)] = f"{category}_listing"
+                        future_to_category[executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, True, False, threshold_date)] = f"{category}_listing"
             except:
                 pass    
             
