@@ -26,7 +26,7 @@ def remove_stop_words(text):
             continue
         outputlist.append(word)
     
-    return(brand + ' '.join(word.lower() for word in outputlist[:MAX_WORDS]))
+    return(brand.lower() + ' '.join(word.lower() for word in outputlist[:MAX_WORDS]))
 
 
 def tokenize_titles():
