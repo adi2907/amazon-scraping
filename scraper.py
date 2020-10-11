@@ -216,11 +216,46 @@ def remove_from_cache(category):
         cache.delete(f"{category}_PIDS")
 
 
-def process_product_detail(db_session, category, base_url, num_pages, server_url='https://amazon.in', change=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None):
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None:
     global cache
+    global headers, cookies
+    global last_product_detail
+    global cache
+    global speedup
+    global use_multithreading
+    global cache_file, use_cache
+    global USE_DB
     global pids
 
-    listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
+    if use_multithreading == True:
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=True) # Separate Proxy per thread
+        try:
+            my_proxy.change_identity()
+        except:
+            logger.warning('No Proxy available via Tor relay. Mode = Normal')
+            logger.newline()
+            my_proxy = None
+
+        if my_proxy is None:
+            session = requests.Session()
+        
+        db_session = Session()
+        #db_session = scoped_session(Session)
+    else:
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=False) # Separate Proxy per thread
+        try:
+            my_proxy.change_identity()
+        except:
+            logger.warning('No Proxy available via Tor relay. Mode = Normal')
+            logger.newline()
+            my_proxy = None
+
+        if my_proxy is None:
+            session = requests.Session()
+        
+        db_session = Session()
+
+    #listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
     
     for product_id in listing_pids:
         curr_page = 1
@@ -351,7 +386,7 @@ def process_product_detail(db_session, category, base_url, num_pages, server_url
         change = True
 
 
-def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None):
+def fetch_category(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None):
     # global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -1851,14 +1886,24 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         
         logger.info(f"Have {len(listing_categories)} categories. Splitting work into {num_workers} threads")
 
+        if detail == True:
+            total_listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
+            total_listing_pids = [pid.decode() for pid in total_listing_pids]
+            listing_partition = [total_listing_pids[(i*len(total_listing_pids))//num_workers:((i+1)*len(total_listing_pids)) // num_workers] for i in range(num_workers)]
+        else:
+            total_listing_pids = []
+            listing_partition = [[] for _ in range(num_workers)]
+
         # TODO: https://stackoverflow.com/questions/56733397/how-i-can-get-new-ip-from-tor-every-requests-in-threads
         # Separate proxy object per thread
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
             if no_sub == False:
-                future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, threshold_date): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
+                future_to_category = {executor.submit(process_product_detail, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
+                #future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             else:
-                future_to_category = {executor.submit(fetch_category, category, category_template, num_pages, change, server_url, no_listing, detail, threshold_date): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
+                future_to_category = {executor.submit(process_product_detail, category, category_template, num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
+                #future_to_category = {executor.submit(fetch_category, category, category_template, num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             
             try:
                 if concurrent_jobs == True:
