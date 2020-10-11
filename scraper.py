@@ -374,13 +374,9 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                 logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
                 error_logger.info(f"Scraped {num_products} for category {category}. Moving to the next one")
                 overflow = True
-                break
+                continue
         
         cooldown = False
-
-        if overflow == True:
-            overflow = False
-            break
 
         time.sleep(4)
 
