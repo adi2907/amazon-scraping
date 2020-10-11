@@ -1901,10 +1901,10 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
             if no_sub == False:
-                future_to_category = {executor.submit(process_product_detail, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
+                future_to_category = {executor.submit(process_product_detail, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
                 #future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             else:
-                future_to_category = {executor.submit(process_product_detail, category, category_template, num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
+                future_to_category = {executor.submit(process_product_detail, category, category_template, num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
                 #future_to_category = {executor.submit(fetch_category, category, category_template, num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             
             try:
