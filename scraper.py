@@ -328,11 +328,11 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                     if hasattr(obj, 'product_details') and obj.product_details in (None, {}, '{}'):
                         rescrape = 1
                         error_logger.info(f"Product ID {product_id} has NULL product_details. Scraping it again...")
-                        product_url = obj.product_url
+                        #product_url = obj.product_url
                         if hasattr(obj, 'completed') and obj.completed is None:
                             rescrape = 2
                     else:
-                        product_url = obj.product_url
+                        #product_url = obj.product_url
                         if _date != threshold_date:
                             rescrape = 0
                         else:
