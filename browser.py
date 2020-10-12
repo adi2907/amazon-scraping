@@ -196,7 +196,8 @@ def run_subcategory(browser='Firefox'):
 
     server_url = 'https://www.amazon.in'
 
-    category_map = {"washing machine": [["fully automatic", "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_sixteen_browse-bin%3A2753055031&dc&qid=1599329326&rnid=2753054031&ref=sr_nr_p_n_feature_sixteen_browse-bin_1"], ["semi automatic", "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_sixteen_browse-bin%3A2753056031&dc&qid=1599329355&rnid=2753054031&ref=sr_nr_p_n_feature_sixteen_browse-bin_2"], ["top load", "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_fifteen_browse-bin%3A2753052031&dc&qid=1599329495&rnid=2753051031&ref=sr_nr_p_n_feature_fifteen_browse-bin_2"], ["front load", "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_fifteen_browse-bin%3A2753053031&dc&qid=1599329490&rnid=2753051031&ref=sr_nr_p_n_feature_fifteen_browse-bin_1"]]}
+    category_map = {"headphones": [["wired", "https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564046031&dc&fst=as%3Aoff&qid=1599294897&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1"], ["wireless", "https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564047031%7C15564048031&dc&fst=as%3Aoff&qid=1599295118&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1"]]}
+    #category_map = {"washing machine": [["fully automatic", "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_sixteen_browse-bin%3A2753055031&dc&qid=1599329326&rnid=2753054031&ref=sr_nr_p_n_feature_sixteen_browse-bin_1"], ["semi automatic", "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_sixteen_browse-bin%3A2753056031&dc&qid=1599329355&rnid=2753054031&ref=sr_nr_p_n_feature_sixteen_browse-bin_2"], ["top load", "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_fifteen_browse-bin%3A2753052031&dc&qid=1599329495&rnid=2753051031&ref=sr_nr_p_n_feature_fifteen_browse-bin_2"], ["front load", "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_fifteen_browse-bin%3A2753053031&dc&qid=1599329490&rnid=2753051031&ref=sr_nr_p_n_feature_fifteen_browse-bin_1"]]}
 
     #category_map = {"refrigerator": [["single door", "https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_thirteen_browse-bin%3A2753044031&dc&qid=1599984176&rnid=2753038031&ref=sr_nr_p_n_feature_thirteen_browse-bin_3"]]}
     
@@ -206,6 +207,10 @@ def run_subcategory(browser='Firefox'):
         for category in category_map:
             for item in category_map[category]:
                 subcategory, url = item[0], item[1]
+
+                for filename in glob.glob(f"dumps/{category}_{subcategory}_*"):
+                    if os.path.exists(filename):
+                        os.remove(filename)
                 
                 curr = 1
 
