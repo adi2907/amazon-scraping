@@ -1273,7 +1273,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             if strict == False:
                 DELTA = 0.1
             else:
-                DELTA = 0.05
+                DELTA = 0.08
 
             # Find duplicate set
             a = (obj.short_title == prev.short_title)
