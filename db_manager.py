@@ -1503,7 +1503,7 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductListing', column)
     #mark_duplicates(session, "headphones")
     #mark_duplicate_reduced(session, "headphones")
-    #index_duplicate_sets(session, insert=False, strict=True)
+    #index_duplicate_sets(session, insert=True, strict=True)
     #update_duplicate_set(session, table='ProductListing', insert=True)
     #update_active_products(engine, ['B07X1KSWZ3'], table='ProductListing', insert=True)
     #index_qandas(engine)
