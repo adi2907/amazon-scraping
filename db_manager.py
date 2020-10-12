@@ -1149,14 +1149,14 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
         for instance in null_queryset:
             for obj in queryset:
                 # TODO: Set this back to 0
-                DELTA = 0
+                DELTA = 0.1
 
                 # Find duplicate set
                 a = (obj.short_title == instance.short_title)
                 A_PRICE = obj.old_price if obj.old_price is not None else obj.price
                 B_PRICE = instance.old_price if instance.old_price is not None else instance.price
-                b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (0.1 + DELTA) * (max(A_PRICE, B_PRICE))))
-                b = ((obj.price == instance.price) or (obj.price is not None and instance.price is not None and abs(obj.price - instance.price) <= (0.1 + DELTA) * (max(obj.price, instance.price))))
+                b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
+                b = ((obj.price == instance.price) or (obj.price is not None and instance.price is not None and abs(obj.price - instance.price) <= ( DELTA) * (max(obj.price, instance.price))))
                 c = ((obj.total_ratings == instance.total_ratings) or (obj.total_ratings is not None and instance.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, instance.total_ratings))))
 
                 flag = ((a & b) | (b & c) | (c & a))
@@ -1188,15 +1188,14 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                 # Check with the previously inserted items
                 dup = False
                 for _obj in inserted_items:
-                    # TODO: Set this back to 0
-                    DELTA = 0
+                    DELTA = 0.1
 
                     # Find duplicate set
                     a = (_obj.short_title == instance.short_title)
                     A_PRICE = _obj.old_price if _obj.old_price is not None else _obj.price
                     B_PRICE = instance.old_price if instance.old_price is not None else instance.price
-                    b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (0.1 + DELTA) * (max(A_PRICE, B_PRICE))))
-                    c = ((_obj.total_ratings == instance.total_ratings) or (instance.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(_obj.total_ratings, instance.total_ratings))))
+                    b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
+                    c = ((_obj.total_ratings == instance.total_ratings) or (instance.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= (DELTA) * (max(_obj.total_ratings, instance.total_ratings))))
 
                     dup = ((a & b) | (b & c) | (c & a))
 
@@ -1274,14 +1273,14 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             if strict == False:
                 DELTA = 0.1
             else:
-                DELTA = 0
+                DELTA = 0.05
 
             # Find duplicate set
             a = (obj.short_title == prev.short_title)
             A_PRICE = obj.old_price if obj.old_price is not None else obj.price
             B_PRICE = prev.old_price if prev.old_price is not None else prev.price
-            b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (0.1 + DELTA) * (max(A_PRICE, B_PRICE))))
-            c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, prev.total_ratings))))
+            b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
+            c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= (DELTA) * (max(obj.total_ratings, prev.total_ratings))))
 
             flag = ((a & b) | (b & c) | (c & a))
 
