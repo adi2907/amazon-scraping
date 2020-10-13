@@ -135,6 +135,13 @@ tables = {
         'date': 'DATETIME',
         #'_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
+    'SentimentAnalysis': {
+        'id': 'INTEGER PRIMARY KEY',
+        'product_id': 'TEXT(16)',
+        'review_id': 'INTEGER',
+        'sentiments': 'LONGTEXT',
+        'duplicate_set': 'INTEGER',
+    }
 }
 
 field_map = {
@@ -291,6 +298,11 @@ class DailyProductListing():
     pass
 
 
+@apply_schema
+class SentimentAnalysis():
+    pass
+
+
 table_map = {
     'ProductListing': ProductListing,
     'ProductDetails': ProductDetails,
@@ -298,6 +310,7 @@ table_map = {
     'QandA': QandA,
     'Reviews': Reviews,
     'DailyProductListing': DailyProductListing,
+    'SentimentAnalysis': SentimentAnalysis,
 }
 
 
