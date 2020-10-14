@@ -19,6 +19,7 @@ from utils import create_logger
 logger = create_logger('fetch_archived')
 
 cache = cache.Cache()
+cache.connect('master', use_redis=True)
 
 cache_file = 'cache.sqlite3'
 
