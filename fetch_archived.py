@@ -165,7 +165,7 @@ def process_archived_pids(category):
     pids = cache.smembers(f"ARCHIVED_PRODUCTS_{category}")
     for pid in pids:
         pid = pid.decode()
-        instance = db_session.query(db_manager.ProductListing).filter(product_id=pid).first()
+        instance = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id=pid).first()
         if not instance:
             logger.warning(f"PID {pid} not in ProductListing. Skipping this product")
             continue
@@ -178,6 +178,8 @@ def process_archived_pids(category):
         except Exception as ex:
             traceback.print_exc()
             logger.critical(f"Exception when fetching Product Details for PID {instance.product_id}: {ex}")
+    
+    logger.info(f"Finished fetching archived products for Category: {category}")
 
 
 
