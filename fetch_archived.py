@@ -165,7 +165,7 @@ def process_archived_pids(category):
     pids = cache.smembers(f"ARCHIVED_PRODUCTS_{category}")
     for pid in pids:
         pid = pid.decode()
-        instance = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id=pid).first()
+        instance = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == pid).first()
         if not instance:
             logger.warning(f"PID {pid} not in ProductListing. Skipping this product")
             continue
@@ -187,3 +187,11 @@ if __name__ == '__main__':
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
     process_archived_pids("headphones")
+    time.sleep(120)
+    process_archived_pids("smarphones")
+    time.sleep(120)
+    process_archived_pids("ceiling fan")
+    time.sleep(120)
+    process_archived_pids("refrigerator")
+    time.sleep(120)
+    process_archived_pids("washing machine")
