@@ -1188,6 +1188,10 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     flag = ((a & b) | (b & c) | (c & a))
                 else:
                     flag = ((a & b) | (b & c) | (c & a)) & (d)
+                    if not flag:
+                        override = (obj.total_ratings == instance.total_ratings) & (obj.avg_rating == instance.avg_rating)
+                        if override:
+                            flag = True
 
                 if flag and not a:
                     # Be a bit careful
@@ -1243,6 +1247,10 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                         dup = ((a & b) | (b & c) | (c & a))
                     else:
                         dup = ((a & b) | (b & c) | (c & a)) & (d)
+                        if not dup:
+                            override = (_obj.total_ratings == instance.total_ratings) & (_obj.avg_rating == instance.avg_rating)
+                            if override:
+                                dup = True
 
                     if dup and not a:
                         # Be a bit careful
@@ -1344,6 +1352,10 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                 flag = ((a & b) | (b & c) | (c & a))
             else:
                 flag = ((a & b) | (b & c) | (c & a)) & (d)
+                if not flag:
+                    override = (obj.total_ratings == prev.total_ratings) & (obj.avg_rating == prev.avg_rating)
+                    if override:
+                        flag = True
 
             if flag and not a:
                 # Be a bit careful
