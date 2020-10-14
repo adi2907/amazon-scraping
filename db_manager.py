@@ -1172,7 +1172,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                 b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
                 
                 A_PRICE = obj.price
-                B_PRICE = prev.price
+                B_PRICE = instance.price
                 
                 b_prime = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
 
@@ -1183,7 +1183,8 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                 d = (obj.avg_rating == instance.avg_rating)
 
                 if obj.total_ratings is not None and obj.total_ratings <= 100 and instance.total_ratings is not None and instance.total_ratings <= 100:
-                    flag = (a & b)
+                    c = ((obj.total_ratings == instance.total_ratings) or (obj.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= 5))
+                    flag = ((a & b) | (b & c) | (c & a))
                 else:
                     flag = ((a & b) | (b & c) | (c & a)) & (d)
 
@@ -1223,8 +1224,8 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     
                     b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
                     
-                    A_PRICE = obj.price
-                    B_PRICE = prev.price
+                    A_PRICE = _obj.price
+                    B_PRICE = instance.price
                     
                     b_prime = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
 
@@ -1237,7 +1238,8 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     dup = ((a & b) | (b & c) | (c & a))
                     
                     if _obj.total_ratings is not None and _obj.total_ratings <= 100 and instance.total_ratings is not None and instance.total_ratings <= 100:
-                        dup = (a & b)
+                        c = ((_obj.total_ratings == instance.total_ratings) or (_obj.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= 5))
+                        dup = ((a & b) | (b & c) | (c & a))
                     else:
                         dup = ((a & b) | (b & c) | (c & a)) & (d)
 
@@ -1337,7 +1339,8 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             d = (obj.avg_rating == prev.avg_rating)
 
             if obj.total_ratings is not None and obj.total_ratings <= 100 and prev.total_ratings is not None and prev.total_ratings <= 100:
-                flag = (a & b)
+                c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= 5))
+                flag = ((a & b) | (b & c) | (c & a))
             else:
                 flag = ((a & b) | (b & c) | (c & a)) & (d)
 
