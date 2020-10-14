@@ -1423,6 +1423,39 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
         logger.info(f"Finished inserting!")
 
 
+def find_archived_products(session, table='ProductListing'):
+    from sqlalchemy import asc, desc
+    import cache
+
+    cache = cache.Cache()
+    cache.connect('master', use_redis=True)
+    
+    _table = table_map[table]
+
+    queryset = session.query(_table).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('duplicate_set')).order_by(desc('total_ratings'))
+
+    prev = None
+
+    count = 0
+    
+    for instance in queryset:
+        if prev is None:
+            prev = instance
+            continue
+        
+        if prev.category == instance.category and prev.duplicate_set != instance.duplicate_set and prev.short_title == instance.short_title:
+            # Possibly an archived product
+            # Constraint: price(prev) >= price(curr), so prev is more recent
+            cache.sadd(f"ARCHIVED_PRODUCTS_{instance.category}", instance.product_id)
+            count += 1
+            continue
+
+        prev = instance
+        continue
+
+    logger.info(f"Found {count} archived products totally")
+
+
 def update_active_products(engine, pids, table='ProductListing', insert=True):
     engine.execute('UPDATE %s SET %s = %s' % (table, "is_active", "False"))
     
@@ -1520,6 +1553,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_product_data', help='Update Product Data (QandA and Reviews)', default=False, action='store_true')
     parser.add_argument('--update_product_listing_from_cache', help='Update Product Data from Cache', default=False, action='store_true')
     parser.add_argument('--update_active_products', help='Update Active Products (QandA and Reviews)', default=False, action='store_true')
+    parser.add_argument('--find_archived_products', help='Find archived products from ProductListing', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1529,6 +1563,7 @@ if __name__ == '__main__':
     _update_product_data = args.update_product_data
     _update_product_listing_from_cache = args.update_product_listing_from_cache
     _update_active_products = args.update_active_products
+    _find_archived_products = args.find_archived_products
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1602,24 +1637,25 @@ if __name__ == '__main__':
     #update_product_data(engine, dump=False)
     #column = Column('date_completed', DateTime())
     #add_column(engine, 'ProductListing', column)
-    for arg in vars(args):
-        if arg == 'index_duplicate_sets' and getattr(args, arg) == True:
-            index_duplicate_sets(session, insert=True, strict=True)
-        if arg == 'index_qandas' and getattr(args, arg) == True:
-            index_qandas(engine)
-        if args == 'index_reviews' and getattr(args, arg) == True:
-            index_reviews(engine)
-        if args == 'update_product_data' and getattr(args, arg) == True:
-            update_product_data(engine, dump=False)
-        if args == 'update_product_listing_from_cache' and getattr(args, arg) == True:
-            update_product_listing_from_cache(session, "headphones")
-        if args == 'update_active_products' and getattr(args, arg) == True:
-            import cache
-            cache = cache.Cache()
-            cache.connect('master', use_redis=True)
-            category = "headphones"
-            pids = cache.smembers(f"LISTING_{category}_PIDS")
-            update_active_products(engine, pids)
+    if _index_duplicate_sets == True:
+        index_duplicate_sets(session, insert=True, strict=True)
+    if _index_qandas == True:
+        index_qandas(engine)
+    if _index_reviews == True:
+        index_reviews(engine)
+    if _update_product_data == True:
+        update_product_data(engine, dump=False)
+    if _update_product_listing_from_cache == True:
+        update_product_listing_from_cache(session, "headphones")
+    if _update_active_products == True:
+        import cache
+        cache = cache.Cache()
+        cache.connect('master', use_redis=True)
+        category = "headphones"
+        pids = cache.smembers(f"LISTING_{category}_PIDS")
+        update_active_products(engine, pids)
+    if _find_archived_products == True:
+        find_archived_products(session)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
