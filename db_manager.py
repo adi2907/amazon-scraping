@@ -1187,7 +1187,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     c = ((obj.total_ratings == instance.total_ratings) or (obj.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= 5))
                     flag = ((a & b) | (b & c) | (c & a))
                 else:
-                    flag = ((a & b) | (b & c) | (c & a)) & (d)
+                    flag = ((a & d) | (d & c) | (c & a))
                     if not flag:
                         override = (obj.total_ratings == instance.total_ratings) & (obj.avg_rating == instance.avg_rating)
                         if override:
@@ -1246,7 +1246,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                         c = ((_obj.total_ratings == instance.total_ratings) or (_obj.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= 5))
                         dup = ((a & b) | (b & c) | (c & a))
                     else:
-                        dup = ((a & b) | (b & c) | (c & a)) & (d)
+                        dup = ((a & d) | (d & c) | (c & a))
                         if not dup:
                             override = (_obj.total_ratings == instance.total_ratings) & (_obj.avg_rating == instance.avg_rating)
                             if override:
@@ -1351,7 +1351,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                 c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= 5))
                 flag = ((a & b) | (b & c) | (c & a))
             else:
-                flag = ((a & b) | (b & c) | (c & a)) & (d)
+                flag = ((a & d) | (d & c) | (c & a))
                 if not flag:
                     override = (obj.total_ratings == prev.total_ratings) & (obj.avg_rating == prev.avg_rating)
                     if override:
