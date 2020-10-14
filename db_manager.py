@@ -1,13 +1,13 @@
 # Represents all the Models used to create our scraper
 
-import os
+import argparse
+import datetime
 import glob
-
 import json
+import os
 import pickle
 import re
 import sqlite3
-import datetime
 
 import pymysql
 from decouple import UndefinedValueError, config
@@ -16,7 +16,7 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
                         MetaData, String, Table, Text, create_engine, exc)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
-from sqlalchemy.orm.exc import NoResultFound, FlushError
+from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
 
 from utils import create_logger
@@ -862,8 +862,9 @@ def find_incomplete(session, table='ProductDetails'):
 
 
 def assign_subcategories(session, category, subcategory, table='ProductDetails'):
-    import parse_data
     from bs4 import BeautifulSoup
+
+    import parse_data
 
     DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
 
@@ -1430,10 +1431,11 @@ def update_listing_completed(engine, table='ProductListing'):
 
 
 def update_product_data(engine, dump=False):
-    from decouple import config
     import os
-    import pandas as pd
     import subprocess
+
+    import pandas as pd
+    from decouple import config
 
     if dump == True:
         db_user = config('DB_USER')
@@ -1499,6 +1501,21 @@ def update_product_data(engine, dump=False):
 
 if __name__ == '__main__':
     # Start a session using the existing engine
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--index_duplicate_sets', help='Index Duplicate Sets', default=False, action='store_true')
+    parser.add_argument('--index_qandas', help='Index Q and A', default=False, action='store_true')
+    parser.add_argument('--index_reviews', help='Index Reviews', default=False, action='store_true')
+    parser.add_argument('--update_product_data', help='Update Product Data (QandA and Reviews)', default=False, action='store_true')
+    parser.add_argument('--update_product_listing_from_cache', help='Update Product Data from Cache', default=False, action='store_true')
+
+    args = parser.parse_args()
+
+    _index_duplicate_sets = args.index_duplicate_sets
+    _index_qandas = args.index_qandas
+    _index_reviews = args.index_reviews
+    _update_product_data = args.update_product_data
+    _update_product_listing_from_cache = args.update_product_listing_from_cache
+
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 
@@ -1571,6 +1588,17 @@ if __name__ == '__main__':
     #update_product_data(engine, dump=False)
     #column = Column('date_completed', DateTime())
     #add_column(engine, 'ProductListing', column)
+    for arg in vars(args):
+        if arg == 'index_duplicate_sets' and getattr(args, arg) == True:
+            index_duplicate_sets(session, insert=True, strict=True)
+        if arg == 'index_qandas' and getattr(args, arg) == True:
+            index_qandas(engine)
+        if args == 'index_reviews' and getattr(args, arg) == True:
+            index_reviews(engine)
+        if args == 'update_product_data' and getattr(args, arg) == True:
+            update_product_data(engine, dump=False)
+        if args == 'update_product_listing_from_cache' and getattr(args, arg) == True:
+            update_product_listing_from_cache(session, "headphones")
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
