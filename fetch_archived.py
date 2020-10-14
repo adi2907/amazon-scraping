@@ -170,7 +170,7 @@ def process_archived_pids(category):
             logger.warning(f"PID {pid} not in ProductListing. Skipping this product")
             continue
 
-        url = instance.url
+        url = instance.product_url
         logger.info(f"Scraping Details for: {instance.short_title}")
         try:
             scrape_product_detail(category, url)
