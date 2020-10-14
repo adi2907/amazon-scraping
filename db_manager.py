@@ -1185,7 +1185,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
 
                 if obj.total_ratings is not None and obj.total_ratings <= 100 and instance.total_ratings is not None and instance.total_ratings <= 100:
                     c = ((obj.total_ratings == instance.total_ratings) or (obj.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= 5))
-                    flag = ((a & b) | (b & c) | (c & a))
+                    flag = ((a & d) | (d & c) | (c & a))
                 else:
                     flag = ((a & d) | (d & c) | (c & a))
                     if not flag:
@@ -1244,7 +1244,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     
                     if _obj.total_ratings is not None and _obj.total_ratings <= 100 and instance.total_ratings is not None and instance.total_ratings <= 100:
                         c = ((_obj.total_ratings == instance.total_ratings) or (_obj.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= 5))
-                        dup = ((a & b) | (b & c) | (c & a))
+                        dup = ((a & d) | (d & c) | (c & a))
                     else:
                         dup = ((a & d) | (d & c) | (c & a))
                         if not dup:
@@ -1349,7 +1349,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
 
             if obj.total_ratings is not None and obj.total_ratings <= 100 and prev.total_ratings is not None and prev.total_ratings <= 100:
                 c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= 5))
-                flag = ((a & b) | (b & c) | (c & a))
+                flag = ((a & d) | (d & c) | (c & a))
             else:
                 flag = ((a & d) | (d & c) | (c & a))
                 if not flag:
