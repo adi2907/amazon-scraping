@@ -1617,6 +1617,7 @@ if __name__ == '__main__':
             import cache
             cache = cache.Cache()
             cache.connect('master', use_redis=True)
+            category = "headphones"
             pids = cache.smembers(f"LISTING_{category}_PIDS")
             update_active_products(engine, pids)
     exit(0)
