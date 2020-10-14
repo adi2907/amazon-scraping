@@ -1519,6 +1519,7 @@ if __name__ == '__main__':
     parser.add_argument('--index_reviews', help='Index Reviews', default=False, action='store_true')
     parser.add_argument('--update_product_data', help='Update Product Data (QandA and Reviews)', default=False, action='store_true')
     parser.add_argument('--update_product_listing_from_cache', help='Update Product Data from Cache', default=False, action='store_true')
+    parser.add_argument('--update_active_products', help='Update Active Products (QandA and Reviews)', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1527,6 +1528,7 @@ if __name__ == '__main__':
     _index_reviews = args.index_reviews
     _update_product_data = args.update_product_data
     _update_product_listing_from_cache = args.update_product_listing_from_cache
+    _update_active_products = args.update_active_products
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1611,6 +1613,12 @@ if __name__ == '__main__':
             update_product_data(engine, dump=False)
         if args == 'update_product_listing_from_cache' and getattr(args, arg) == True:
             update_product_listing_from_cache(session, "headphones")
+        if args == 'update_active_products' and getattr(args, arg) == True:
+            import cache
+            cache = cache.Cache()
+            cache.connect('master', use_redis=True)
+            pids = cache.smembers(f"LISTING_{category}_PIDS")
+            update_active_products(engine, pids)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
