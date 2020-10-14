@@ -1189,7 +1189,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                 else:
                     flag = ((a & d) | (d & c) | (c & a))
                     if not flag:
-                        override = c & (obj.avg_ratings is not None and instance.avg_ratings is not None and abs(obj.avg_ratings - instance.avg_ratings) <= 0.1)
+                        override = c & (obj.avg_rating is not None and instance.avg_rating is not None and abs(obj.avg_rating - instance.avg_rating) <= 0.1)
                         if override:
                             flag = True
 
@@ -1248,7 +1248,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
                     else:
                         dup = ((a & d) | (d & c) | (c & a))
                         if not dup:
-                            override = c & (_obj.avg_ratings is not None and instance.avg_ratings is not None and abs(_obj.avg_ratings - instance.avg_ratings) <= 0.1)
+                            override = c & (_obj.avg_rating is not None and instance.avg_rating is not None and abs(_obj.avg_rating - instance.avg_rating) <= 0.1)
                             if override:
                                 dup = True
 
@@ -1353,7 +1353,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             else:
                 flag = ((a & d) | (d & c) | (c & a))
                 if not flag:
-                    override = c & (obj.avg_ratings is not None and prev.avg_ratings is not None and abs(obj.avg_ratings - prev.avg_ratings) <= 0.1)
+                    override = c & (obj.avg_rating is not None and prev.avg_rating is not None and abs(obj.avg_rating - prev.avg_rating) <= 0.1)
                     if override:
                         flag = True
 
