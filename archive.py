@@ -275,18 +275,18 @@ if __name__ == '__main__':
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
 
-    if _categories == True:
+    if _categories is not None:
         categories = _categories
     if _find_archived_products == True:
         find_archived_products(db_session)
     if _process_archived_pids == True:
         if _categories == False:
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
-        for category in categories:
+        for category in _categories:
             process_archived_pids(category)
             time.sleep(120)
     if _update_archive_listing == True:
-        if _categories == False:
+        if _categories is None:
             raise ValueError(f"Need to specify list of categories for updating archived PIDs")
-        for category in categories:
+        for category in _categories:
             update_archive_listing(db_session, category)
