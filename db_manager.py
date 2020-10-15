@@ -1467,7 +1467,11 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             c = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))
 
             if ((a & b) | (b & c) | (c & a)):
+                # if b and c:
                 duplicate_flag = True
+
+                logger.info(f"Duplicate Flag for {obj1.title} and {obj2.title}")
+                time.sleep(5)
             
                 if obj2.product_id in info:
                     info[obj1.product_id] = info[obj2.product_id]
@@ -1522,9 +1526,9 @@ def test_indices(csv_file='ProductListing.csv'):
     with SqliteDict('cache.sqlite3', autocommit=False) as mydict:
         info = mydict[f"DUPLICATE_INFO"]
     
-    df1 = pd.read_csv(csv_file, sep=',', encoding='utf-8')
+    df1 = pd.read_csv(csv_file, sep=',', encoding='utf-8', delimiter='\n')
     
-    df2 = pd.DataFrame(info)
+    df2 = pd.DataFrame(info.items(), columns=['product_id', 'duplicate_set'])
 
     cleaned_df = pd.merge(df1, df2.rename(columns={'duplicate_set': 'dup1'}), left_on='id', right_on='id1', how='left').drop('id1', 'dup1', axis=1)
 
