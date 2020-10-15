@@ -1471,8 +1471,8 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                 if obj2.product_id in info:
                     info[obj1.product_id] = info[obj2.product_id]
                 else:
-                    info[obj1.product_id] = idx
-                    info[obj2.product_id] = idx
+                    info[obj1.product_id] = get_max(info)
+                    info[obj2.product_id] = get_max(info)
                 
                 break
         
