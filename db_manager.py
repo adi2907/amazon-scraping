@@ -368,6 +368,11 @@ def insert_product_listing(session, data, table='ProductListing'):
                 except:
                     row['short_title'] = None
                 
+                if row['short_title'] is None:
+                    row['brand'] = None
+                else:
+                    row['brand'] = row['short_title'].split()[0]
+                
                 value = data[category][page_num][title]
                 for key in value:
                     if value[key] is not None:
