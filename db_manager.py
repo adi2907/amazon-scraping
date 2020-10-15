@@ -50,6 +50,7 @@ tables = {
         'duplicate_set': 'INTEGER',
         'is_active': 'BOOLEAN',
         'date_completed': 'DATETIME',
+        'brand': 'TEXT(100)',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -1456,8 +1457,31 @@ def find_archived_products(session, table='ProductListing'):
     logger.info(f"Found {count} archived products totally")
 
 
-def sanity_check(session, pids, table='ProductListing'):
-    pass
+def sanity_check(session, categories, pids, table='ProductListing'):
+    from sqlalchemy import asc, desc
+    import cache
+
+    from sqlalchemy.sql.expression import func
+
+    max_set = session.query(func.max(ProductListing.duplicate_set))
+
+    cache = cache.Cache()
+    cache.connect('master', use_redis=True)
+    
+    _table = table_map[table]
+
+    for category in categories:
+        for idx in range(max_set + 1):
+            queryset = session.query(_table).filter(ProductListing.duplicate_set == duplicate_set)
+            set_count = queryset.count()
+            if set_count == 0:
+                continue
+            elif set_count == 1:
+                # Suspicious
+                # Reindex this
+                q = 
+        
+        
 
 
 def update_active_products(engine, pids, table='ProductListing', insert=True):
@@ -1477,6 +1501,10 @@ def index_reviews(engine, table='Reviews'):
 
 def update_listing_completed(engine, table='ProductListing'):
     engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, date_completed FROM ProductDetails) as t2 SET t1.date_completed = t2.date_completed WHERE t1.product_id = t2.product_id' % (table))
+
+
+def transfer_brands(engine, table='ProductListing'):
+    engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, brand FROM ProductDetails) as t2 SET t1.brand = t2.brand WHERE t1.product_id = t2.product_id' % (table))
 
 
 def update_product_data(engine, dump=False):
@@ -1558,6 +1586,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_product_listing_from_cache', help='Update Product Data from Cache', default=False, action='store_true')
     parser.add_argument('--update_active_products', help='Update Active Products (QandA and Reviews)', default=False, action='store_true')
     parser.add_argument('--find_archived_products', help='Find archived products from ProductListing', default=False, action='store_true')
+    parser.add_argument('--transfer_brands', help='Transfer brands from ProductListing', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1568,6 +1597,7 @@ if __name__ == '__main__':
     _update_product_listing_from_cache = args.update_product_listing_from_cache
     _update_active_products = args.update_active_products
     _find_archived_products = args.find_archived_products
+    _transfer_brands = args.transfer_brands
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1660,6 +1690,8 @@ if __name__ == '__main__':
         update_active_products(engine, pids)
     if _find_archived_products == True:
         find_archived_products(session)
+    if _transfer_brands == True:
+        transfer_brands(engine)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
