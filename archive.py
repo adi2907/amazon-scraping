@@ -240,11 +240,13 @@ def update_archive_listing(session, category, table='ProductListing'):
 
             for field in required_details:
                 if field == "num_reviews" and detail.get('num_reviews') is not None:
+                    num_reviews = int(detail[field].split()[0].replace(',', '').replace('.', ''))
                     if hasattr(instance, "total_ratings"):
-                        setattr(instance, "total_ratings", detail['num_reviews'])
+                        setattr(instance, "total_ratings", num_reviews)
                 elif field == "curr_price" and detail.get('curr_price') is not None:
+                    price = float(detail[field].replace(',', ''))
                     if hasattr(instance, "price"):
-                        setattr(instance, "price", detail['curr_price'])
+                        setattr(instance, "price", price)
         
             try:
                 db_session.commit()
