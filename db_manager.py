@@ -1456,7 +1456,8 @@ def find_archived_products(session, table='ProductListing'):
     logger.info(f"Found {count} archived products totally")
 
 
-def sanity_check(session, table='ProductListing', )
+def sanity_check(session, table='ProductListing', pids):
+    pass
 
 
 def update_active_products(engine, pids, table='ProductListing', insert=True):
