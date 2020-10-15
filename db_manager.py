@@ -1331,17 +1331,17 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             # Find duplicate set
             a = (obj.short_title == prev.short_title)
             
-            A_PRICE = obj.old_price if obj.old_price is not None else obj.price
-            B_PRICE = prev.old_price if prev.old_price is not None else prev.price
+            #A_PRICE = obj.old_price if obj.old_price is not None else obj.price
+            #B_PRICE = prev.old_price if prev.old_price is not None else prev.price
             
-            b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
+            #b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
             
-            A_PRICE = obj.price
-            B_PRICE = prev.price
+            #A_PRICE = obj.price
+            #B_PRICE = prev.price
             
-            b_prime = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
+            #b_prime = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
 
-            b = b | b_prime
+            #b = b | b_prime
             
             c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= (DELTA) * (max(obj.total_ratings, prev.total_ratings))))
 
@@ -1454,6 +1454,9 @@ def find_archived_products(session, table='ProductListing'):
         continue
 
     logger.info(f"Found {count} archived products totally")
+
+
+def sanity_check(session, table='ProductListing', )
 
 
 def update_active_products(engine, pids, table='ProductListing', insert=True):
