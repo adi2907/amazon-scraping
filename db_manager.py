@@ -1462,10 +1462,11 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             if obj1.product_id == obj2.product_id:
                 continue
             
-            avg_rating_flag = ((obj1.avg_rating == obj2.avg_rating) or (obj1.avg_rating is not None and obj2.avg_rating is not None and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1)))
-            rating_flag = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))
+            a = (obj1.short_title == obj2.short_title)
+            b = ((obj1.avg_rating == obj2.avg_rating) or (obj1.avg_rating is not None and obj2.avg_rating is not None and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1)))
+            c = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))
 
-            if (rating_flag and avg_rating_flag):
+            if ((a & b) | (b & c) | (c & a)):
                 duplicate_flag = True
             
                 if obj2.product_id in info:
