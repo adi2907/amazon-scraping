@@ -1479,9 +1479,7 @@ def sanity_check(session, categories, pids, table='ProductListing'):
             elif set_count == 1:
                 # Suspicious
                 # Reindex this
-                q = 
-        
-        
+                pass
 
 
 def update_active_products(engine, pids, table='ProductListing', insert=True):
