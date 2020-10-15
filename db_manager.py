@@ -1515,6 +1515,23 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
         logger.info(f"Finished inserting!")
 
 
+def test_indices(csv_file='ProductListing.csv'):
+    import pandas as pd
+    import os
+
+    with SqliteDict('cache.sqlite3', autocommit=False) as mydict:
+        info = mydict[f"DUPLICATE_INFO"]
+    
+    df1 = pd.read_csv(csv_file, sep=',', encoding='utf-8')
+    
+    df2 = pd.DataFrame(info)
+
+    cleaned_df = pd.merge(df1, df2.rename(columns={'duplicate_set': 'dup1'}), left_on='id', right_on='id1' how='left').drop('id1', 'dup1', axis=1)
+
+    cleaned_df.to_csv(os.path.join(os.getcwd(), 'test.csv'), index=False)
+
+
+
 def find_archived_products(session, table='ProductListing'):
     from sqlalchemy import asc, desc
     import cache
