@@ -1482,6 +1482,31 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
     
     logger.info(f"Successfully indexed {idx} duplicate sets")
 
+    if insert == True:
+        logger.info(f"Inserting indexes into the DB...")
+        
+        with SqliteDict('cache.sqlite3', autocommit=True) as cache:
+            if "DUPLICATE_INFO_OLD" not in cache:
+                cache[f"DUPLICATE_INFO_OLD"] = {}
+
+            idxs = cache.get(f"DUPLICATE_INFO")
+            if not idxs:
+                logger.warning("idxs is None")
+            else:
+                for product_id in idxs:
+                    instance = session.query(_table).filter(_table.product_id == product_id).first()
+                    if instance:
+                        cache[f"DUPLICATE_INFO_OLD"][product_id] = instance.duplicate_set
+                        setattr(instance, 'duplicate_set', idxs[product_id])
+
+        try:
+            session.commit()
+        except Exception as ex:
+            session.rollback()
+            logger.critical(f"Exception: {ex} when trying to commit idxs")
+        
+        logger.info(f"Finished inserting!")
+
 
 def find_archived_products(session, table='ProductListing'):
     from sqlalchemy import asc, desc
