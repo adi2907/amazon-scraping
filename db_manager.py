@@ -1435,7 +1435,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
 
     _table = table_map[table]
 
-    queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand'))
+    queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
 
     idx = 1
 
