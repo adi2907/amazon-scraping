@@ -204,8 +204,9 @@ def find_archived_products(session, categories=[], table='ProductListing'):
                 cache.sadd(f"ARCHIVED_PRODUCTS_{category}_BACKUP", _pid)
                 mydict[f"ARCHIVED_PRODUCTS_{category}"].add(_pid)
     
-    # Delete the current ones
-    cache.delete(f"ARCHIVED_PRODUCTS_{instance.category}")
+    for category in categories:
+        # Delete the current ones
+        cache.delete(f"ARCHIVED_PRODUCTS_{category}")
     
     for instance in queryset:
         if prev is None:
