@@ -1399,7 +1399,7 @@ def index_duplicate_sets_old(session, table='ProductListing', insert=False, stri
         logger.info(f"Finished inserting!")
 
 
-def update_duplicate_sets(session, table='ProductListing', insert=False, strict=False):
+def update_duplicate_set(session, table='ProductListing', insert=False, strict=False):
     return index_duplicate_sets(session, table='ProductListing', insert=insert, strict=strict, index_all=False)
 
 
