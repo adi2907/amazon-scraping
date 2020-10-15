@@ -24,7 +24,7 @@ def remove_stop_words(text):
             #    pass
             #else:
             #    continue
-            continue
+            return(' '.join(word.lower() for word in outputlist[:MAX_WORDS]))
         outputlist.append(word)
     
     #return(brand.lower() + ' '.join(word.lower() for word in outputlist[:MAX_WORDS]))
