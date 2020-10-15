@@ -1,3 +1,4 @@
+import argparse
 import random
 import signal
 import sys
@@ -182,16 +183,59 @@ def process_archived_pids(category):
     logger.info(f"Finished fetching archived products for Category: {category}")
 
 
+def find_archived_products(session, table='ProductListing'):
+    from sqlalchemy import asc, desc
+    global cache, db_session
+    
+    _table = db_manager.table_map[table]
+
+    queryset = db_session.query(_table).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('duplicate_set')).order_by(desc('total_ratings'))
+
+    prev = None
+
+    count = 0
+    
+    for instance in queryset:
+        if prev is None:
+            prev = instance
+            continue
+        
+        if prev.category == instance.category and prev.duplicate_set != instance.duplicate_set and prev.short_title == instance.short_title:
+            # Possibly an archived product
+            # Constraint: price(prev) >= price(curr), so prev is more recent
+            cache.sadd(f"ARCHIVED_PRODUCTS_{instance.category}", instance.product_id)
+            count += 1
+            continue
+
+        prev = instance
+        continue
+
+    logger.info(f"Found {count} archived products totally")
+
 
 if __name__ == '__main__':
+    # Start a session using the existing engine
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--categories', help='List of all categories (comma separated)', type=lambda s: [item.strip() for item in s.split(',')])
+    parser.add_argument('--find_archived_products', help='Find all archived products from existing ones on Product Listing', default=False, action='store_true')
+    parser.add_argument('--process_archived_pids', help='Fetch Product Details of potentially Archived Products', default=False, action='store_true')
+
+    args = parser.parse_args()
+
+    _categories = args.categories
+    _find_archived_products = args.find_archived_products
+    _process_archived_pids = args.process_archived_pids
+
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
-    process_archived_pids("headphones")
-    time.sleep(120)
-    process_archived_pids("smarphones")
-    time.sleep(120)
-    process_archived_pids("ceiling fan")
-    time.sleep(120)
-    process_archived_pids("refrigerator")
-    time.sleep(120)
-    process_archived_pids("washing machine")
+
+    if _categories == True:
+        categories = _categories
+    if _find_archived_products == True:
+        find_archived_products(db_session)
+    if _process_archived_pids == True:
+        if _categories == False:
+            raise ValueError(f"Need to specify list of categories for processing archived PIDs")
+        for category in categories:
+            process_archived_pids(category)
+            time.sleep(120)
