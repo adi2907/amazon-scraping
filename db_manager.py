@@ -1432,6 +1432,7 @@ def index_duplicate_sets_old(session, table='ProductListing', insert=False, stri
 def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False):
     from sqlalchemy import asc, desc
     from sqlitedict import SqliteDict
+    import time
 
     _table = table_map[table]
 
