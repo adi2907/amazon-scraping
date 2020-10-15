@@ -1505,14 +1505,11 @@ def transfer_brands(engine, table='ProductListing'):
     engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, brand FROM ProductDetails) as t2 SET t1.brand = t2.brand WHERE t1.product_id = t2.product_id' % (table))
 
 
-def update_brands(session, table='ProductListing'):
+def update_brands(session, table='ProductListing', override=True):
     queryset = session.query(ProductListing).all()
 
     for instance in queryset:
-        if instance.brand is None:
-            instance.brand = instance.short_title.split()[0]
-        else:
-            instance.brand = instance.brand.lower()
+        instance.brand = instance.short_title.split()[0]
     try:
         session.commit()
     except:
