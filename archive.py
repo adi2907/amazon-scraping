@@ -185,7 +185,7 @@ def process_archived_pids(category):
 
 def find_archived_products(session, table='ProductListing'):
     from sqlalchemy import asc, desc
-    global cache, db_session
+    global cache, db_session, cache_file
     
     _table = db_manager.table_map[table]
 
@@ -194,6 +194,17 @@ def find_archived_products(session, table='ProductListing'):
     prev = None
 
     count = 0
+
+    with SqliteDict(cache_file, autocommit=True) as mydict:
+        # Take a backup
+        mydict[f"ARCHIVED_PRODUCTS_{instance.category}"] = set()
+        for pid in cache.smembers(f"ARCHIVED_PRODUCTS_{instance.category}"):
+            _pid = pid.decode()
+            cache.sadd(f"ARCHIVED_PRODUCTS_{instance.category}_BACKUP", _pid)
+            mydict[f"ARCHIVED_PRODUCTS_{instance.category}"].add(_pid)
+    
+    # Delete the current ones
+    cache.delete(f"ARCHIVED_PRODUCTS_{instance.category}")
     
     for instance in queryset:
         if prev is None:
