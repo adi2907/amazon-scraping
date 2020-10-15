@@ -213,18 +213,62 @@ def find_archived_products(session, table='ProductListing'):
     logger.info(f"Found {count} archived products totally")
 
 
+def update_archive_listing(session, category, table='ProductListing'):
+    from sqlalchemy import asc, desc
+    global cache, db_session, cache_file
+
+    _table = db_manager.table_map[table]
+
+    # Update only important details
+    required_details = ["num_reviews", "curr_price"]
+
+    archived_pids = cache.smembers(f"ARCHIVED_PRODUCTS_{category}")
+    archived_pids = [pid.decode() for pid in archived_pids]
+
+    with SqliteDict(cache_file, autocommit=False) as mydict:
+        for pid in archived_pids:
+            instance = db_session.query(_table).filter(_table.product_id == pid).first()
+            if instance is None:
+                logger.warning(f"For PID {pid}, no such instance in {table}")
+                continue
+
+            detail = mydict.get(f"ARCHIVED_DETAIL_{pid}")
+
+            if detail is None:
+                logger.warning(f"For PID {pid}, no such detail info in cache")
+                continue
+
+            for field in required_details:
+                if field == "num_reviews" and detail.get('num_reviews') is not None:
+                    if hasattr(instance, "total_ratings"):
+                        setattr(instance, "total_ratings", detail['num_reviews'])
+                elif field == "curr_price" and detail.get('curr_price') is not None:
+                    if hasattr(instance, "price"):
+                        setattr(instance, "price", detail['curr_price'])
+        
+            try:
+                db_session.commit()
+            except Exception as ex:
+                db_session.rollback()
+                logger.critical(f"Error when trying to commit the session for PID {pid}: {ex}")
+    
+    logger.info(f"Updated Archive Products for category: {category}")
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--categories', help='List of all categories (comma separated)', type=lambda s: [item.strip() for item in s.split(',')])
     parser.add_argument('--find_archived_products', help='Find all archived products from existing ones on Product Listing', default=False, action='store_true')
     parser.add_argument('--process_archived_pids', help='Fetch Product Details of potentially Archived Products', default=False, action='store_true')
+    parser.add_argument('--update_archive_listing', help='Updated Product Listing of Archived Products', default=False, action='store_true')
 
     args = parser.parse_args()
 
     _categories = args.categories
     _find_archived_products = args.find_archived_products
     _process_archived_pids = args.process_archived_pids
+    _update_archive_listing = args.update_archive_listing
 
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
@@ -239,3 +283,8 @@ if __name__ == '__main__':
         for category in categories:
             process_archived_pids(category)
             time.sleep(120)
+    if _update_archive_listing == True:
+        if _categories == False:
+            raise ValueError(f"Need to specify list of categories for updating archived PIDs")
+        for category in categories:
+            update_archive_listing(db_session, category)
