@@ -8,10 +8,9 @@ from utils import create_logger
 
 logger = create_logger('tokenize')
 
-nltk.download('stopwords')
-
 
 def remove_stop_words(text):
+    nltk.download('stopwords')
     #brand = ''.join([i for i in str(text).split()[:1]])
     blob = TextBlob(str(text)).words
     #blob = TextBlob(''.join([i for i in str(text).split()[1:]])).words

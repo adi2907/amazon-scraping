@@ -19,6 +19,7 @@ from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
 
+from tokenize_titles import remove_stop_words
 from utils import create_logger
 
 # This is required for integration with MySQL and Python
@@ -322,38 +323,7 @@ def get_short_title(product_title):
     if product_title.startswith('(Renewed)'):
         product_title = product_title[9:].strip()
     
-    result = product_title.lower()
-    # Order matters
-    DELIMITERS = ['tws', 'true', 'wired', 'wireless', 'in-ear', 'in ear', 'on-ear', 'on ear'] + ['with', '[', '{', '(', ',']
-    slen = len(result)
-    fin = result
-    temp = fin
-    for delim in DELIMITERS:
-        if result.startswith(delim):
-            result = result[len(delim):].strip()
-        bar = result.split(delim)
-        if len(bar) == 1:
-            # Empty
-            continue
-        short_title = bar[0].strip()
-        
-        if len(short_title) < slen:
-            temp = fin
-            fin = short_title.strip()
-            slen = len(short_title)
-    
-    fin = fin.strip()
-    if len(fin) == 0:
-        print(f"For title {product_title}, len = 0")
-    if len(fin.split()) <= 1:
-        # Let's take the second shortest one instead, as fin is too short
-        if len(temp.split()) <= 1:
-            pass
-        else:
-            fin = temp.strip()
-    if len(fin) > 0 and fin[-1] in [',', '.', ':', '-']:
-        fin = fin[:-1]
-    return fin
+    return remove_stop_words(product_title)
 
 
 def insert_product_listing(session, data, table='ProductListing'):
@@ -1135,7 +1105,7 @@ def mark_duplicate_reduced(session, category):
     logger.info(f"Marked {count} products as duplicate!")
 
 
-def update_duplicate_set(session, table='ProductListing', insert=False):
+def update_duplicate_set_old(session, table='ProductListing', insert=False):
     from sqlalchemy import asc, desc, func
     from sqlitedict import SqliteDict
 
@@ -1429,16 +1399,35 @@ def index_duplicate_sets_old(session, table='ProductListing', insert=False, stri
         logger.info(f"Finished inserting!")
 
 
-def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False):
-    from sqlalchemy import asc, desc
-    from sqlitedict import SqliteDict
+def update_duplicate_sets(session, table='ProductListing', insert=False, strict=False):
+    return index_duplicate_sets(session, table='ProductListing', insert=insert, strict=strict, index_all=False)
+
+
+def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False, index_all=True):
     import time
+
+    from sqlalchemy import asc, desc, func
+    from sqlitedict import SqliteDict
 
     _table = table_map[table]
 
     queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
 
-    idx = 1
+    if index_all == False:
+        queryset = session.query(_table).filter(ProductListing.duplicate_set == None).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
+    else:
+        queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
+    
+    if index_all == False:
+        try:
+            num_sets = session.query(func.max(ProductListing.duplicate_set)).scalar()
+        except Exception as ex:
+            logger.critical(f"Exception during fetching maximum value: {ex}")
+            return
+    else:
+        num_sets = 1
+
+    idx = num_sets
 
     info = {}
 
@@ -1518,8 +1507,9 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
 
 
 def test_indices(csv_file='ProductListing.csv'):
-    import pandas as pd
     import os
+
+    import pandas as pd
 
     with SqliteDict('cache.sqlite3', autocommit=False) as mydict:
         info = mydict[f"DUPLICATE_INFO"]
@@ -1536,6 +1526,7 @@ def test_indices(csv_file='ProductListing.csv'):
 
 def find_archived_products(session, table='ProductListing'):
     from sqlalchemy import asc, desc
+
     import cache
 
     cache = cache.Cache()
@@ -1569,9 +1560,9 @@ def find_archived_products(session, table='ProductListing'):
 
 def sanity_check(session, categories, pids, table='ProductListing'):
     from sqlalchemy import asc, desc
-    import cache
-
     from sqlalchemy.sql.expression import func
+
+    import cache
 
     max_set = session.query(func.max(ProductListing.duplicate_set))
 
