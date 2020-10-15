@@ -1526,7 +1526,7 @@ def test_indices(csv_file='ProductListing.csv'):
     
     df2 = pd.DataFrame(info)
 
-    cleaned_df = pd.merge(df1, df2.rename(columns={'duplicate_set': 'dup1'}), left_on='id', right_on='id1' how='left').drop('id1', 'dup1', axis=1)
+    cleaned_df = pd.merge(df1, df2.rename(columns={'duplicate_set': 'dup1'}), left_on='id', right_on='id1', how='left').drop('id1', 'dup1', axis=1)
 
     cleaned_df.to_csv(os.path.join(os.getcwd(), 'test.csv'), index=False)
 
