@@ -1706,6 +1706,7 @@ if __name__ == '__main__':
     parser.add_argument('--find_archived_products', help='Find archived products from ProductListing', default=False, action='store_true')
     parser.add_argument('--transfer_brands', help='Transfer brands from ProductListing', default=False, action='store_true')
     parser.add_argument('--update_brands', help='Update brands in ProductListing', default=False, action='store_true')
+    parser.add_argument('--test_indices', help='Test Indices', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1718,6 +1719,7 @@ if __name__ == '__main__':
     _find_archived_products = args.find_archived_products
     _transfer_brands = args.transfer_brands
     _update_brands = args.update_brands
+    _test_indices = args.test_indices
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1814,6 +1816,8 @@ if __name__ == '__main__':
         transfer_brands(engine)
     if _update_brands == True:
         update_brands(session)
+    if _test_indices == True:
+        test_indices()
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
