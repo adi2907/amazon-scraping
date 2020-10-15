@@ -1505,6 +1505,21 @@ def transfer_brands(engine, table='ProductListing'):
     engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, brand FROM ProductDetails) as t2 SET t1.brand = t2.brand WHERE t1.product_id = t2.product_id' % (table))
 
 
+def update_brands(session, table='ProductListing'):
+    queryset = session.query(ProductListing).all()
+
+    for instance in queryset:
+        if instance.brand is None:
+            instance.brand = instance.short_title.split()[0]
+        else:
+            instance.brand = instance.brand.lower()
+    try:
+        session.commit()
+    except:
+        session.rollback()
+        logger.critical(f"Error when commiting for update_brands()")
+
+
 def update_product_data(engine, dump=False):
     import os
     import subprocess
@@ -1585,6 +1600,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_active_products', help='Update Active Products (QandA and Reviews)', default=False, action='store_true')
     parser.add_argument('--find_archived_products', help='Find archived products from ProductListing', default=False, action='store_true')
     parser.add_argument('--transfer_brands', help='Transfer brands from ProductListing', default=False, action='store_true')
+    parser.add_argument('--update_brands', help='Update brands in ProductListing', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1596,6 +1612,7 @@ if __name__ == '__main__':
     _update_active_products = args.update_active_products
     _find_archived_products = args.find_archived_products
     _transfer_brands = args.transfer_brands
+    _update_brands = args.update_brands
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1690,6 +1707,8 @@ if __name__ == '__main__':
         find_archived_products(session)
     if _transfer_brands == True:
         transfer_brands(engine)
+    if _update_brands == True:
+        update_brands(session)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
