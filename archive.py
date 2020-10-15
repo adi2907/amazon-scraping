@@ -183,7 +183,7 @@ def process_archived_pids(category):
     logger.info(f"Finished fetching archived products for Category: {category}")
 
 
-def find_archived_products(session, table='ProductListing'):
+def find_archived_products(session, categories=[], table='ProductListing'):
     from sqlalchemy import asc, desc
     global cache, db_session, cache_file
     
@@ -197,11 +197,12 @@ def find_archived_products(session, table='ProductListing'):
 
     with SqliteDict(cache_file, autocommit=True) as mydict:
         # Take a backup
-        mydict[f"ARCHIVED_PRODUCTS_{instance.category}"] = set()
-        for pid in cache.smembers(f"ARCHIVED_PRODUCTS_{instance.category}"):
-            _pid = pid.decode()
-            cache.sadd(f"ARCHIVED_PRODUCTS_{instance.category}_BACKUP", _pid)
-            mydict[f"ARCHIVED_PRODUCTS_{instance.category}"].add(_pid)
+        for category in categories:
+            mydict[f"ARCHIVED_PRODUCTS_{category}"] = set()
+            for pid in cache.smembers(f"ARCHIVED_PRODUCTS_{category}"):
+                _pid = pid.decode()
+                cache.sadd(f"ARCHIVED_PRODUCTS_{category}_BACKUP", _pid)
+                mydict[f"ARCHIVED_PRODUCTS_{category}"].add(_pid)
     
     # Delete the current ones
     cache.delete(f"ARCHIVED_PRODUCTS_{instance.category}")
@@ -289,9 +290,11 @@ if __name__ == '__main__':
     if _categories is not None:
         categories = _categories
     if _find_archived_products == True:
-        find_archived_products(db_session)
+        if _categories is None:
+            raise ValueError(f"Need to specify list of categories for processing archived PIDs")
+        find_archived_products(db_session, categories=_categories)
     if _process_archived_pids == True:
-        if _categories == False:
+        if _categories is None:
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
         for category in _categories:
             process_archived_pids(category)
