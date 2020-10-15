@@ -1573,13 +1573,14 @@ def sanity_check(session, categories, pids, table='ProductListing'):
 
     for category in categories:
         for idx in range(max_set + 1):
-            queryset = session.query(_table).filter(ProductListing.duplicate_set == duplicate_set)
+            queryset = session.query(_table).filter(ProductListing.duplicate_set == idx)
             set_count = queryset.count()
             if set_count == 0:
                 continue
             elif set_count == 1:
                 # Suspicious
                 # Reindex this
+                # TODO: Set duplicate_set of all such products to NULL and finally update indexes
                 pass
 
 
