@@ -232,7 +232,7 @@ def update_archive_listing(session, category, table='ProductListing'):
                 logger.warning(f"For PID {pid}, no such instance in {table}")
                 continue
 
-            detail = mydict.get(f"ARCHIVED_DETAIL_{pid}")
+            detail = mydict.get(f"ARCHIVED_DETAILS_{pid}")
 
             if detail is None:
                 logger.warning(f"For PID {pid}, no such detail info in cache")
