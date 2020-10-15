@@ -1302,7 +1302,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False):
         logger.info(f"Finished inserting!")
 
 
-def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False):
+def index_duplicate_sets_old(session, table='ProductListing', insert=False, strict=False):
     from sqlalchemy import asc, desc
     from sqlitedict import SqliteDict
 
@@ -1422,6 +1422,65 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             logger.critical(f"Exception: {ex} when trying to commit idxs")
         
         logger.info(f"Finished inserting!")
+
+
+def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False):
+    from sqlalchemy import asc, desc
+    from sqlitedict import SqliteDict
+
+    _table = table_map[table]
+
+    queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand'))
+
+    idx = 1
+
+    info = {}
+
+    DELTA = 0.1
+
+    def get_max(info):
+        maxval = 1
+        for key in info:
+            if info[key] > maxval:
+                maxval = info[key]
+        return maxval
+
+    for obj1 in queryset:
+        if obj1.product_id in info:
+            continue
+        
+        q = session.query(_table).filter(ProductListing.category == obj1.category, ProductListing.brand == obj1.brand).order_by(desc('total_ratings'))
+        
+        duplicate_flag = False
+
+        for obj2 in q:
+            if obj1.product_id == obj2.product_id:
+                continue
+            
+            avg_rating_flag = ((obj1.avg_rating == obj2.avg_rating) or (obj1.avg_rating is not None and obj2.avg_rating is not None and abs(obj1.avg_rating - obj2.total_ratings) <= (0.1)))
+            rating_flag = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))
+
+            if (rating_flag and avg_rating_flag):
+                duplicate_flag = True
+            
+                if obj2.product_id in info:
+                    info[obj1.product_id] = info[obj2.product_id]
+                else:
+                    info[obj1.product_id] = idx
+                    info[obj2.product_id] = idx
+                
+                break
+        
+        if duplicate_flag == False:
+            # Not a duplicate
+            idx = get_max(info)
+            info[obj1.product_id] = idx + 1
+            idx += 1
+    
+    with SqliteDict('cache.sqlite3', autocommit=True) as mydict:
+        mydict[f"DUPLICATE_INFO"] = info
+    
+    logger.info(f"Successfully indexed {idx} duplicate sets")
 
 
 def find_archived_products(session, table='ProductListing'):
