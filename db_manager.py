@@ -1456,7 +1456,7 @@ def find_archived_products(session, table='ProductListing'):
     logger.info(f"Found {count} archived products totally")
 
 
-def sanity_check(session, table='ProductListing', pids):
+def sanity_check(session, pids, table='ProductListing'):
     pass
 
 
