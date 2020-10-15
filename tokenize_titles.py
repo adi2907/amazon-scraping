@@ -30,7 +30,7 @@ def remove_stop_words(text):
     return(' '.join(word.lower() for word in outputlist[:MAX_WORDS]))
 
 
-def tokenize_titles():
+def main():
     Session = sessionmaker(bind=db_manager.engine, autocommit=False, autoflush=True)
 
     session = Session()
@@ -54,4 +54,4 @@ def tokenize_titles():
 
 
 if __name__ == '__main__':
-    tokenize_titles()
+    main()
