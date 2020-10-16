@@ -19,7 +19,7 @@ from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
 
-from tokenize_titles import remove_stop_words
+import tokenize_titles
 from utils import create_logger
 
 # This is required for integration with MySQL and Python
@@ -323,7 +323,7 @@ def get_short_title(product_title):
     if product_title.startswith('(Renewed)'):
         product_title = product_title[9:].strip()
     
-    return remove_stop_words(product_title)
+    return tokenize_titles.remove_stop_words(product_title)
 
 
 def insert_product_listing(session, data, table='ProductListing'):
