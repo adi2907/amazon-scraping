@@ -400,6 +400,17 @@ def get_product_data(soup, html=None):
         else:
             results['histogram'] = None
         
+        # Get the average rating
+        avg_rating = customer_reviews.find("span", {"data-hook": "rating-out-of-text"})
+        if avg_rating is not None:
+            try:
+                avg_rating = avg_rating.text.strip().split()[0]
+                avg_rating = float(avg_rating)
+            except:
+                avg_rating = None
+        
+        results['avg_rating'] = avg_rating
+        
         # Get the feature wise ratings
         attribute_widget = customer_reviews.find("div", {"data-hook": "summarization-attributes-widget"})
         if attribute_widget is not None:
@@ -630,9 +641,15 @@ if __name__ == '__main__':
     #print(results)
     #print(len(results.keys()))
 
-    soup = init_parser('mobile/sample')
-    results = get_product_data(soup)
-    print(results['product_details'])
+    #soup = init_parser('mobile/sample')
+    soup = init_parser('headphones/LISTING_headphones_PAGE_7')
+    #results = get_product_data(soup)
+    #print(results['reviews_url'])
+    page_element = soup.find("ul", class_="a-pagination")
+    next_page = page_element.find("li", class_="a-last")
+    page_url = next_page.find("a")
+    page_url = page_url.attrs['href']
+    print(page_url)
     exit(0)
 
     # Get the Product Data (Including Customer Reviews)

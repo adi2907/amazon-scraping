@@ -465,7 +465,7 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
     row['is_sponsored'] = is_sponsored
     try:
         obj = table_map[table]()
-        [setattr(obj, key, value) for key, value in row.items()]
+        [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
         session.add(obj)
         session.commit()
         return True

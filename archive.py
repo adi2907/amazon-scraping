@@ -233,7 +233,7 @@ def update_archive_listing(session, category, table='ProductListing'):
     _table = db_manager.table_map[table]
 
     # Update only important details
-    required_details = ["num_reviews", "curr_price"]
+    required_details = ["num_reviews", "curr_price", "avg_rating"]
 
     archived_pids = cache.smembers(f"ARCHIVED_PRODUCTS_{category}")
     archived_pids = [pid.decode() for pid in archived_pids]
@@ -260,6 +260,10 @@ def update_archive_listing(session, category, table='ProductListing'):
                     price = float(detail[field].replace(',', ''))
                     if hasattr(instance, "price"):
                         setattr(instance, "price", price)
+                elif field == "avg_rating" and detail.get('avg_rating') is not None and isinstance(detail.get('avg_rating'), float):
+                    avg_rating = detail['avg_rating']
+                    if hasattr(instance, "avg_rating"):
+                        setattr(instance, "avg_rating", avg_rating)
         
             try:
                 db_session.commit()
