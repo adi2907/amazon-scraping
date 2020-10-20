@@ -1688,6 +1688,39 @@ def update_product_data(engine, dump=False):
     engine.execute('UPDATE Reviews SET is_duplicate = False WHERE id in (%s)' % (ids))
 
 
+def export_sets(session, cache_file='cache.sqlite3', category='headphones'):
+    from sqlalchemy import asc, desc, func
+    from sqlitedict import SqliteDict
+    
+    with SqliteDict(cache_file) as cache:
+        results = cache.get(f"IMPORT_SETS_{category}")
+    
+    if results is None:
+        return
+    
+    init_flag = True
+    max_val = 1
+    
+    for pid in results:
+        instance = session.query(ProductListing).filter(ProductListing.product_id == pid).first()
+        dup_set = results[pid]['duplicate_set']
+        if dup_set is None:
+            if init_flag == True:
+                init_flag = False
+                max_val = session.query(func.max(ProductListing.duplicate_set)).scalar()
+                
+            max_val += 1
+            instance.duplicate_set = max_val
+        else:
+            instance.duplicate_set = dup_set
+        
+        try:
+            session.commit()
+        except Exception as ex:
+            session.rollback()
+            logger.critical(f"Error when exporting duplicate sets: {ex}")
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
@@ -1701,6 +1734,7 @@ if __name__ == '__main__':
     parser.add_argument('--transfer_brands', help='Transfer brands from ProductListing', default=False, action='store_true')
     parser.add_argument('--update_brands', help='Update brands in ProductListing', default=False, action='store_true')
     parser.add_argument('--test_indices', help='Test Indices', default=False, action='store_true')
+    parser.add_argument('--export_sets', help='Export Sets', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1714,6 +1748,7 @@ if __name__ == '__main__':
     _transfer_brands = args.transfer_brands
     _update_brands = args.update_brands
     _test_indices = args.test_indices
+    _export_sets = args.export_sets
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1812,6 +1847,8 @@ if __name__ == '__main__':
         update_brands(session)
     if _test_indices == True:
         test_indices()
+    if _export_sets == True:
+        export_sets()
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
