@@ -1848,7 +1848,7 @@ if __name__ == '__main__':
     if _test_indices == True:
         test_indices()
     if _export_sets == True:
-        export_sets()
+        export_sets(session)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
