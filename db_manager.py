@@ -1597,6 +1597,8 @@ def update_alert_flags(session, table='ProductListing'):
 
     DELTA = 0.1
 
+    queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
+
     for obj1 in queryset:
         q = session.query(_table).filter(ProductListing.category == obj1.category, ProductListing.brand == obj1.brand).order_by(desc('total_ratings'))
         
