@@ -273,7 +273,9 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                 cache.atomic_set_add(f"{category}_PIDS", product_id)
             else:
                 logger.info(f"PID {product_id} in set. Skipping this product")
-                continue
+                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                if obj is not None:
+                    continue
 
             if product_id is not None:
                 _date = threshold_date
@@ -314,7 +316,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                                 logger.info(f"Skipping this product. within the last week")
                                 continue
                             
-                        elif hasattr(obj, 'date_completed') and obj.date_completed is not None:
+                        elif hasattr(recent_obj, 'date_completed') and recent_obj.date_completed is not None:
                             # Go until this point only
                             _date = obj.date_completed
                             logger.info(f"Set date as {_date}")
