@@ -940,7 +940,6 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                             continue
                         subcategories.append(price_subcategory)
                         instance.subcategories = json.dumps(subcategories)
-                    logger.info(f"Set {title} as TWS subcategory")
             
             try:
                 session.commit()
@@ -1969,7 +1968,7 @@ if __name__ == '__main__':
     if _index_reviews == True:
         index_reviews(engine)
     if _update_listing_alerts == True:
-        index_duplicate_sets(session, insert=False, strict=True)
+        update_alert_flags(session)
     if _update_product_data == True:
         update_product_data(engine, dump=False)
     if _update_product_listing_from_cache == True:
