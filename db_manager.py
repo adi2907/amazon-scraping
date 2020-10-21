@@ -1628,7 +1628,7 @@ def update_alert_flags(session, table='ProductListing'):
             
             if duplicate_flag == True:
                 # They must belong to the same set
-                if obj1.duplicate_set != obj1.duplicate_set:
+                if obj1.duplicate_set != obj2.duplicate_set:
                     obj1.alert = True
                     obj2.alert = True
             else:
