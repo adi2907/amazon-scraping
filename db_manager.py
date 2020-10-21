@@ -1507,6 +1507,28 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             logger.critical(f"Exception: {ex} when trying to commit idxs")
         
         logger.info(f"Finished inserting!")
+    else:
+        # Set the alert flag
+        logger.info(f"Updating alert flags into the DB...")
+        
+        with SqliteDict('cache.sqlite3', autocommit=False) as cache:
+            idxs = cache.get(f"DUPLICATE_INFO")
+            if not idxs:
+                logger.warning("idxs is None")
+            else:
+                for product_id in idxs:
+                    instance = session.query(_table).filter(_table.product_id == product_id).first()
+                    if instance:
+                        if hasattr(instance, 'alert'):
+                            setattr(instance, 'alert', True)
+
+        try:
+            session.commit()
+        except Exception as ex:
+            session.rollback()
+            logger.critical(f"Exception: {ex} when trying to commit idxs")
+        
+        logger.info(f"Finished updating alerts!")        
 
 
 def test_indices(csv_file='ProductListing.csv'):
@@ -1730,6 +1752,7 @@ if __name__ == '__main__':
     parser.add_argument('--index_duplicate_sets', help='Index Duplicate Sets', default=False, action='store_true')
     parser.add_argument('--index_qandas', help='Index Q and A', default=False, action='store_true')
     parser.add_argument('--index_reviews', help='Index Reviews', default=False, action='store_true')
+    parser.add_argument('--update_listing_alerts', help='Update Listing Alerts', default=False, action='store_true')
     parser.add_argument('--update_product_data', help='Update Product Data (QandA and Reviews)', default=False, action='store_true')
     parser.add_argument('--update_product_listing_from_cache', help='Update Product Data from Cache', default=False, action='store_true')
     parser.add_argument('--update_active_products', help='Update Active Products (QandA and Reviews)', default=False, action='store_true')
@@ -1745,6 +1768,7 @@ if __name__ == '__main__':
     _index_duplicate_sets = args.index_duplicate_sets
     _index_qandas = args.index_qandas
     _index_reviews = args.index_reviews
+    _update_listing_alerts = args.update_listing_alerts
     _update_product_data = args.update_product_data
     _update_product_listing_from_cache = args.update_product_listing_from_cache
     _update_active_products = args.update_active_products
@@ -1833,6 +1857,8 @@ if __name__ == '__main__':
         index_qandas(engine)
     if _index_reviews == True:
         index_reviews(engine)
+    if _update_listing_alerts == True:
+        index_duplicate_sets(session, insert=False, strict=True)
     if _update_product_data == True:
         update_product_data(engine, dump=False)
     if _update_product_listing_from_cache == True:
