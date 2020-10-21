@@ -905,6 +905,13 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                             subcategories.append(subcategory)
                             instance.subcategories = json.dumps(subcategories)
                         logger.info(f"Set {title} as TWS subcategory")
+            
+            try:
+                session.commit()
+                logger.info(f'Updated subcategories for {subcategory}')
+            except Exception as ex:
+                session.rollback()
+                logger.critical(f"Exception during commiting: {ex}")
 
 
 def update_date(session):
