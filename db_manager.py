@@ -885,14 +885,14 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
     
     if category == "headphones":
-        queryset = session.query(ProductListing).filter(ProductListing.category=category)
+        queryset = session.query(ProductListing).filter(ProductListing.category == category)
         pids = set()
         for obj in queryset:
             pids.add(obj.product_id)
         
         if subcategory == "tws":
             for pid in pids:
-                instance = session.query(ProductDetails).filter(ProductDetails.product_id=pid).first()
+                instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
                 if instance is not None:
                     title = instance.product_title.lower()
                     if ("tws" in title) or ("true wireless" in title) or ("truly wireless" in title) or ("true-wireless" in title):
