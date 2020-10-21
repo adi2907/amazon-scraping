@@ -881,7 +881,8 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                 except Exception as ex:
                     session.rollback()
                     print(ex)
-        os.rename(filename, os.path.join(DUMP_DIR, f"archived_{filename}"))
+        name = filename.split('/')[-1]
+        os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
 
 
 def update_date(session):
