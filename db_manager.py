@@ -1529,7 +1529,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                 # if b and c:
                 duplicate_flag = True
 
-                if duplicate_flag == True and (c == False):
+                if duplicate_flag == True and (a == True and c == False):
                     # Suspicious
                     max_val = max(obj1.total_ratings, obj2.total_ratings)
                     if max_val > 1000:
