@@ -883,6 +883,25 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                     print(ex)
         name = filename.split('/')[-1]
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
+    
+    if category == "headphones":
+        queryset = session.query(ProductDetails).filter(ProductDetails.category=category)
+        pids = set()
+        for obj in queryset:
+            pids.add(obj.product_id)
+        
+        if subcategory == "tws":
+            for pid in pids:
+                instance = session.query(ProductDetails).filter(ProductDetails.product_id=pid).first()
+                if instance is not None:
+                    title = instance.product_title.lower()
+                    if ("tws" in title) or ("true wireless" in title) or ("truly wireless" in title) or ("true-wireless" in title):
+                        if instance.subcategories in ["", None, []]:
+                            instance.subcategories = ["tws"]
+                        else:
+                            if "tws" not in instance.subcategories:
+                                instance.subcategories.append("tws")
+                        logger.info(f"Set {title} as TWS subcategory")
 
 
 def update_date(session):
