@@ -1528,6 +1528,16 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             if ((a & b) | (b & c) | (c & a)):
                 # if b and c:
                 duplicate_flag = True
+
+                if duplicate_flag == True and (c == False):
+                    # Suspicious
+                    max_val = max(obj1.total_ratings, obj2.total_ratings)
+                    if max_val > 1000:
+                        if abs(obj1.total_ratings - obj2.total_ratings) > 60:
+                            duplicate_flag = False
+                    else:
+                        if abs(obj1.total_ratings - obj2.total_ratings) > 20:
+                            duplicate_flag = False
             
                 if obj2.product_id in info:
                     info[obj1.product_id] = info[obj2.product_id]
