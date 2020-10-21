@@ -896,11 +896,14 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                 if instance is not None:
                     title = instance.product_title.lower()
                     if ("tws" in title) or ("true wireless" in title) or ("truly wireless" in title) or ("true-wireless" in title):
-                        if instance.subcategories in ["", None, []]:
-                            instance.subcategories = ["tws"]
+                        if instance.subcategories in ([], None):
+                            instance.subcategories = json.dumps([subcategory])
                         else:
-                            if "tws" not in instance.subcategories:
-                                instance.subcategories.append("tws")
+                            subcategories = json.loads(instance.subcategories)
+                            if subcategory in subcategories:
+                                continue
+                            subcategories.append(subcategory)
+                            instance.subcategories = json.dumps(subcategories)
                         logger.info(f"Set {title} as TWS subcategory")
 
 
