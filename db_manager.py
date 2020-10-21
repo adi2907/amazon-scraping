@@ -885,7 +885,7 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
     
     if category == "headphones":
-        queryset = session.query(ProductDetails).filter(ProductDetails.category=category)
+        queryset = session.query(ProductListing).filter(ProductListing.category=category)
         pids = set()
         for obj in queryset:
             pids.add(obj.product_id)
