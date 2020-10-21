@@ -20,7 +20,7 @@ from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
 
 import tokenize_titles
-from utils import create_logger
+from utils import create_logger, subcategory_map
 
 # This is required for integration with MySQL and Python
 pymysql.install_as_MySQLdb()
@@ -881,6 +881,7 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                 except Exception as ex:
                     session.rollback()
                     print(ex)
+        os.rename(filename, os.path.join(DUMP_DIR, f"archived_{filename}"))
 
 
 def update_date(session):
@@ -1737,6 +1738,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_brands', help='Update brands in ProductListing', default=False, action='store_true')
     parser.add_argument('--test_indices', help='Test Indices', default=False, action='store_true')
     parser.add_argument('--export_sets', help='Export Sets', default=False, action='store_true')
+    parser.add_argument('--assign_subcategories', help='Assign Subcategories', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1751,6 +1753,7 @@ if __name__ == '__main__':
     _update_brands = args.update_brands
     _test_indices = args.test_indices
     _export_sets = args.export_sets
+    _assign_subcategories = args.assign_subcategories
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1851,6 +1854,10 @@ if __name__ == '__main__':
         test_indices()
     if _export_sets == True:
         export_sets(session)
+    if _assign_subcategories == True:
+        for category in subcategory_map:
+            for subcategory in subcategory_map[category]:
+                assign_subcategories(session, category, subcategory, table='ProductDetails')
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
