@@ -886,9 +886,9 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
     
     if category == "headphones":
         queryset = session.query(ProductListing).filter(ProductListing.category == category)
-        pids = set()
+        pids = dict()
         for obj in queryset:
-            pids.add(obj.product_id)
+            pids[obj.product_id] = obj.price
         
         if subcategory == "tws":
             for pid in pids:
@@ -905,6 +905,42 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                             subcategories.append(subcategory)
                             instance.subcategories = json.dumps(subcategories)
                         logger.info(f"Set {title} as TWS subcategory")
+            
+            try:
+                session.commit()
+                logger.info(f'Updated subcategories for {subcategory}')
+            except Exception as ex:
+                session.rollback()
+                logger.critical(f"Exception during commiting: {ex}")
+        
+        if subcategory == "price":
+            for pid, price in pids.items():
+                instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
+                if instance is not None:
+                    if price < 500:
+                        price_subcategory = "<500"
+                    elif price >= 500 and price < 1000:
+                        price_subcategory = "500-1000"
+                    elif price >= 1000 and price < 2000:
+                        price_subcategory = "1000-2000"
+                    elif price >= 2000 and price < 3000:
+                        price_subcategory = "2000-3000"
+                    elif price >= 3000 and price <= 5000:
+                        price_subcategory = "3000-5000"
+                    elif price > 5000:
+                        price_subcategory = ">5000"
+                    else:
+                        continue
+                    
+                    if instance.subcategories in ([], None):
+                        instance.subcategories = json.dumps([price_subcategory])
+                    else:
+                        subcategories = json.loads(instance.subcategories)
+                        if subcategory in subcategories:
+                            continue
+                        subcategories.append(price_subcategory)
+                        instance.subcategories = json.dumps(subcategories)
+                    logger.info(f"Set {title} as TWS subcategory")
             
             try:
                 session.commit()
