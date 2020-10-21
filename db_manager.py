@@ -1582,29 +1582,64 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             session.rollback()
             logger.critical(f"Exception: {ex} when trying to commit idxs")
         
-        logger.info(f"Finished inserting!")
-    else:
-        # Set the alert flag
-        logger.info(f"Updating alert flags into the DB...")
-        
-        with SqliteDict('cache.sqlite3', autocommit=False) as cache:
-            idxs = cache.get(f"DUPLICATE_INFO")
-            if not idxs:
-                logger.warning("idxs is None")
-            else:
-                for product_id in idxs:
-                    instance = session.query(_table).filter(_table.product_id == product_id).first()
-                    if instance:
-                        if hasattr(instance, 'alert'):
-                            setattr(instance, 'alert', True)
+        logger.info(f"Finished inserting!")       
 
-        try:
-            session.commit()
-        except Exception as ex:
-            session.rollback()
-            logger.critical(f"Exception: {ex} when trying to commit idxs")
+
+def update_alert_flags(session, table='ProductListing'):
+    # Set the alert flag
+    logger.info(f"Updating alert flags into the DB...")
+    
+    from sqlalchemy import asc, desc, func
+    from sqlitedict import SqliteDict
+
+    _table = table_map[table]
+
+    DELTA = 0.1
+
+    for obj1 in queryset:
+        q = session.query(_table).filter(ProductListing.category == obj1.category, ProductListing.brand == obj1.brand).order_by(desc('total_ratings'))
         
-        logger.info(f"Finished updating alerts!")        
+        duplicate_flag = False
+
+        for obj2 in q:
+            if obj1.product_id == obj2.product_id:
+                continue
+            
+            a = (obj1.short_title == obj2.short_title)
+            b = ((obj1.avg_rating == obj2.avg_rating) or (obj1.avg_rating is not None and obj2.avg_rating is not None and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1)))
+            c = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))
+
+            if ((a & b) | (b & c) | (c & a)):
+                # if b and c:
+                duplicate_flag = True
+
+                if duplicate_flag == True and (a == True and c == False):
+                    # Suspicious
+                    max_val = max(obj1.total_ratings, obj2.total_ratings)
+                    if max_val > 1000:
+                        if abs(obj1.total_ratings - obj2.total_ratings) > 60:
+                            duplicate_flag = False
+                    else:
+                        if abs(obj1.total_ratings - obj2.total_ratings) > 20:
+                            duplicate_flag = False
+            
+            if duplicate_flag == True:
+                # They must belong to the same set
+                if obj1.duplicate_set != obj1.duplicate_set:
+                    obj1.alert = True
+                    obj1.alert = True
+            else:
+                if obj1.duplicate_set == obj1.duplicate_set:
+                    obj1.alert = True
+                    obj1.alert = True
+
+    try:
+        session.commit()
+    except Exception as ex:
+        session.rollback()
+        logger.critical(f"Exception: {ex} when trying to commit idxs")
+    
+    logger.info(f"Finished updating alerts!")
 
 
 def test_indices(csv_file='ProductListing.csv'):
