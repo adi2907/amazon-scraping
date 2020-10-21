@@ -1367,6 +1367,32 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         with SqliteDict(cache_file, autocommit=True) as mydict:
             mydict[f"DETAILS_{product_id}"] = details
             mydict[f"IS_SPONSORED_{product_id}"] = sponsored
+    
+    try:
+        important_fields = ['product_title', 'description', 'product_details', 'reviews_url', 'customer_qa']
+        empty_fields = []
+        for field in important_fields:
+            if details.get(field) in [None, "", {}, []]:
+                empty_fields.append(field)
+        
+        if empty_fields != []:
+            msg = ','.join([field for field in empty_fields])
+            raise ValueError(f"For Product ID {product_id}, fields {msg} is empty")
+    except Exception as ex:
+        logger.critical(f"Error during parsing details: {ex}")
+        error_msg = str(ex)
+        try:
+            details['alert'] = True
+            with SqliteDict(cache_file, autocommit=True) as _mydict:
+                key = f"DETAIL_ALERT_{category}_{today}"
+                if key not in _mydict:
+                    _mydict[key] = list()
+                alerts = _mydict[key]
+                alerts.append(error_msg)
+                _mydict[key] = alerts
+        except Exception as ex:
+            logger.critical(f"Error when trying to store alert for PID {product_id}: {ex}")
+
 
     if USE_DB == True:
         # Insert to the DB
@@ -1468,6 +1494,18 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 pass
 
             qanda, next_url = parse_data.get_qanda(soup, page_num=page_num)
+
+            if qanda == []:
+                try:
+                    with SqliteDict(cache_file, autocommit=True) as _mydict:
+                        key = f"QANDA_ALERT_{today}"
+                        if key not in _mydict:
+                            _mydict[key] = set()
+                        val = _mydict[key]
+                        val.add(product_id)
+                        _mydict[key] = val
+                except Exception as ex:
+                    logger.critical(f"Error when trying to store QandA alert for PID {product_id}: {ex}")
 
             if use_cache:
                 # Store to cache first
@@ -1634,6 +1672,18 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     pass
                 
                 reviews, next_url, num_reviews = parse_data.get_customer_reviews(soup, page_num=page_num, first_request=first_request)
+
+                if (reviews == {}) or ('reviews' not in reviews) or (reviews['reviews'] in [None, []]):
+                    try:
+                        with SqliteDict(cache_file, autocommit=True) as _mydict:
+                            key = f"REVIEWS_ALERT_{today}"
+                            if key not in _mydict:
+                                _mydict[key] = set()
+                            val = _mydict[key]
+                            val.add(product_id)
+                            _mydict[key] = val
+                    except Exception as ex:
+                        logger.critical(f"Error when trying to store Reviews alert for PID {product_id}: {ex}")
 
                 if first_request == True:
                     if num_reviews is None:
