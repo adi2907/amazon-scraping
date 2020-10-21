@@ -917,6 +917,8 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
             for pid, price in pids.items():
                 instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
                 if instance is not None:
+                    if price is None:
+                        continue
                     if price < 500:
                         price_subcategory = "<500"
                     elif price >= 500 and price < 1000:
