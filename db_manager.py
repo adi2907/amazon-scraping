@@ -52,6 +52,7 @@ tables = {
         'is_active': 'BOOLEAN',
         'date_completed': 'DATETIME',
         'brand': 'TEXT(100)',
+        'alert': 'BOOLEAN',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -77,6 +78,7 @@ tables = {
         'model': 'TEXT(100)',
         'date_completed': 'DATETIME',
         'is_duplicate': 'BOOLEAN',
+        'alert': 'BOOLEAN',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
