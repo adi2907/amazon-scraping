@@ -16,6 +16,7 @@ def main():
         
         cache.delete(f"{category}_PIDS")
         cache.delete(f"COUNTER_{category}")
+    cache.delete(f"DUPLICATE_SETS")
 
 
 if __name__ == '__main__':
