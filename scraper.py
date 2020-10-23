@@ -1981,8 +1981,12 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         if detail == True:
             logger.info(f"Detail: Scraping ONLY category {categories[0]}")
             category = categories[0]
-            total_listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
-            total_listing_pids = [pid.decode() for pid in total_listing_pids]
+            
+            #total_listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
+            #total_listing_pids = [pid.decode() for pid in total_listing_pids]
+            
+            queryset = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category)
+            total_listing_pids = [getattr(instance, 'product_id') for instance in queryset if hasattr(instance, 'product_id')]
             listing_partition = [total_listing_pids[(i*len(total_listing_pids))//num_workers:((i+1)*len(total_listing_pids)) // num_workers] for i in range(num_workers)]
         else:
             total_listing_pids = []
