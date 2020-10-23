@@ -1268,7 +1268,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     logger.info(f"Going to Details page for PID {product_id}")
 
-    obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
+    obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == f'{product_id}').first()
 
     if obj is None:
         logger.critical(f"Row with PID {product_id} doesn't exist in ProductListing. Returning....")
