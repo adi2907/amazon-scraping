@@ -216,7 +216,7 @@ def remove_from_cache(category):
         cache.delete(f"{category}_PIDS")
 
 
-def process_product_detail(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None):
+def process_product_detail(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None, qanda_pages=50, review_pages=500):
     global cache
     global headers, cookies
     global last_product_detail
@@ -1997,10 +1997,10 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
             if no_sub == False:
-                future_to_category = {executor.submit(process_product_detail, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
+                future_to_category = {executor.submit(process_product_detail, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids, qanda_pages, review_pages): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
                 #future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             else:
-                future_to_category = {executor.submit(process_product_detail, category, category_template, num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
+                future_to_category = {executor.submit(process_product_detail, category, category_template, num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids, qanda_pages, review_pages): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
                 #future_to_category = {executor.submit(fetch_category, category, category_template, num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             
             try:
@@ -2057,8 +2057,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
     parser.add_argument('--pages', help='Number of pages to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=1)
     parser.add_argument('--num_products', help='Number of products per category to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
-    parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int, default=1000) # 100 pages Reviews (1000 reviews)
-    parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int, default=10) # 10 pages QandA (100 QandAs)
+    parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int, default=5000) # 500 pages Reviews (5000 reviews)
+    parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int, default=50) # 50 pages QandA (500 QandAs)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
     parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
     parser.add_argument('--date', help='Threshold Limit for scraping Product Reviews', type=lambda s: datetime.strptime(s, '%Y-%m-%d'), default=datetime(year=2020, month=8, day=1))
