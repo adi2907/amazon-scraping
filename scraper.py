@@ -376,7 +376,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             logger.info(f"Skipping this product. within the last week")
                             continue
                         
-                    elif hasattr(recent_obj, 'date_completed') and obj.date_completed is not None:
+                    elif hasattr(recent_obj, 'date_completed') and recent_obj.date_completed is not None:
                         # Go until this point only
                         _date = recent_obj.date_completed
                         logger.info(f"Set date as {_date}")
