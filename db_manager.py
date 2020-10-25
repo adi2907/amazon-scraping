@@ -2011,7 +2011,7 @@ if __name__ == '__main__':
     if _close_all_db_connections == True:
         close_all_db_connections(engine, session)
     if _dump_from_cache == True:
-        for c in ["smartphones", "ceiling fan", "washing machine", "refrigerator"]:
+        for c in ["headphones", "smartphones", "ceiling fan", "washing machine", "refrigerator"]:
             dump_from_cache(session, c, cache_file='cache.sqlite3')
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
