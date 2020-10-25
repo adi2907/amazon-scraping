@@ -1860,6 +1860,12 @@ def export_sets(session, cache_file='cache.sqlite3', category='headphones'):
             logger.critical(f"Error when exporting duplicate sets: {ex}")
 
 
+def close_all_db_connections(engine, session):
+    session.close_all()
+    engine.dispose()
+    logger.info(f"Closed all DB connections!")
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
@@ -1876,6 +1882,8 @@ if __name__ == '__main__':
     parser.add_argument('--test_indices', help='Test Indices', default=False, action='store_true')
     parser.add_argument('--export_sets', help='Export Sets', default=False, action='store_true')
     parser.add_argument('--assign_subcategories', help='Assign Subcategories', default=False, action='store_true')
+    parser.add_argument('--dump_from_cache', help='Dump from Cache', default=False, action='store_true')
+    parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1892,6 +1900,8 @@ if __name__ == '__main__':
     _test_indices = args.test_indices
     _export_sets = args.export_sets
     _assign_subcategories = args.assign_subcategories
+    _dump_from_cache = args.dump_from_cache
+    _close_all_db_connections = args.close_all_db_connections
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1998,6 +2008,11 @@ if __name__ == '__main__':
         for category in subcategory_map:
             for subcategory in subcategory_map[category]:
                 assign_subcategories(session, category, subcategory, table='ProductDetails')
+    if _close_all_db_connections == True:
+        close_all_db_connections(engine, session)
+    if _dump_from_cache == True:
+        for c in ["smartphones", "ceiling fan", "washing machine", "refrigerator"]:
+            dump_from_cache(session, c, cache_file='cache.sqlite3')
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     
