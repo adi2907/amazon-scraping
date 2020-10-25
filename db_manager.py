@@ -1860,8 +1860,8 @@ def export_sets(session, cache_file='cache.sqlite3', category='headphones'):
             logger.critical(f"Error when exporting duplicate sets: {ex}")
 
 
-def close_all_db_connections(engine, session):
-    session.close_all()
+def close_all_db_connections(engine, SessionFactory):
+    SessionFactory.close_all()
     engine.dispose()
     logger.info(f"Closed all DB connections!")
 
@@ -2009,7 +2009,7 @@ if __name__ == '__main__':
             for subcategory in subcategory_map[category]:
                 assign_subcategories(session, category, subcategory, table='ProductDetails')
     if _close_all_db_connections == True:
-        close_all_db_connections(engine, session)
+        close_all_db_connections(engine, Session)
     if _dump_from_cache == True:
         for c in ["headphones", "smartphones", "ceiling fan", "washing machine", "refrigerator"]:
             dump_from_cache(session, c, cache_file='cache.sqlite3')
