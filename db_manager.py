@@ -1501,10 +1501,15 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
 
     info = {}
 
+    if index_all == False:
+        # Populate info with existing duplicate_set values
+        non_null_queryset = session.query(_table).filter(ProductListing.duplicate_set != None).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
+        info = {instance.product_id: instance.duplicate_set for instance in non_null_queryset if instance.duplicate_set is not None}
+
     DELTA = 0.1
 
     def get_max(info):
-        maxval = 1
+        maxval = num_sets
         for key in info:
             if info[key] > maxval:
                 maxval = info[key]
@@ -1860,6 +1865,19 @@ def export_sets(session, cache_file='cache.sqlite3', category='headphones'):
             logger.critical(f"Error when exporting duplicate sets: {ex}")
 
 
+def import_from_csv(engine, table_name, csv_file):
+    import pandas as pd
+
+    if not os.path.exists(os.path.join(os.getcwd(), csv_file)):
+        logger.critical(f"CSV File {csv_file} not found")
+        raise ValueError
+
+        
+    df = pd.read_csv(csv_file, encoding="utf-8-sig")
+    df.to_sql(table_name, engine, if_exists='append', index=False)
+    logger.info(f"Successfully imported {table_name} from {csv_file}!")
+
+
 def close_all_db_connections(engine, SessionFactory):
     SessionFactory.close_all()
     engine.dispose()
@@ -1870,6 +1888,7 @@ if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
     parser.add_argument('--index_duplicate_sets', help='Index Duplicate Sets', default=False, action='store_true')
+    parser.add_argument('--update_duplicate_sets', help='Update Duplicate Sets', default=False, action='store_true')
     parser.add_argument('--index_qandas', help='Index Q and A', default=False, action='store_true')
     parser.add_argument('--index_reviews', help='Index Reviews', default=False, action='store_true')
     parser.add_argument('--update_listing_alerts', help='Update Listing Alerts', default=False, action='store_true')
@@ -1881,9 +1900,13 @@ if __name__ == '__main__':
     parser.add_argument('--update_brands', help='Update brands in ProductListing', default=False, action='store_true')
     parser.add_argument('--test_indices', help='Test Indices', default=False, action='store_true')
     parser.add_argument('--export_sets', help='Export Sets', default=False, action='store_true')
+    parser.add_argument('--import_from_csv', help='Import a Schema from a CSV file', default=False, action='store_true')
     parser.add_argument('--assign_subcategories', help='Assign Subcategories', default=False, action='store_true')
     parser.add_argument('--dump_from_cache', help='Dump from Cache', default=False, action='store_true')
     parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
+
+    parser.add_argument('--csv', help='An external CSV file', type=str, default=None)
+    parser.add_argument('--table', help='The database table', type=str, default=None)
 
     args = parser.parse_args()
 
@@ -1899,9 +1922,14 @@ if __name__ == '__main__':
     _update_brands = args.update_brands
     _test_indices = args.test_indices
     _export_sets = args.export_sets
+    _import_from_csv = args.import_from_csv
     _assign_subcategories = args.assign_subcategories
     _dump_from_cache = args.dump_from_cache
     _close_all_db_connections = args.close_all_db_connections
+    _update_duplicate_sets = args.update_duplicate_sets
+
+    _csv = args.csv
+    _table = args.table
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -1977,6 +2005,8 @@ if __name__ == '__main__':
     #add_column(engine, 'ProductListing', column)
     if _index_duplicate_sets == True:
         index_duplicate_sets(session, insert=True, strict=True)
+    if _update_duplicate_sets == True:
+        update_duplicate_set(session, insert=True, strict=True)
     if _index_qandas == True:
         index_qandas(engine)
     if _index_reviews == True:
@@ -2004,6 +2034,12 @@ if __name__ == '__main__':
         test_indices()
     if _export_sets == True:
         export_sets(session)
+    if _import_from_csv == True:
+        if _table is None or _csv is None:
+            raise ValueError(f"Both --table and --csv flags must be given for importing from csv")
+        table_name = _table
+        csv_file = _csv
+        import_from_csv(engine, table_name, csv_file)
     if _assign_subcategories == True:
         for category in subcategory_map:
             for subcategory in subcategory_map[category]:

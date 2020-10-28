@@ -185,11 +185,11 @@ def process_archived_pids(category):
 
 def find_archived_products(session, categories=[], table='ProductListing'):
     from sqlalchemy import asc, desc
-    global cache, db_session, cache_file
+    global cache, cache_file
     
     _table = db_manager.table_map[table]
 
-    queryset = db_session.query(_table).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('duplicate_set')).order_by(desc('total_ratings'))
+    queryset = session.query(_table).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('duplicate_set')).order_by(desc('total_ratings'))
 
     prev = None
 
@@ -213,7 +213,7 @@ def find_archived_products(session, categories=[], table='ProductListing'):
             prev = instance
             continue
         
-        if prev.category == instance.category and prev.duplicate_set != instance.duplicate_set and prev.short_title == instance.short_title:
+        if prev.category == instance.category and ((prev.duplicate_set != instance.duplicate_set and prev.short_title == instance.short_title) or (prev.duplicate_set == instance.duplicate_set and ((prev.short_title != instance.short_title) or (prev.total_ratings != instance.total_ratings)))):
             # Possibly an archived product
             # Constraint: price(prev) >= price(curr), so prev is more recent
             cache.sadd(f"ARCHIVED_PRODUCTS_{instance.category}", instance.product_id)
