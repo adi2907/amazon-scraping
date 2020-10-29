@@ -136,8 +136,8 @@ tables = {
         'serial_no': 'INTEGER',
         'avg_rating': 'FLOAT',
         'total_ratings': 'INTEGER',
-        'price': 'INTEGER',
-        'old_price': 'INTEGER',
+        'price': 'FLOAT',
+        'old_price': 'FLOAT',
         'date': 'DATETIME',
         #'_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
@@ -330,8 +330,9 @@ def get_short_title(product_title):
     return tokenize_titles.remove_stop_words(product_title)
 
 
-def insert_product_listing(session, data, table='ProductListing'):
+def insert_product_listing(session, data, table='ProductListing', domain='amazon.in'):
     row = dict()
+    row['domain'] = domain
     for category in data:
         row['category'] = category
         for page_num in data[category]:
