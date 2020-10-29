@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from textblob import TextBlob
 
 import db_manager
+
 from utils import create_logger
 
 logger = create_logger('tokenize')

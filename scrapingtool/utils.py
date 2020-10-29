@@ -5,6 +5,11 @@ import sys
 import types
 from string import Template
 
+import dramatiq
+from decouple import config
+
+from scrapingtool.taskqueue.broker import Broker
+
 url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
 
 customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
@@ -38,6 +43,17 @@ subcategory_map = {
     'price': ['<500', '500-1000', '1000-2000', '2000-3000', '3000-5000', '>5000']
     }
 }
+
+def setup_broker():
+    try:
+        broker_type = config('BROKER_TYPE')
+        connection_params = {'host': config('REDIS_SERVER_HOST'), 'port': config('REDIS_SERVER_PORT'), 'db': config('REDIS_SERVER_DATABASE'), 'password': config('REDIS_SERVER_PASSWORD')}
+    except:
+        broker_type = None
+        connection_params = {}
+
+    broker = Broker(broker_type=broker_type, connection_params=connection_params)
+    return broker
 
 
 def to_http(url, use_tor=False):

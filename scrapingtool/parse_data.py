@@ -642,8 +642,10 @@ if __name__ == '__main__':
     #print(len(results.keys()))
 
     #soup = init_parser('mobile/sample')
-    soup = init_parser('headphones/LISTING_headphones_PAGE_7')
-    #results = get_product_data(soup)
+    soup = init_parser('headphones/REDMI Earbuds 2C')
+    results = get_product_data(soup)
+    print(results)
+    exit(0)
     #print(results['reviews_url'])
     page_element = soup.find("ul", class_="a-pagination")
     next_page = page_element.find("li", class_="a-last")
