@@ -49,6 +49,7 @@ def run_category(browser='Firefox'):
     
     try:
         for domain in domain_map:
+            logger.info(f"Domain: {domain}")
             curr = 1
 
             server_url = f'https://www.{domain}'
@@ -67,6 +68,8 @@ def run_category(browser='Firefox'):
 
                 for category, template in domain_map[domain].items():
                     url = template.substitute(PAGE_NUM=1)
+
+                    logger.info(f"Scraping category {category} with URL {url}")
                     
                     curr = 1
 
