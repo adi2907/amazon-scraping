@@ -33,6 +33,23 @@ old_listing_templates = [
 listing_categories = ['smartphones', 'headphones', 'ceiling fan', 'refrigerator', 'washing machine']
 #listing_categories = ['headphones']
 
+domain_map = {
+    'amazon.in': {
+        'smartphones': Template('https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A976419031%2Cn%3A1389401031%2Cn%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031&dc&qid=1597812891&rnid=976420031&ref=sr_nr_n_$PAGE_NUM'),
+        'headphones': Template('https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_$PAGE_NUM'),
+        'ceiling fan': Template('https://www.amazon.in/s?k=ceiling+fan&i=kitchen&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031&dc&crid=1TGIH58I2LW9I&qid=1597813011&rnid=1318483031&sprefix=ceili%2Caps%2C380&ref=sr_nr_p_n_availability_2'),
+        'refrigerator': Template('https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031&dc&qid=1597813026&rnid=1318483031&ref=sr_nr_p_n_availability_2'),
+        'washing machine': Template('https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031&dc&qid=1597813042&rnid=1318483031&ref=sr_nr_p_n_availability_2'),
+     },
+    'amazon.com': {
+        'hair color': Template('https://www.amazon.com/s?i=beauty&bbn=16225006011&rh=n%3A11057241%2Cn%3A11057451%2Cn%3A10728531&dc&qid=1603887229&rnid=11057451&ref=sr_nr_n_1'),
+    },
+}
+
+domain_to_db = {
+    'amazon.in': 'freshdb',
+    'amazon.com': 'amazonusa',
+}
 
 # Subcategories
 subcategory_map = {

@@ -17,7 +17,8 @@ from webdriver_manager.firefox import GeckoDriverManager
 
 import db_manager
 import parse_data
-from utils import create_logger, listing_categories, listing_templates
+from utils import (create_logger, domain_map, domain_to_db, listing_categories,
+                   listing_templates)
 
 logger = create_logger('browser')
 
@@ -43,137 +44,146 @@ def run_category(browser='Firefox'):
     elif browser == 'Firefox':
         # Set it to Firefox
         driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
-
-    curr = 1
-
-    server_url = 'https://www.amazon.in'
+    
+    from sqlalchemy.orm import sessionmaker
     
     try:
-        from sqlalchemy.orm import sessionmaker
-
-        Session = sessionmaker(bind=db_manager.engine, autocommit=False, autoflush=True)
-        session = Session()
-    except Exception as ex:
-        traceback.print_exc()
-        logger.critical(f"Error during initiation session: {ex}")
-
-    try:
-
-        assert len(listing_categories) == len(listing_templates)
-
-        for category, template in zip(listing_categories, listing_templates):
-            url = template.substitute(PAGE_NUM=1)
-            
+        for domain in domain_map:
             curr = 1
 
-            print(f"GET URL {url}")
-            driver.get(url)
+            server_url = f'https://www.{domain}'
+            
+            try:
+                engine = db_manager.connect_to_db(domain_to_db[domain])
+                Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
+                session = Session()
+            except Exception as ex:
+                traceback.print_exc()
+                logger.critical(f"Error during initiation session: {ex}")
 
-            while True:
-                print(f"At Page Number {curr}")
-                print("Sleeping...")
-                time.sleep(12) # Wait for some time to load
+            try:
 
-                html = driver.page_source.encode('utf-8', errors='ignore')
+                assert len(listing_categories) == len(listing_templates)
 
-                try:
-                    captcha = driver.find_element_by_id("captchacharacters")
-                    print("Fuck. Captcha")
-                    time.sleep(10)
+                for category, template in domain_map[domain].items():
+                    url = template.substitute(PAGE_NUM=1)
+                    
+                    curr = 1
+
+                    print(f"GET URL {url}")
                     driver.get(url)
-                    continue
-                except:
-                    pass
 
-                try:
-                    soup = BeautifulSoup(html, 'lxml')
-                    product_info, _ = parse_data.get_product_info(soup)
+                    while True:
+                        print(f"At Page Number {curr}")
+                        print("Sleeping...")
+                        time.sleep(12) # Wait for some time to load
 
-                    page_results = dict()
-                    page_results[category] = dict()
-                    page_results[category][curr] = product_info
-                    status = db_manager.insert_product_listing(session, page_results)
+                        html = driver.page_source.encode('utf-8', errors='ignore')
 
-                    if not status:
-                        logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
+                        try:
+                            captcha = driver.find_element_by_id("captchacharacters")
+                            print("Fuck. Captcha")
+                            time.sleep(10)
+                            driver.get(url)
+                            continue
+                        except:
+                            pass
 
-                    status = db_manager.insert_daily_product_listing(session, page_results)
+                        try:
+                            soup = BeautifulSoup(html, 'lxml')
+                            product_info, _ = parse_data.get_product_info(soup)
 
-                    if not status:
-                        logger.warning(f"Error while inserting DAILY LISTING Page {curr} of category - {category}")
+                            page_results = dict()
+                            page_results[category] = dict()
+                            page_results[category][curr] = product_info
+                            status = db_manager.insert_product_listing(session, page_results, domain=domain)
 
-                except Exception as ex:
-                    traceback.print_exc()
-                    logger.info(f"Exception during storing daily listing: {ex}")
+                            if not status:
+                                logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
 
-                with open(f'dumps/listing_{category}_{curr}.html', 'wb') as f:
-                    f.write(html)
+                            status = db_manager.insert_daily_product_listing(session, page_results)
 
-                print("Written html. Sleeping...")
-                time.sleep(2)
+                            if not status:
+                                logger.warning(f"Error while inserting DAILY LISTING Page {curr} of category - {category}")
 
-                flag = True
+                        except Exception as ex:
+                            traceback.print_exc()
+                            logger.info(f"Exception during storing daily listing: {ex}")
 
-                try:
-                    elements = driver.find_elements_by_class_name("a-last")
-                except:
-                    print("Next page not found. Quitting...")
-                    break
+                        with open(f'dumps/listing_{category}_{curr}.html', 'wb') as f:
+                            f.write(html)
 
-                for element in elements:
-                    try:
-                        #url = element.get_attribute("href")
-                        e = driver.find_element_by_css_selector(".a-last > a:nth-child(1)")
-                        url = e.get_attribute("href")
-                        print(url)
-                        if url is not None:
-                            if not url.startswith(server_url):
-                                url = server_url + url
-                            print(f"URL is {url}")
-                            curr += 1
-                            alpha = 1000
-                            while alpha <= 5000:
-                                try:
-                                    actions = ActionChains(driver)
-                                    driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
-                                    time.sleep(5)
-                                    actions.move_to_element(e)
-                                    time.sleep(2)
-                                    actions.click(element).perform()
-                                    time.sleep(5)
-                                    break
-                                except Exception as ex:
-                                    print(ex)
-                                    print(f"Alpha is {alpha}. Now incrementing")
-                                    alpha += 500
-                                    time.sleep(1)
+                        print("Written html. Sleeping...")
+                        time.sleep(2)
 
-                            print("Went to the next URL")
-                            flag = False
+                        flag = True
+
+                        try:
+                            elements = driver.find_elements_by_class_name("a-last")
+                        except:
+                            print("Next page not found. Quitting...")
                             break
-                    except Exception as ex:
-                        print(ex)
-                        continue
 
-                if flag == True:
-                    break
+                        for element in elements:
+                            try:
+                                #url = element.get_attribute("href")
+                                e = driver.find_element_by_css_selector(".a-last > a:nth-child(1)")
+                                url = e.get_attribute("href")
+                                print(url)
+                                if url is not None:
+                                    if not url.startswith(server_url):
+                                        url = server_url + url
+                                    print(f"URL is {url}")
+                                    curr += 1
+                                    alpha = 1000
+                                    while alpha <= 5000:
+                                        try:
+                                            actions = ActionChains(driver)
+                                            driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
+                                            time.sleep(5)
+                                            actions.move_to_element(e)
+                                            time.sleep(2)
+                                            actions.click(element).perform()
+                                            time.sleep(5)
+                                            break
+                                        except Exception as ex:
+                                            print(ex)
+                                            print(f"Alpha is {alpha}. Now incrementing")
+                                            alpha += 500
+                                            time.sleep(1)
 
-                print("Sleeping...")
-                time.sleep(2)
-        
-    except Exception as ex:
-        print(ex)
-    
+                                    print("Went to the next URL")
+                                    flag = False
+                                    break
+                            except Exception as ex:
+                                print(ex)
+                                continue
+
+                        if flag == True:
+                            break
+
+                        print("Sleeping...")
+                        time.sleep(2)
+                
+            except Exception as ex:
+                print(ex)
+            
+            finally:
+                logger.info(f"Updating duplicate indices...")
+                # Update set indexes
+                try:
+                    db_manager.update_duplicate_set(session, table='ProductListing', insert=True)
+                    logger.info("Updated indexes!")
+                except Exception as ex:
+                    logger.critical(f"Error when updating listing indexes: {ex}")
+                
+                try:
+                    session.close()
+                    db_manager.close_all_db_connections(engine, Session)
+                except Exception as ex:
+                    logger.critical(f"Error when trying to close all sessions: {ex}")
     finally:
         driver.quit()
-
-        logger.info(f"Updating duplicate indices...")
-        # Update set indexes
-        try:
-            db_manager.update_duplicate_set(session, table='ProductListing', insert=True)
-            logger.info("Updated indexes!")
-        except Exception as ex:
-            logger.critical(f"Error when updating listing indexes: {ex}")
 
 
 def run_subcategory(browser='Firefox'):

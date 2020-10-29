@@ -206,6 +206,11 @@ except:
     DEVELOPMENT = False
 
 
+def connect_to_db(db_name):
+    engine = Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, dbname=db_name, server=DB_SERVER).db_engine
+    return engine
+
+
 def apply_schema(cls):
     # Refer https://stackoverflow.com/a/2575016
     table = tables[cls.__name__]
