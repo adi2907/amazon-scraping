@@ -33,7 +33,7 @@ try:
 except:
     print(f"Warning: Please install PyTorch / Tensorflow. Crucial features won't work")
 
-def preprocess_reviews():
+def preprocess_reviews(category):
     df = pd.read_csv(REVIEWS_FILE, sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
     df['body'] = df['body'].apply(lambda content: re.sub(r'\.\.+', '.', content.replace('\\n', '.').strip())[2:] if isinstance(content, str) else content)
     return df
@@ -170,14 +170,14 @@ def count_ranges(indexed_df, review_df):
     return counts
 
 
-def clean_up_reviews():
-    df = preprocess_reviews()
+def clean_up_reviews(category):
+    df = preprocess_reviews(category)
     df.to_csv(CLEANED_UP_FILE, index=False)
 
 
-def sentiment_analysis():
+def sentiment_analysis(category):
     df = pd.read_csv(CLEANED_UP_FILE, sep=",", encoding="utf-8")
-    a, b = preprocess("headphones")
+    a, b = preprocess(category)
     analyse(df, a, b)
 
 
@@ -198,8 +198,8 @@ def fetch_category_info(engine, category, month, year):
     else:
         last_day = '30'
     
-    results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = 'headphones' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{year}-{month}-{first_day}' AND '{year}-{month}-{last_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
-    results.to_csv(os.path.join(DATASET_PATH, 'Reviews.csv'), index=False, sep=",")
+    results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = '{category}' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{year}-{month}-{first_day}' AND '{year}-{month}-{last_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
+    results.to_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), index=False, sep=",")
 
 
 if __name__ == '__main__':
@@ -249,22 +249,24 @@ if __name__ == '__main__':
             engine = db_manager.Database(dbtype=DB_TYPE).db_engine
         # Fetch
         fetch_category_info(engine, category, month, year)
+    else:
+        raise ValueError(f"Need to specify --category argument")
 
     # Pre-process
-    clean_up_reviews()
+    clean_up_reviews(category)
     
     # Run the sentiment analysis
-    sentiment_analysis()
+    sentiment_analysis(category)
     
     # Post-process
     review_df = pd.read_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
     indexed_sentiments = aggregate_sentiments_after_script()
     indexed_df = construct_indexed_df(review_df, indexed_sentiments)
-    indexed_df.to_csv(os.path.join(DATASET_PATH, 'sentiment_analysis.csv'))
+    indexed_df.to_csv(os.path.join(DATASET_PATH, f'sentiment_analysis_{category}.csv'))
     counts = count_ranges(indexed_df, review_df)
 
-    with open('sentiment_counts.pkl', 'wb') as f:
+    with open(f'sentiment_counts_{category}.pkl', 'wb') as f:
         pickle.dump(counts, f)
 
     df_count = pd.DataFrame(counts).T
-    df_count.to_csv(os.path.join(DATASET_PATH, 'sentiment_counts.csv'))
+    df_count.to_csv(os.path.join(DATASET_PATH, f'sentiment_counts_{category}.csv'))
