@@ -5,7 +5,7 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-from utils import create_logger
+from scrapingtool.utils import create_logger
 
 logger = create_logger(__name__)
 
@@ -642,8 +642,8 @@ if __name__ == '__main__':
     #print(len(results.keys()))
 
     #soup = init_parser('mobile/sample')
-    soup = init_parser('headphones/REDMI Earbuds 2C')
-    results = get_product_data(soup)
+    soup = init_parser('haircolor')
+    results = get_product_info(soup)
     print(results)
     exit(0)
     #print(results['reviews_url'])

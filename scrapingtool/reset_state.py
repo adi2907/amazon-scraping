@@ -1,5 +1,5 @@
-from cache import Cache
-from utils import create_logger, listing_categories
+from scrapingtool.cache import Cache
+from scrapingtool.utils import create_logger, listing_categories
 
 logger = create_logger('reset_state')
 

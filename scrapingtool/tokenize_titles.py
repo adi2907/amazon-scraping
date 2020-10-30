@@ -3,9 +3,8 @@ from nltk.corpus import stopwords
 from sqlalchemy.orm import sessionmaker
 from textblob import TextBlob
 
-import db_manager
-
-from utils import create_logger
+from scrapingtool import db_manager
+from scrapingtool.utils import create_logger
 
 logger = create_logger('tokenize')
 

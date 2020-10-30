@@ -19,9 +19,8 @@ from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
 
-import tokenize_titles
-
-from utils import create_logger, subcategory_map
+from scrapingtool import tokenize_titles
+from scrapingtool.utils import create_logger, subcategory_map
 
 # This is required for integration with MySQL and Python
 pymysql.install_as_MySQLdb()

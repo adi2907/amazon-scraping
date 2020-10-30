@@ -24,13 +24,11 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from sqlitedict import SqliteDict
 
-import cache
-import db_manager
-import parse_data
-import proxy
-from utils import (create_logger, customer_reviews_template,
-                   listing_categories, listing_templates, qanda_template,
-                   subcategory_map, url_template)
+from scrapingtool import cache, db_manager, parse_data, proxy
+from scrapingtool.utils import (create_logger, customer_reviews_template,
+                                domain_map, listing_categories,
+                                listing_templates, qanda_template,
+                                subcategory_map, url_template)
 
 logger = create_logger('scraper')
 
@@ -1885,7 +1883,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
     global cache
     global use_multithreading
     global USE_DB
-    global listing_templates, listing_categories
+    global listing_templates, listing_categories, domain_map
 
     if pages is None:
         pages = [100000 for _ in listing_templates] # Keeping a big number

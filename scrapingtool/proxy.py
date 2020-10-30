@@ -15,7 +15,7 @@ from proxyscrape import create_collector
 from stem import Signal
 from stem.control import Controller
 
-from utils import (create_logger, customer_reviews_template, to_http,
+from scrapingtool.utils import (create_logger, customer_reviews_template, to_http,
                    url_template)
 
 logger = create_logger(__name__)
