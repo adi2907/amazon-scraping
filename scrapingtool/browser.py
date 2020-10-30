@@ -15,8 +15,7 @@ from selenium.webdriver.firefox.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 
-import db_manager
-from scrapingtool import parse_data
+from scrapingtool import parse_data, db_manager
 from scrapingtool.utils import (create_logger, domain_map, domain_to_db,
                                 listing_categories, listing_templates)
 
@@ -34,6 +33,8 @@ subcategory = "double door"
 
 # wireless -> Last URL https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564047031%7C15564048031&dc&page=36&fst=as%3Aoff&qid=1599907737&rnid=15564019031&ref=sr_pg_35
 
+
+connection_params = db_manager.get_credentials()
 
 def run_category(browser='Firefox'):
     options = Options()
@@ -55,7 +56,7 @@ def run_category(browser='Firefox'):
             server_url = f'https://www.{domain}'
             
             try:
-                engine = db_manager.connect_to_db(domain_to_db[domain])
+                engine = db_manager.connect_to_db(domain_to_db[domain], connection_params)
                 Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
                 session = Session()
             except Exception as ex:
@@ -322,7 +323,7 @@ def insert_category_to_db(category):
     for domain in domain_map:
         try:
             try:
-                engine = db_manager.connect_to_db(domain_to_db[domain])
+                engine = db_manager.connect_to_db(domain_to_db[domain], connection_params)
                 Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
                 session = Session()
             except Exception as ex:

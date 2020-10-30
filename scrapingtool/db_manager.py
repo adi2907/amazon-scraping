@@ -205,8 +205,24 @@ except:
     DEVELOPMENT = False
 
 
-def connect_to_db(db_name):
-    engine = Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, dbname=db_name, server=DB_SERVER).db_engine
+def get_credentials():
+    from decouple import config
+
+    try:
+        connection_params = {
+            'dbtype': config('DB_TYPE'),
+            'username': config('DB_USER'),
+            'password': config('DB_PASSWORD'),
+            'server': config('DB_SERVER'),
+        }
+    except:
+        connection_params = None
+
+    return connection_params
+
+
+def connect_to_db(db_name, connection_params):
+    engine = Database(dbname=db_name, **(connection_params)).db_engine
     return engine
 
 

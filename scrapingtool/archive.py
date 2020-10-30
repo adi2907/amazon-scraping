@@ -11,8 +11,7 @@ from decouple import UndefinedValueError, config
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlitedict import SqliteDict
 
-import db_manager
-from scrapingtool import cache, parse_data, proxy
+from scrapingtool import cache, db_manager, parse_data, proxy
 from scrapingtool.utils import create_logger
 
 logger = create_logger('fetch_archived')
