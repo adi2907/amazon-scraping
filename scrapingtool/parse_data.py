@@ -101,14 +101,17 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
         product_info[title]['avg_rating'] = avg_rating
         product_info[title]['total_ratings'] = total_ratings
 
-        symbol = product_bar.find("span", class_="a-price-symbol")
-        price = product_bar.find("span", class_="a-price-whole")
+        #symbol = product_bar.find("span", class_="a-price-symbol")
+        price_whole = product_bar.find("span", class_="a-price-whole")
+        price_fraction = product_bar.find("span", class_="a-price-fraction")
 
-        if price is not None:
-            if symbol is not None:
-                product_info[title]['price'] = symbol.text.strip() + price.text.strip()
-            else:
-                product_info[title]['price'] = price.text.strip()
+        if price_whole is not None:
+            product_info[title]['price'] = price_whole.text.strip()
+            if price_fraction is not None:
+                try:
+                    product_info[title]['price'] += '.' + price_fraction.text.strip()
+                except:
+                    product_info[title]['price'] += '.' + '0'
         else:
             product_info[title]['price'] = None
 
