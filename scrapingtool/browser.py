@@ -316,37 +316,58 @@ def insert_category_to_db(category):
 
     from sqlalchemy.orm import sessionmaker
 
-    Session = sessionmaker(bind=db_manager.engine, autocommit=False, autoflush=True)
-    session = Session()
+    if category != 'all':
+        raise ValueError(f"Need to provide category = all")
 
-    files = sorted(glob.glob(os.path.join(DUMP_DIR, f"listing_{category}_*")), key=lambda x: int(x.split('.')[0].split('_')[-1]))
+    for domain in domain_map:
+        try:
+            try:
+                engine = db_manager.connect_to_db(domain_to_db[domain])
+                Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
+                session = Session()
+            except Exception as ex:
+                traceback.print_exc()
+                logger.critical(f"Error during initiation session: {ex}")
+            
+            Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
+            session = Session()
 
-    final_results = dict()
+            for category, _ in domain_map[domain].items():
 
-    final_results[category] = dict()
+                files = sorted(glob.glob(os.path.join(DUMP_DIR, f"listing_{category}_*")), key=lambda x: int(x.split('.')[0].split('_')[-1]))
 
-    for idx, filename in enumerate(files):
-        with open(filename, 'rb') as f:
-            html = f.read()
+                final_results = dict()
 
-        soup = BeautifulSoup(html, 'lxml')
-        product_info, _ = parse_data.get_product_info(soup)
+                final_results[category] = dict()
 
-        final_results[category][idx + 1] = product_info
+                for idx, filename in enumerate(files):
+                    with open(filename, 'rb') as f:
+                        html = f.read()
 
-        page_results = dict()
-        page_results[category] = dict()
-        page_results[category][idx + 1] = final_results[category][idx + 1]
+                    soup = BeautifulSoup(html, 'lxml')
+                    product_info, _ = parse_data.get_product_info(soup)
 
-        #if idx + 1 == 28:
-        #    print(page_results)
-        #continue
+                    final_results[category][idx + 1] = product_info
 
-        status = db_manager.insert_product_listing(session, page_results)
+                    page_results = dict()
+                    page_results[category] = dict()
+                    page_results[category][idx + 1] = final_results[category][idx + 1]
 
-        if not status:
-            print(f"Error while inserting Page {idx + 1} of category - {category}")
-            continue
+                    #if idx + 1 == 28:
+                    #    print(page_results)
+                    #continue
+
+                    status = db_manager.insert_product_listing(session, page_results, domain=domain)
+
+                    if not status:
+                        print(f"Error while inserting Page {idx + 1} of category - {category}")
+                        continue
+        finally:
+            try:
+                session.close()
+                db_manager.close_all_db_connections(engine, Session)
+            except Exception as ex:
+                logger.critical(f"Error when trying to close all sessions: {ex}")
 
 
 if __name__ == '__main__':
@@ -363,8 +384,7 @@ if __name__ == '__main__':
                 category = sys.argv[2]
                 print("Inserting listing")
                 if category == 'all':
-                    for category in ["headphones", "smartphones", "washing machine", "refrigerator", "ceiling fan"]:
-                        insert_category_to_db(category)
+                    insert_category_to_db('all')
                 else:
                     insert_category_to_db(category)
             else:
