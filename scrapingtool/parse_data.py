@@ -222,8 +222,12 @@ def get_product_data(soup, html=None):
         else:
             # Encoding and then again decoding to remove the Rupee Symbol
             results['curr_price'] = price_node.text.strip().encode('ascii', 'ignore').decode('utf-8')
+            if results['curr_price'][0].isdigit() == False:
+                results['curr_price'] = results['curr_price'][1:]
     else:
         results['curr_price'] = price_node.text.strip().encode('ascii', 'ignore').decode('utf-8')
+        if results['curr_price'][0].isdigit() == False:
+            results['curr_price'] = results['curr_price'][1:]
     
     # Feature Points
     feature_node = center_col_node.find("div", id="feature-bullets")
