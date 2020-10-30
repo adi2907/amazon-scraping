@@ -109,9 +109,20 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
             product_info[title]['price'] = price_whole.text.strip()
             if price_fraction is not None:
                 try:
-                    product_info[title]['price'] += '.' + price_fraction.text.strip()
+                    if product_info[title]['price'][0].isdigit() == False:
+                        product_info[title]['price'] = product_info[title]['price'][1:]
+                    price_fraction = price_fraction.text.strip()
+                    if price_fraction[0] == '.':
+                        price_fraction = price_fraction[1:]
+                    if product_info[title]['price'][-1] == '.':
+                        product_info[title]['price'] += price_fraction
+                    else:
+                        product_info[title]['price'] += '.' + price_fraction
                 except:
-                    product_info[title]['price'] += '.' + '0'
+                    if product_info[title]['price'][-1] == '.':
+                        product_info[title]['price'] += '0'
+                    else:
+                        product_info[title]['price'] += '.0'
         else:
             product_info[title]['price'] = None
 
@@ -119,6 +130,8 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
         old_price = product_bar.find("span", class_="a-price a-text-price")
         if old_price is not None:
             product_info[title]['old_price'] = old_price.find("span", class_="a-offscreen").text.strip()
+            if product_info[title]['old_price'][0].isdigit() == False:
+                product_info[title]['old_price'] = product_info[title]['old_price'][1:]
         else:
             product_info[title]['old_price'] = None
         
