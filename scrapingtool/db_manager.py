@@ -379,7 +379,7 @@ def insert_product_listing(session, data, table='ProductListing', domain='amazon
                         elif key == 'total_ratings':
                             row[key] = int(value[key].replace(',', '').replace('.', ''))
                         elif key in ('price', 'old_price'):
-                            row[key] = float(value[key][1:].replace(',', '').replace('.', ''))
+                            row[key] = float(value[key][1:].replace(',', ''))
                         else:
                             row[key] = value[key]
                     else:
@@ -437,7 +437,7 @@ def insert_daily_product_listing(session, data, table='DailyProductListing'):
                         elif key == 'total_ratings':
                             row[key] = int(value[key].replace(',', '').replace('.', ''))
                         elif key in ('price', 'old_price'):
-                            row[key] = float(value[key][1:].replace(',', '').replace('.', ''))
+                            row[key] = float(value[key][1:].replace(',', ''))
                         else:
                             row[key] = value[key]
                     else:
