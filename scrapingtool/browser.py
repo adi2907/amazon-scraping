@@ -15,7 +15,8 @@ from selenium.webdriver.firefox.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 
-from scrapingtool import db_manager, parse_data
+import db_manager
+from scrapingtool import parse_data
 from scrapingtool.utils import (create_logger, domain_map, domain_to_db,
                                 listing_categories, listing_templates)
 
