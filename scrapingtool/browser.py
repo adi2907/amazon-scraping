@@ -310,7 +310,7 @@ def run_subcategory(browser='Firefox'):
         driver.quit()
 
 
-def insert_category_to_db(category):
+def insert_category_to_db(category, domain='all'):
     DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
     if not os.path.exists(DUMP_DIR):
         raise ValueError("Dump Directory not present")
@@ -320,10 +320,15 @@ def insert_category_to_db(category):
     if category != 'all':
         raise ValueError(f"Need to provide category = all")
 
-    for domain in domain_map:
+    for _domain in domain_map:
+        if domain == 'all':
+            pass
+        else:
+            if _domain != domain:
+                continue
         try:
             try:
-                engine = db_manager.connect_to_db(domain_to_db[domain], connection_params)
+                engine = db_manager.connect_to_db(domain_to_db[_domain], connection_params)
                 Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
                 session = Session()
             except Exception as ex:
@@ -358,7 +363,7 @@ def insert_category_to_db(category):
                     #    print(page_results)
                     #continue
 
-                    status = db_manager.insert_product_listing(session, page_results, domain=domain)
+                    status = db_manager.insert_product_listing(session, page_results, domain=_domain)
 
                     if not status:
                         print(f"Error while inserting Page {idx + 1} of category - {category}")
@@ -381,15 +386,16 @@ if __name__ == '__main__':
             print("Category")
             run_category()
         elif sys.argv[1] == 'listing':
-            if len(sys.argv) == 3:
+            if len(sys.argv) == 4:
                 category = sys.argv[2]
+                domain = sys.argv[3]
                 print("Inserting listing")
-                if category == 'all':
-                    insert_category_to_db('all')
+                if category == 'all' and domain == 'all':
+                    insert_category_to_db('all', domain='all')
                 else:
-                    insert_category_to_db(category)
+                    insert_category_to_db(category, domain)
             else:
-                print("Need to specify category")
+                print("Need to specify category, domain")
         else:
             print("Invalid argument")
     else:
