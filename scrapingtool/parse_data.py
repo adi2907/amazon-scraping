@@ -5,7 +5,7 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-from scrapingtool.utils import create_logger
+from utils import create_logger
 
 logger = create_logger(__name__)
 

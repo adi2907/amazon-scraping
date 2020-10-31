@@ -3,9 +3,9 @@ import os
 
 from bs4 import BeautifulSoup
 
-from scrapingtool import parse_data
-from scrapingtool.cache import Cache
-from scrapingtool.utils import create_logger, listing_categories
+import parse_data
+from cache import Cache
+from utils import create_logger, listing_categories
 
 logger = create_logger('activate_products')
 

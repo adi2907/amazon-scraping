@@ -17,7 +17,7 @@ try:
 except ImportError:
     raise ValueError(f"Please download the English CNN model using 'python -m spacy download en_core_web_sm'")
 
-from scrapingtool import db_manager
+import db_manager
 
 DATASET_PATH = os.getcwd()
 

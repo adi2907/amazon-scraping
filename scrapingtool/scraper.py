@@ -24,8 +24,8 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from sqlitedict import SqliteDict
 
-from scrapingtool import cache, db_manager, parse_data, proxy
-from scrapingtool.utils import (create_logger, customer_reviews_template,
+import cache, db_manager, parse_data, proxy
+from utils import (create_logger, customer_reviews_template,
                                 domain_map, listing_categories,
                                 listing_templates, qanda_template,
                                 subcategory_map, url_template)

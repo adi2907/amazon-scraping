@@ -5,7 +5,7 @@ import redis
 from decouple import UndefinedValueError, config
 from redis.exceptions import WatchError
 
-from scrapingtool.utils import create_logger
+from utils import create_logger
 
 # Create the logger
 logger = create_logger(__name__)

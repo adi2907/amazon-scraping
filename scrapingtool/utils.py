@@ -8,7 +8,7 @@ from string import Template
 import dramatiq
 from decouple import config
 
-from scrapingtool.taskqueue.broker import Broker
+from taskqueue.broker import Broker
 
 url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
 
