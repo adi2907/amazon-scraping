@@ -1938,7 +1938,7 @@ def import_from_csv(engine, table_name, csv_file):
     logger.info(f"Successfully imported {table_name} from {csv_file}!")
 
 
-def export_to_csv(table_name, csv):
+def export_to_csv(table_name, csv, query=None):
     import pandas as pd
 
     try:
@@ -1953,7 +1953,11 @@ def export_to_csv(table_name, csv):
         DB_TYPE = 'sqlite'
         engine = Database(dbtype=DB_TYPE).db_engine
     
-    results = pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
+    if query is None:
+        results = pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
+    else:
+        results = pd.read_sql_query(query, engine)
+    
     results.to_csv(os.path.join(os.getcwd(), f'{csv}'), index=False, sep=",")
     logger.info(f"Successfully exported {table_name} to {csv}!")
 
@@ -1989,6 +1993,7 @@ if __name__ == '__main__':
     parser.add_argument('--csv', help='An external CSV file', type=str, default=None)
     parser.add_argument('--table', help='The database table', type=str, default=None)
     parser.add_argument('--export_to_csv', help='Export to CSV', default=False, action='store_true')
+    parser.add_argument('--query', help='DB Query for exporting', type=str, default=None)
 
     args = parser.parse_args()
 
@@ -2014,6 +2019,7 @@ if __name__ == '__main__':
     _csv = args.csv
     _table = args.table
     _export_to_csv = args.export_to_csv
+    _query = args.query
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -2090,7 +2096,7 @@ if __name__ == '__main__':
     if _export_to_csv == True:
         if _table is None or _csv is None:
             raise ValueError(f"Must specify the --table and --csv for exporting to csv")
-        export_to_csv(_table, _csv)
+        export_to_csv(_table, _csv, query=_query)
         exit(0)
     if _index_duplicate_sets == True:
         index_duplicate_sets(session, insert=True, strict=True, very_strict=_strict)
