@@ -1938,6 +1938,26 @@ def import_from_csv(engine, table_name, csv_file):
     logger.info(f"Successfully imported {table_name} from {csv_file}!")
 
 
+def export_to_csv(table_name, csv):
+    import pandas as pd
+
+    try:
+        DB_USER = config('DB_USER')
+        DB_PASSWORD = config('DB_PASSWORD')
+        DB_PORT = config('DB_PORT')
+        DB_NAME = config('DB_NAME')
+        DB_SERVER = config('DB_SERVER')
+        DB_TYPE = config('DB_TYPE')
+        engine = Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
+    except:
+        DB_TYPE = 'sqlite'
+        engine = Database(dbtype=DB_TYPE).db_engine
+    
+    results = pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
+    results.to_csv(os.path.join(DATASET_PATH, f'{csv}'), index=False, sep=",")
+    logger.info(f"Successfully exported {table_name} to {csv}!")
+
+
 def close_all_db_connections(engine, SessionFactory):
     SessionFactory.close_all()
     engine.dispose()
@@ -2070,19 +2090,7 @@ if __name__ == '__main__':
     if _export_to_csv == True:
         if _table is None or _csv is None:
             raise ValueError(f"Must specify the --table and --csv for exporting to csv")
-        try:
-            DB_USER = config('DB_USER')
-            DB_PASSWORD = config('DB_PASSWORD')
-            DB_PORT = config('DB_PORT')
-            DB_NAME = config('DB_NAME')
-            DB_SERVER = config('DB_SERVER')
-            DB_TYPE = config('DB_TYPE')
-            engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
-        except:
-            DB_TYPE = 'sqlite'
-            engine = db_manager.Database(dbtype=DB_TYPE).db_engine
-        results = pd.read_sql_query(f"SELECT * FROM {_table}", engine)
-        results.to_csv(os.path.join(DATASET_PATH, f'{_csv}'), index=False, sep=",")
+        export_to_csv(_table, _csv)
         exit(0)
     if _index_duplicate_sets == True:
         index_duplicate_sets(session, insert=True, strict=True, very_strict=_strict)
