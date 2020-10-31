@@ -1520,6 +1520,8 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
         except Exception as ex:
             logger.critical(f"Exception during fetching maximum value: {ex}")
             return
+        if num_sets is None or num_sets <= 0:
+            num_sets = 1
     else:
         num_sets = 1
 
