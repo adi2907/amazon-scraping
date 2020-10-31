@@ -2066,9 +2066,9 @@ if __name__ == '__main__':
     #column = Column('date_completed', DateTime())
     #add_column(engine, 'ProductListing', column)
     if _index_duplicate_sets == True:
-        index_duplicate_sets(session, insert=True, strict=True, very_strict=strict)
+        index_duplicate_sets(session, insert=True, strict=True, very_strict=_strict)
     if _update_duplicate_sets == True:
-        update_duplicate_set(session, insert=True, strict=True, very_strict=strict)
+        update_duplicate_set(session, insert=True, strict=True, very_strict=_strict)
     if _index_qandas == True:
         index_qandas(engine)
     if _index_reviews == True:
