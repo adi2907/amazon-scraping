@@ -1954,7 +1954,7 @@ def export_to_csv(table_name, csv):
         engine = Database(dbtype=DB_TYPE).db_engine
     
     results = pd.read_sql_query(f"SELECT * FROM {table_name}", engine)
-    results.to_csv(os.path.join(DATASET_PATH, f'{csv}'), index=False, sep=",")
+    results.to_csv(os.path.join(os.getcwd(), f'{csv}'), index=False, sep=",")
     logger.info(f"Successfully exported {table_name} to {csv}!")
 
 
