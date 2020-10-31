@@ -1572,6 +1572,31 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                     else:
                         if abs(obj1.total_ratings - obj2.total_ratings) > 20:
                             duplicate_flag = False
+                
+                if duplicate_flag == True and a == False:
+                    # Try to compare model names if short title doesn't match
+                    pattern = r'(([a-z\s\-\.\'(\d*\/+\d*)]+([0-9]\w*)))*[a-z\s\-\.\'\/]*'
+                    try:
+                        model_a = re.match(pattern, obj1.short_title).groups()[0].strip()
+                    except:
+                        model_a = obj1.short_title
+                    try:
+                        model_b = re.match(pattern, obj2.short_title).groups()[0].strip()
+                    except:
+                        model_b = obj2.short_title
+                    
+                    if model_a != model_b:
+                        if b == True and c == True:
+                            # Try stricter conditions
+                            if obj1.total_ratings is not None and obj2.total_ratings is not None:
+                                if obj1.total_ratings == obj1.total_ratings:
+                                    pass
+                                else:
+                                    min_val = min(obj1.total_ratings, obj2.total_ratings)
+                                    if min_val > 1000 and abs(obj1.total_ratings - obj2.total_ratings) > 500:
+                                        duplicate_flag = False
+                                    elif min_val > 100 and abs(obj1.total_ratings - obj2.total_ratings) > 50:
+                                        duplicate_flag = False
             
                 if obj2.product_id in info:
                     info[obj1.product_id] = info[obj2.product_id]
