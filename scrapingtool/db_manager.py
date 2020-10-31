@@ -1495,11 +1495,11 @@ def index_duplicate_sets_old(session, table='ProductListing', insert=False, stri
         logger.info(f"Finished inserting!")
 
 
-def update_duplicate_set(session, table='ProductListing', insert=False, strict=False):
-    return index_duplicate_sets(session, table='ProductListing', insert=insert, strict=strict, index_all=False)
+def update_duplicate_set(session, table='ProductListing', insert=False, strict=False, very_strict=False):
+    return index_duplicate_sets(session, table='ProductListing', insert=insert, strict=strict, index_all=False, very_strict=very_strict)
 
 
-def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False, index_all=True):
+def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False, index_all=True, very_strict=False):
     import time
 
     from sqlalchemy import asc, desc, func
@@ -1577,19 +1577,19 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                     # Try to compare model names if short title doesn't match
                     pattern = r'(([a-z\s\-\.\'(\d*\/+\d*)]+([0-9]\w*)))*[a-z\s\-\.\'\/]*'
                     try:
-                        model_a = re.match(pattern, obj1.short_title).groups()[0].strip()
+                        model_a = re.match(pattern, obj1.title.lower()).groups()[0].strip()
                     except:
                         model_a = obj1.short_title
                     try:
-                        model_b = re.match(pattern, obj2.short_title).groups()[0].strip()
+                        model_b = re.match(pattern, obj2.title.lower()).groups()[0].strip()
                     except:
                         model_b = obj2.short_title
                     
                     if model_a != model_b:
-                        if b == True and c == True:
+                        if b == True:
                             # Try stricter conditions
                             if obj1.total_ratings is not None and obj2.total_ratings is not None:
-                                if obj1.total_ratings == obj1.total_ratings:
+                                if obj1.total_ratings == obj2.total_ratings:
                                     pass
                                 else:
                                     min_val = min(obj1.total_ratings, obj2.total_ratings)
@@ -1597,6 +1597,13 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                                         duplicate_flag = False
                                     elif min_val > 100 and abs(obj1.total_ratings - obj2.total_ratings) > 50:
                                         duplicate_flag = False
+                if c == False:
+                    duplicate_flag = False
+                
+                if very_strict == True:
+                    if duplicate_flag == True:
+                        if obj1.total_ratings != obj2.total_ratings or obj1.avg_rating != obj2.avg_rating:
+                            duplicate_flag = False
             
                 if obj2.product_id in info:
                     info[obj1.product_id] = info[obj2.product_id]
@@ -1942,6 +1949,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--index_duplicate_sets', help='Index Duplicate Sets', default=False, action='store_true')
     parser.add_argument('--update_duplicate_sets', help='Update Duplicate Sets', default=False, action='store_true')
+    parser.add_argument('--strict', help='Apply very strict conditions on indexing', default=False, action='store_true')
     parser.add_argument('--index_qandas', help='Index Q and A', default=False, action='store_true')
     parser.add_argument('--index_reviews', help='Index Reviews', default=False, action='store_true')
     parser.add_argument('--update_listing_alerts', help='Update Listing Alerts', default=False, action='store_true')
@@ -1964,6 +1972,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     _index_duplicate_sets = args.index_duplicate_sets
+    _strict = args.strict
     _index_qandas = args.index_qandas
     _index_reviews = args.index_reviews
     _update_listing_alerts = args.update_listing_alerts
@@ -2057,9 +2066,9 @@ if __name__ == '__main__':
     #column = Column('date_completed', DateTime())
     #add_column(engine, 'ProductListing', column)
     if _index_duplicate_sets == True:
-        index_duplicate_sets(session, insert=True, strict=True)
+        index_duplicate_sets(session, insert=True, strict=True, very_strict=strict)
     if _update_duplicate_sets == True:
-        update_duplicate_set(session, insert=True, strict=True)
+        update_duplicate_set(session, insert=True, strict=True, very_strict=strict)
     if _index_qandas == True:
         index_qandas(engine)
     if _index_reviews == True:
