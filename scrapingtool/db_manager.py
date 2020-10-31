@@ -18,6 +18,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
+from unicodedata import normalize
 
 import tokenize_titles
 from utils import create_logger, subcategory_map
@@ -1550,15 +1551,16 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
         q = session.query(_table).filter(ProductListing.category == obj1.category, ProductListing.brand == obj1.brand).order_by(desc('total_ratings'))
         
         duplicate_flag = False
+        break_flag = False
 
         for obj2 in q:
             if obj1.product_id == obj2.product_id:
                 continue
             
-            a = (obj1.short_title == obj2.short_title)
+            a = (normalize('NFKD', obj1.short_title) == normalize('NFKD', obj2.short_title))
             b = ((obj1.avg_rating == obj2.avg_rating) or (obj1.avg_rating is not None and obj2.avg_rating is not None and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1)))
-            c = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))
-
+            c = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))            
+            
             if ((a & b) | (b & c) | (c & a)):
                 # if b and c:
                 duplicate_flag = True
@@ -1575,13 +1577,13 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                 
                 if duplicate_flag == True and a == False:
                     # Try to compare model names if short title doesn't match
-                    pattern = r'(([a-z\s\-\.\'(\d*\/+\d*)]+([0-9]\w*)))*[a-z\s\-\.\'\/]*'
+                    pattern = r'(([a-z\(\)\s\-\.\'(\(*\d*\/+\d*\)*)]+([0-9]\w*\)*)))*[a-z\(\)\s\-\.\'\/]*'
                     try:
-                        model_a = re.match(pattern, obj1.title.lower()).groups()[0].strip()
+                        model_a = re.match(pattern, normalize('NFKD', obj1.title.lower())).groups()[0].strip()
                     except:
                         model_a = obj1.short_title
                     try:
-                        model_b = re.match(pattern, obj2.title.lower()).groups()[0].strip()
+                        model_b = re.match(pattern, normalize('NFKD', obj2.title.lower())).groups()[0].strip()
                     except:
                         model_b = obj2.short_title
                     
@@ -1613,16 +1615,20 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                                     if obj1.short_title != obj2.short_title:
                                         duplicate_flag = False
             
-                if obj2.product_id in info:
+                if duplicate_flag == True and obj2.product_id in info:
                     info[obj1.product_id] = info[obj2.product_id]
-                else:
+                    break_flag = True
+                    break
+                elif duplicate_flag == True and obj2.product_id not in info:
                     idx = get_max(info)
                     info[obj1.product_id] = idx + 1
                     info[obj2.product_id] = idx + 1
-                
-                break
-        
-        if duplicate_flag == False:
+                    break_flag = True
+                    break
+            
+        if break_flag == True:
+            pass
+        else:
             # Not a duplicate
             idx = get_max(info)
             info[obj1.product_id] = idx + 1
