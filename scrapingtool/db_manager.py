@@ -1968,6 +1968,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--csv', help='An external CSV file', type=str, default=None)
     parser.add_argument('--table', help='The database table', type=str, default=None)
+    parser.add_argument('--export_to_csv', help='Export to CSV', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -1992,6 +1993,7 @@ if __name__ == '__main__':
 
     _csv = args.csv
     _table = args.table
+    _export_to_csv = args.export_to_csv
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -2065,6 +2067,23 @@ if __name__ == '__main__':
     #update_product_data(engine, dump=False)
     #column = Column('date_completed', DateTime())
     #add_column(engine, 'ProductListing', column)
+    if _export_to_csv == True:
+        if _table is None or _csv is None:
+            raise ValueError(f"Must specify the --table and --csv for exporting to csv")
+        try:
+            DB_USER = config('DB_USER')
+            DB_PASSWORD = config('DB_PASSWORD')
+            DB_PORT = config('DB_PORT')
+            DB_NAME = config('DB_NAME')
+            DB_SERVER = config('DB_SERVER')
+            DB_TYPE = config('DB_TYPE')
+            engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
+        except:
+            DB_TYPE = 'sqlite'
+            engine = db_manager.Database(dbtype=DB_TYPE).db_engine
+        results = pd.read_sql_query(f"SELECT * FROM {_table}", engine)
+        results.to_csv(os.path.join(DATASET_PATH, f'{_csv}'), index=False, sep=",")
+        exit(0)
     if _index_duplicate_sets == True:
         index_duplicate_sets(session, insert=True, strict=True, very_strict=_strict)
     if _update_duplicate_sets == True:
