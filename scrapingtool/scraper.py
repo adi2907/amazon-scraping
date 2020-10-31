@@ -226,7 +226,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
     global pids
 
     if use_multithreading == True:
-        my_proxy = proxy.Proxy(OS=OS, stream_isolation=True) # Separate Proxy per thread
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=True, server_url=server_url) # Separate Proxy per thread
         try:
             my_proxy.change_identity()
         except:
@@ -240,7 +240,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
         db_session = Session()
         #db_session = scoped_session(Session)
     else:
-        my_proxy = proxy.Proxy(OS=OS, stream_isolation=False) # Separate Proxy per thread
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=False, server_url=server_url) # Separate Proxy per thread
         try:
             my_proxy.change_identity()
         except:
@@ -436,7 +436,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
     global pids
 
     if use_multithreading == True:
-        my_proxy = proxy.Proxy(OS=OS, stream_isolation=True) # Separate Proxy per thread
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=True, server_url=server_url) # Separate Proxy per thread
         try:
             my_proxy.change_identity()
         except:
@@ -450,7 +450,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
         db_session = Session()
         #db_session = scoped_session(Session)
     else:
-        my_proxy = proxy.Proxy(OS=OS, stream_isolation=False) # Separate Proxy per thread
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=False, server_url=server_url) # Separate Proxy per thread
         try:
             my_proxy.change_identity()
         except:

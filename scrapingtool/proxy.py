@@ -116,10 +116,11 @@ class Proxy():
         return count
     
 
-    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True, country='in', stream_isolation=False):
+    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True, country='in', stream_isolation=False, server_url='https://www.amazon.in'):
         self.proxy_port = proxy_port
         self.control_port = control_port
         self.stream_isolation = stream_isolation
+        self.server_url = server_url
         
         if self.stream_isolation == False:
             self.proxies = {
@@ -418,7 +419,7 @@ class Proxy():
         self.change_identity()
         self.reference_count = self.generate_count(2, 6)
 
-        server_url = to_http('https://www.amazon.in', use_tor=self.use_tor)
+        server_url = to_http(f'{self.server_url}', use_tor=self.use_tor)
 
         # Increase ref count before request. Don't want to keep looping!
         self.reference_count += 1
