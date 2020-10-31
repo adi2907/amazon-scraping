@@ -1604,6 +1604,14 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                     if duplicate_flag == True:
                         if obj1.total_ratings != obj2.total_ratings or obj1.avg_rating != obj2.avg_rating:
                             duplicate_flag = False
+                        
+                        if obj1.total_ratings is None and obj2.total_ratings is None:
+                            if obj1.price != obj2.price:
+                                duplicate_flag = False
+                            else:
+                                if obj1.price is None:
+                                    if obj1.short_title != obj2.short_title:
+                                        duplicate_flag = False
             
                 if obj2.product_id in info:
                     info[obj1.product_id] = info[obj2.product_id]
