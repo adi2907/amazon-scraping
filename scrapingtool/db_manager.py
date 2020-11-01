@@ -1595,7 +1595,9 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                                     pass
                                 else:
                                     min_val = min(obj1.total_ratings, obj2.total_ratings)
-                                    if min_val > 1000 and abs(obj1.total_ratings - obj2.total_ratings) > 500:
+                                    if min_val > 5000 and abs(obj1.total_ratings - obj2.total_ratings) > 1000:
+                                        duplicate_flag = False
+                                    elif min_val > 1000 and abs(obj1.total_ratings - obj2.total_ratings) > 500:
                                         duplicate_flag = False
                                     elif min_val > 100 and abs(obj1.total_ratings - obj2.total_ratings) > 50:
                                         duplicate_flag = False
@@ -1774,6 +1776,10 @@ def find_archived_products(session, table='ProductListing'):
         continue
 
     logger.info(f"Found {count} archived products totally")
+
+
+def update_listing_from_details(engine):
+    engine.execute('UPDATE ProductListing as t1 JOIN (SELECT product_id, curr_price, num_reviews FROM ProductListing) as t2 SET t1.price = t2.curr_price, t1.total_ratings = t2.num_reviews WHERE t1.product_id = t2.product_id AND t1.total_ratings IS NOT NULL AND t2.num_reviews IS NOT NULL AND t1.total_ratings < t2.num_reviews')
 
 
 def sanity_check(session, categories, pids, table='ProductListing'):
@@ -2001,6 +2007,7 @@ if __name__ == '__main__':
     parser.add_argument('--export_sets', help='Export Sets', default=False, action='store_true')
     parser.add_argument('--import_from_csv', help='Import a Schema from a CSV file', default=False, action='store_true')
     parser.add_argument('--assign_subcategories', help='Assign Subcategories', default=False, action='store_true')
+    parser.add_argument('--update_listing_from_details', help='Update Listing from Details (for possibly archived products)', default=False, action='store_true')
     parser.add_argument('--dump_from_cache', help='Dump from Cache', default=False, action='store_true')
     parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
 
@@ -2027,6 +2034,7 @@ if __name__ == '__main__':
     _import_from_csv = args.import_from_csv
     _assign_subcategories = args.assign_subcategories
     _dump_from_cache = args.dump_from_cache
+    _update_listing_from_details = args.update_listing_from_details
     _close_all_db_connections = args.close_all_db_connections
     _update_duplicate_sets = args.update_duplicate_sets
 
@@ -2137,6 +2145,8 @@ if __name__ == '__main__':
         find_archived_products(session)
     if _transfer_brands == True:
         transfer_brands(engine)
+    if _update_listing_from_details == True:
+        update_listing_from_details(engine)
     if _update_brands == True:
         update_brands(session)
     if _test_indices == True:
