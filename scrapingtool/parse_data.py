@@ -554,6 +554,8 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
             reviews_url = reviews_url.find("a", {"data-hook": "see-all-reviews-link-foot"})
             if reviews_url is not None:
                 reviews_url = reviews_url.attrs['href']
+        else:
+            reviews_url = None
         content['reviews_url'] = reviews_url
         
         review_data = []
@@ -574,6 +576,7 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
             
             # Review Date
             date = review.find("span", {"data-hook": "review-date"})
+            country = None
             if date is not None:
                 date = date.text.strip()
                 country = date.split()[2]
@@ -583,6 +586,10 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                     date = datetime.strptime(date, '%d %B, %Y')
                 else:
                     date = datetime.strptime(date, '%d %B %Y')
+            else:
+                country = None
+                date = None
+            
             data['review_date'] = date
             data['country'] = country
 
@@ -593,9 +600,9 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                 if hasattr(product_info, 'text'):
                     info.append(product_info.text.strip())
                 product_info = product_info.find_all(recursive=True)
-                for content in product_info:
-                    if hasattr(content, 'text'):
-                        info.append(content.text.strip())
+                for _content in product_info:
+                    if hasattr(_content, 'text'):
+                        info.append(_content.text.strip())
                 data['product_info'] = info
             else:
                 data['product_info'] = None
@@ -615,16 +622,18 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                 # We're at the main page, so it's no longer collapsed
                 body = review.find("span", {"data-hook": "review-body"})
             if body is not None:
-                body = re.sub(regex, '\n', str(body.span))
+                body = re.sub(regex, '\n', str(body.span.text.strip()))
                 body = body[6:-7] # Remove <span> and </span>
-            data['body'] = body
+                data['body'] = body
+            else:
+                data['body'] = ''
 
             # Number of people who liked this review
-            helpful_votes = review.find("span", {"data-hook": "helpful-vote-statement"})
+            helpful_votes = review.find("span", {"data-hook": "helpful-vote-statement"}).text.strip()
             if helpful_votes is None:
                 data['helpful_votes'] = helpful_votes
             else:
-                value = helpful_votes.text.strip().split()[0].replace(',', '')
+                value = helpful_votes.split()[0].replace(',', '')
                 try:
                     data['helpful_votes'] = int(value)
                 except ValueError:
@@ -634,11 +643,10 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                     data['helpful_votes'] = mapping[value]
 
             data['page_num'] = page_num
-            
             review_data.append(data)
 
         content['reviews'] = review_data
-    
+        
     # Now get the next page url, if there is one
     next_url = None
     next_url = soup.find("ul", class_="a-pagination")
