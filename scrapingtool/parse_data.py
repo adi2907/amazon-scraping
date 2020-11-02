@@ -622,7 +622,10 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                 # We're at the main page, so it's no longer collapsed
                 body = review.find("span", {"data-hook": "review-body"})
             if body is not None:
-                body = re.sub(regex, '\n', str(body.span.text.strip()))
+                try:
+                    body = re.sub(regex, '\n', str(body.span.text.strip()))
+                except:
+                    body = re.sub(regex, '\n', str(body.span))
                 body = body[6:-7] # Remove <span> and </span>
                 data['body'] = body
             else:
