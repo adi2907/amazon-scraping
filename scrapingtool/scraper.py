@@ -359,9 +359,12 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             rescrape = 0
                         else:
                             rescrape = 2
-                            logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                            error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                            continue
+                            if override == True:
+                                pass
+                            else:
+                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                continue
                 else:
                     error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping this from scratch")
                     rescrape = 0
