@@ -194,14 +194,36 @@ def exit_gracefully(signum, frame):
     signal.signal(signal.SIGINT, exit_gracefully)
 
 
-def store_to_cache(key, value):
+def store_page(filename, html=None):
+    if html is None:
+        return
+    try:
+        DUMP_DIR = os.path.join(os.getcwd(), 'html')
+        if not os.path.exists(DUMP_DIR):
+            os.mkdir(DUMP_DIR)
+        with open(os.path.join(DUMP_DIR, filename), 'wb') as f:
+            f.write(html)
+        return
+    except Exception as ex:
+        logger.critical(f"Error when trying to store html: {ex}")
+        return
+
+
+def store_to_cache(key, value, html=None):
     global cache_file, use_cache
     global cache
     try:
         with SqliteDict(cache_file, autocommit=True) as mydict:
             mydict[key] = value
+        return True
     except RecursionError:
         error_logger.critical(f"Recursion Depth exceeded when trying to store key -> {key}")
+        store_page(f"{key}.html", html=html)
+        return False
+    except Exception as ex:
+        error_logger.critical(f"Error when trying to store key -> {key}: {ex}")
+        store_page(f"{key}.html", html=html)
+        return False
  
 
 def remove_from_cache(category):
@@ -667,7 +689,10 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                     except Exception as ex:
                         print(f"Exception when trung to store to Listing: {ex}")
                     finally:
-                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", page_results)
+                        try:
+                            store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", page_results, html=html)
+                        except NameError:
+                            store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", page_results, html=None)
                         
                 if no_listing == False:
                     # Dump the results of this page to the DB
@@ -677,7 +702,10 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                             if not status:
                                 raise ValueError("Yikes. Status is False")
                         except:
-                            store_to_cache(f"DAILYLISTING_{category}_PAGE_{curr_page}_{today}", page_results)
+                            try:
+                                store_to_cache(f"DAILYLISTING_{category}_PAGE_{curr_page}_{today}", page_results, html=html)
+                            except NameError:
+                                store_to_cache(f"DAILYLISTING_{category}_PAGE_{curr_page}_{today}", page_results, html=None)
             
 
             if detail == True:
@@ -901,7 +929,10 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                         # Store to Cache
                         raise ValueError("Status is False")
                 except:
-                    store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", results)
+                    try:
+                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", results, html=html)
+                    except NameError:
+                        store_to_cache(f"LISTING_{category}_PAGE_{curr_page}_{today}", results, html=None)
 
         logger.info(f"Finished Scraping the LAST page {curr_page} of {category}")
 
@@ -1399,11 +1430,17 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         try:
             status = db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
             if status == False:
-                store_to_cache(f"DETAILS_{product_id}", details)
+                try:
+                    store_to_cache(f"DETAILS_{product_id}", details, html=html)
+                except NameError:
+                    store_to_cache(f"DETAILS_{product_id}", details, html=None)
                 store_to_cache(f"IS_SPONSORED_{product_id}", sponsored)
         except:
-            store_to_cache(f"DETAILS_{product_id}", details)
-            store_to_cache(f"IS_SPONSORED_{product_id}", sponsored)
+            try:
+                status = store_to_cache(f"DETAILS_{product_id}", details, html=html)
+            except NameError:
+                status = store_to_cache(f"DETAILS_{product_id}", details, html=None)
+            _ = store_to_cache(f"IS_SPONSORED_{product_id}", sponsored)
     
     time.sleep(4)
 
@@ -1516,13 +1553,22 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 # Insert to the DB
                 try:
                     if curr == 0:
-                        store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
+                        try:
+                            store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
+                        except NameError:
+                            store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
                     else:
                         status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id, duplicate_set=duplicate_set)
                         if status == False:
-                            store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
+                            try:
+                                store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
+                            except NameError:
+                                store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
                 except:
-                    store_to_cache(f"QANDA_{product_id}_{curr}", qanda)
+                    try:
+                        store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
+                    except NameError:
+                        store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
             
             if next_url is not None:
                 logger.info(f"QandA: Going to Page {curr}")
@@ -1740,11 +1786,17 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     if jump_page == 0:
                         try:
                             if first_request == True:
-                                store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                                try:
+                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
+                                except NameError:
+                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
                             else:
                                 status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
                                 if not status:
-                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                                    try:
+                                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
+                                    except NameError:
+                                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
                         except:
                             store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                     else:
@@ -1757,9 +1809,15 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             try:
                                 status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
                                 if not status:
-                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                                    try:
+                                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
+                                    except NameError:
+                                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
                             except:
-                                store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
+                                try:
+                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
+                                except NameError:
+                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
                 
                 #with open(f'dumps/dump_{product_id}_reviews.pkl', 'wb') as f:
                 #	pickle.dump(reviews, f)
