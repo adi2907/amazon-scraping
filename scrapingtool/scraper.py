@@ -2027,14 +2027,26 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             #total_listing_pids = [pid.decode() for pid in total_listing_pids]
             
             queryset = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category).order_by(desc(text('total_ratings')))
+            duplicate_sets = set()
+            total_listing_pids = []
+            idx = 0
             if top_n is not None and top_n > 0:
-                total_listing_pids = [getattr(instance, 'product_id') for instance in queryset[:top_n] if hasattr(instance, 'product_id')]
+                for instance in queryset:
+                    if idx == top_n:
+                        break
+                    if instance.duplicate_set in duplicate_sets:
+                        continue
+                    idx += 1
+                    duplicate_sets.add(instance.duplicate_set)
+                    total_listing_pids.append(instance.product_id)
             else:
                 total_listing_pids = [getattr(instance, 'product_id') for instance in queryset if hasattr(instance, 'product_id')]
             listing_partition = [total_listing_pids[(i*len(total_listing_pids))//num_workers:((i+1)*len(total_listing_pids)) // num_workers] for i in range(num_workers)]
         else:
             total_listing_pids = []
             listing_partition = [[] for _ in range(num_workers)]
+        
+        logger.info(f"Scraping Details of {len(total_listing_pids)} products totally")
 
         # TODO: https://stackoverflow.com/questions/56733397/how-i-can-get-new-ip-from-tor-every-requests-in-threads
         # Separate proxy object per thread
