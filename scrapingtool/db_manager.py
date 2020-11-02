@@ -722,7 +722,7 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                     
                     data = cache[key]
 
-                    if len(data) == 0 or 'page_num' not in data['reviews'][0]:
+                    if len(data) == 0 or ('reviews' in data and len(data['reviews']) == 0) or ('page_num' not in data['reviews'][0]):
                         continue
 
                     status = insert_product_reviews(session, data, product_id)
