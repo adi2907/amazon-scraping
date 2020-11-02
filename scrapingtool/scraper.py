@@ -236,7 +236,7 @@ def remove_from_cache(category):
         cache.delete(f"{category}_PIDS")
 
 
-def process_product_detail(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None, qanda_pages=50, review_pages=500):
+def process_product_detail(category, base_url, num_pages, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=None, no_refer=False, threshold_date=None, listing_pids=None, qanda_pages=50, review_pages=500, override=False):
     global cache
     global headers, cookies
     global last_product_detail
@@ -328,7 +328,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             
                             recent_date = recent_obj.date_completed
 
-                        if recent_date is not None:
+                        if override == False and recent_date is not None:
                             _date = recent_date
                             logger.info(f"Set date as {_date}")
                             delta = datetime.now() - _date
@@ -336,7 +336,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                                 logger.info(f"Skipping this product. within the last week")
                                 continue
                             
-                        elif hasattr(recent_obj, 'date_completed') and recent_obj.date_completed is not None:
+                        elif override == False and hasattr(recent_obj, 'date_completed') and recent_obj.date_completed is not None:
                             # Go until this point only
                             _date = recent_obj.date_completed
                             logger.info(f"Set date as {_date}")
@@ -388,7 +388,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                         
                         recent_date = recent_obj.date_completed
 
-                    if recent_date is not None:
+                    if override == False and recent_date is not None:
                         _date = recent_date
                         logger.info(f"Set date as {_date}")
                         delta = datetime.now() - _date
@@ -396,7 +396,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             logger.info(f"Skipping this product. within the last week")
                             continue
                         
-                    elif hasattr(recent_obj, 'date_completed') and recent_obj.date_completed is not None:
+                    elif override == False hasattr(recent_obj, 'date_completed') and recent_obj.date_completed is not None:
                         # Go until this point only
                         _date = recent_obj.date_completed
                         logger.info(f"Set date as {_date}")
@@ -407,6 +407,10 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                     else:
                         _date = threshold_date
             
+            if override == True:
+                rescrape = 2
+                logger.info(f"Overriding: Scraping FULL Details for {product_id}")
+
             if rescrape == 0:
                 _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=0)
             elif rescrape == 1:
@@ -1360,27 +1364,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         # Get the product details
         try:
             details = parse_data.get_product_data(soup, html=html)
-            # Now check model
-            '''
-            if 'model' in details:
-                model = details['model']
-                if model is not None:
-                    obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'model': f'{product_id}'}))
-                    if obj is not None:
-                        logger.info(f"For product {product_id}, encountered duplicate Model. Exiting...")
-                        return None
-            '''
             break
         except ValueError:
-            #DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
-            #if not os.path.exists(DUMP_DIR):
-            #    os.mkdir(DUMP_DIR)
-            #if category is None or product_url is None:
-            #    filename = 'none'
-            #else:
-            #    filename = category.replace('/', '') + product_url.replace('/', '') + '.html'
-            #with open(os.path.join(DUMP_DIR, filename), 'wb') as f:
-            #    f.write(html)
             logger.warning(f"Written html to {category}_{product_url}.html")
             logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
             logger.warning("Trying again...")
@@ -1934,7 +1919,7 @@ def assign_template_subcategories(categories=None, pages=None, dump=False, detai
             fetch_category(category, url, 10000, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=[subcategory], no_refer=True)
 
 
-def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None):
+def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None, detail_override=False, top_n=None):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -2041,8 +2026,11 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             #total_listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
             #total_listing_pids = [pid.decode() for pid in total_listing_pids]
             
-            queryset = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category)
-            total_listing_pids = [getattr(instance, 'product_id') for instance in queryset if hasattr(instance, 'product_id')]
+            queryset = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category).order_by(desc(text('total_ratings')))
+            if top_n is not None and top_n > 0:
+                total_listing_pids = [getattr(instance, 'product_id') for instance in queryset[:top_n] if hasattr(instance, 'product_id')]
+            else:
+                total_listing_pids = [getattr(instance, 'product_id') for instance in queryset if hasattr(instance, 'product_id')]
             listing_partition = [total_listing_pids[(i*len(total_listing_pids))//num_workers:((i+1)*len(total_listing_pids)) // num_workers] for i in range(num_workers)]
         else:
             total_listing_pids = []
@@ -2053,10 +2041,10 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
             if no_sub == False:
-                future_to_category = {executor.submit(process_product_detail, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids, qanda_pages, review_pages): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
+                future_to_category = {executor.submit(process_product_detail, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids, qanda_pages, review_pages, detail_override): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
                 #future_to_category = {executor.submit(fetch_category, category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             else:
-                future_to_category = {executor.submit(process_product_detail, category, category_template, num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids, qanda_pages, review_pages): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
+                future_to_category = {executor.submit(process_product_detail, category, category_template, num_pages, change, server_url, no_listing, detail, 0, None, False, threshold_date, listing_pids, qanda_pages, review_pages, detail_override): category for category, category_template, num_pages, listing_pids in zip(listing_categories, listing_templates, pages, listing_partition)}
                 #future_to_category = {executor.submit(fetch_category, category, category_template, num_pages, change, server_url, no_listing, detail, threshold_date, listing_pids): category for category, category_template, num_pages in zip(listing_categories, listing_templates, pages)}
             
             try:
@@ -2125,6 +2113,8 @@ if __name__ == '__main__':
     parser.add_argument('--concurrent_jobs', help='To specify if listing + details need to be done', default=False, action='store_true')
     parser.add_argument('--num_workers', help='To specify number of worker threads', type=int, default=0)
     parser.add_argument('--worker_pages', help='Page per worker thread for product detail', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
+    parser.add_argument('--detail_override', help='Override date threshold and scrape details from scratch', default=False, action='store_true')
+    parser.add_argument('--top_n', help='Fetch Top N product details', type=int, default=None)
     parser.add_argument('--jump_page', help='Jump page', type=int, default=0)
     parser.add_argument('--assign_subcategories', help='Assign Subcategories', default=False, action='store_true')
 
@@ -2144,10 +2134,12 @@ if __name__ == '__main__':
     use_tor = args.tor
     num_products = args.num_products
     override = args.override
+    detail_override = args.detail_override
     no_listing = args.no_listing
     concurrent_jobs = args.concurrent_jobs
     num_workers = args.num_workers
     worker_pages = args.worker_pages
+    top_n = args.top_n
     jump_page = args.jump_page
     assign_subcategories = args.assign_subcategories
 
@@ -2279,33 +2271,9 @@ if __name__ == '__main__':
                 else:
                     # Override
                     if isinstance(pages, list):
-                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages)
+                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n)
                     else:
-                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages)
-                """
-                if detail == True:
-                    for category in categories:
-                        curr_item = 0
-                        curr_page = 1
-
-                        while curr_item < num_items:
-                            if curr_page in results[category]:
-                                for title in results[category][curr_page]:
-                                    if results[category][curr_page][title]['product_url'] is not None:
-                                        product_url = results[category][curr_page][title]['product_url']
-                                        try:
-                                            product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                                        except Exception as ex:
-                                            logger.critical(f"{ex}")
-                                            logger.warning(f"Could not scrape details of Product - URL = {product_url}")
-                                            logger.newline()
-                                        curr_item += 1
-                                        if curr_item == num_items:
-                                            break
-                            else:
-                                break
-                            curr_page += 1
-                """
+                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n)
             else:
                 for category in categories:
                     if product_ids is None:
