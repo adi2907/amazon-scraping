@@ -674,7 +674,8 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
         key = f"DETAILS_SET_{category}"
         if key in cache:
             _set = cache[key]
-            for product_id in _set:
+            total = len(_set)
+            for curr, product_id in enumerate(_set):
                 logger.info(f"Dumping Product ID {product_id}")
                 
                 qanda_counter = 0
@@ -737,7 +738,7 @@ def dump_from_cache(session, category, cache_file='cache.sqlite3'):
                 
                 cache[reviews_errors] = _r
 
-                logger.info(f"For PRODUCT ID {product_id}, dumped {qanda_counter} QandA pages, and {reviews_counter} Review Pages")
+                logger.info(f"{curr + 1}/{total}: For PRODUCT ID {product_id}, dumped {qanda_counter} QandA pages, and {reviews_counter} Review Pages")
 
 
 def update_brands_and_models(session, table='ProductDetails'):
