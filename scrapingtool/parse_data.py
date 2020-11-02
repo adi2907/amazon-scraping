@@ -632,11 +632,11 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                 data['body'] = ''
 
             # Number of people who liked this review
-            helpful_votes = review.find("span", {"data-hook": "helpful-vote-statement"}).text.strip()
+            helpful_votes = review.find("span", {"data-hook": "helpful-vote-statement"})
             if helpful_votes is None:
                 data['helpful_votes'] = helpful_votes
             else:
-                value = helpful_votes.split()[0].replace(',', '')
+                value = helpful_votes.text.strip().split()[0].replace(',', '')
                 try:
                     data['helpful_votes'] = int(value)
                 except ValueError:
