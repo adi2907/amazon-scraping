@@ -1749,6 +1749,17 @@ def test_indices(csv_file='ProductListing.csv'):
     cleaned_df.to_csv(os.path.join(os.getcwd(), 'test.csv'), index=False)
 
 
+def update_from_daily_product_listing(session, table='ProductListing'):
+    queryset = session.query(DailyProductListing).filter(DailyProductListing.date >= datetime.date.today())
+
+    pids = set()
+
+    for instance in queryset:
+        pids.add(instance.product_id)
+    
+    for pid in pids:
+        engine.execute('UPDATE %s SET %s = %s WHERE %s.product_id = "%s"' % (table, "is_active", "True", table, pid))
+
 
 def import_product_data(session, csv_file, table='ProductListing'):
     import os, pandas as pd
@@ -2038,6 +2049,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_listing_alerts', help='Update Listing Alerts', default=False, action='store_true')
     parser.add_argument('--update_product_data', help='Update Product Data (QandA and Reviews)', default=False, action='store_true')
     parser.add_argument('--update_product_listing_from_cache', help='Update Product Data from Cache', default=False, action='store_true')
+    parser.add_argument('--update_from_daily_product_listing', help='Update is_active from Daily Product Listing', default=False, action='store_true')
     parser.add_argument('--update_active_products', help='Update Active Products (QandA and Reviews)', default=False, action='store_true')
     parser.add_argument('--find_archived_products', help='Find archived products from ProductListing', default=False, action='store_true')
     parser.add_argument('--transfer_brands', help='Transfer brands from ProductListing', default=False, action='store_true')
@@ -2068,6 +2080,7 @@ if __name__ == '__main__':
     _update_product_listing_from_cache = args.update_product_listing_from_cache
     _update_active_products = args.update_active_products
     _find_archived_products = args.find_archived_products
+    _update_from_daily_product_listing = args.update_from_daily_product_listing
     _transfer_brands = args.transfer_brands
     _update_brands = args.update_brands
     _test_indices = args.test_indices
@@ -2170,6 +2183,8 @@ if __name__ == '__main__':
         index_qandas(engine)
     if _index_reviews == True:
         index_reviews(engine)
+    if _update_from_daily_product_listing == True:
+        update_from_daily_product_listing(session)
     if _update_listing_alerts == True:
         update_alert_flags(session)
     if _update_product_data == True:
