@@ -1573,10 +1573,10 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
                     # Suspicious
                     max_val = max(obj1.total_ratings, obj2.total_ratings)
                     if max_val > 1000:
-                        if abs(obj1.total_ratings - obj2.total_ratings) > 60:
+                        if abs(obj1.total_ratings - obj2.total_ratings) > 300:
                             duplicate_flag = False
                     else:
-                        if abs(obj1.total_ratings - obj2.total_ratings) > 20:
+                        if abs(obj1.total_ratings - obj2.total_ratings) > 100:
                             duplicate_flag = False
                 
                 if duplicate_flag == True and a == False:
