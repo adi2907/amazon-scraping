@@ -2030,7 +2030,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             #total_listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
             #total_listing_pids = [pid.decode() for pid in total_listing_pids]
             
-            queryset = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category).order_by(desc(text('total_ratings')))
+            queryset = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category).order_by(desc(text('total_ratings'))).order_by(desc(text('date_completed')))
             duplicate_sets = set()
             total_listing_pids = []
             idx = 0
