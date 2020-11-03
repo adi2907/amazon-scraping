@@ -12,12 +12,14 @@ from decouple import UndefinedValueError, config
 from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.firefox.options import Options
+from sqlitedict import SqliteDict
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 
-import parse_data, db_manager
-from utils import (create_logger, domain_map, domain_to_db,
-                                listing_categories, listing_templates)
+import db_manager
+import parse_data
+from utils import (create_logger, domain_map, domain_to_db, listing_categories,
+                   listing_templates)
 
 logger = create_logger('browser')
 
@@ -25,6 +27,8 @@ ENTRY_URL = "https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%
 
 category = "refrigerator"
 subcategory = "double door"
+
+today = datetime.today().strftime("%d-%m-%y")
 
 #ENTRY_URL = "https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_thirteen_browse-bin%3A2753039031%7C2753045031&dc&qid=1599327851&rnid=2753038031&ref=sr_nr_p_n_feature_thirteen_browse-bin_2"
 
@@ -47,6 +51,8 @@ def run_category(browser='Firefox'):
         driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
     
     from sqlalchemy.orm import sessionmaker
+
+    active_products = set()
     
     try:
         for domain in domain_map:
@@ -59,6 +65,7 @@ def run_category(browser='Firefox'):
                 engine = db_manager.connect_to_db(domain_to_db[domain], connection_params)
                 Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
                 session = Session()
+                engine.execute(f"UPDATE ProductListing SET is_active = False")
             except Exception as ex:
                 traceback.print_exc()
                 logger.critical(f"Error during initiation session: {ex}")
@@ -101,6 +108,15 @@ def run_category(browser='Firefox'):
                             page_results[category] = dict()
                             page_results[category][curr] = product_info
                             status = db_manager.insert_product_listing(session, page_results, domain=domain)
+
+                            try:
+                                for category in page_results:
+                                    for page_num in page_results[category]:
+                                        for title in page_results[category][page_num]:
+                                            active_products.add(page_results[category][page_num][title]['product_id'])
+                            except Exception as ex:
+                                logger.critical(f"Error when adding to set: {ex}")
+                                
 
                             if not status:
                                 logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
@@ -180,6 +196,11 @@ def run_category(browser='Firefox'):
                     logger.info("Updated indexes!")
                 except Exception as ex:
                     logger.critical(f"Error when updating listing indexes: {ex}")
+                
+                try:
+                    db_manager.update_active_products(engine, active_products)
+                except Exception as ex:
+                    logger.critical(f"Error when updating active products: {ex}")
                 
                 try:
                     session.close()
