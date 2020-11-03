@@ -389,6 +389,7 @@ def insert_product_listing(session, data, table='ProductListing', domain='amazon
                     if row['product_id'] is not None:
                         obj = table_map[table]()
                         row['is_duplicate'] = None
+                        row['is_active'] = True
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         session.add(obj)
                         session.commit()
@@ -406,6 +407,7 @@ def insert_product_listing(session, data, table='ProductListing', domain='amazon
                             if field in row:
                                 setattr(result, field, row[field])
                         setattr(result, 'is_duplicate', temp)
+                        setattr(result, 'is_active', True)
                         if short_title is not None:
                             setattr(result, 'short_title', short_title)
                         try:

@@ -214,11 +214,6 @@ def run_category(browser='Firefox'):
                     logger.critical(f"Error when updating listing indexes: {ex}")
                 
                 try:
-                    db_manager.update_active_products(engine, active_products)
-                except Exception as ex:
-                    logger.critical(f"Error when updating active products: {ex}")
-                
-                try:
                     session.close()
                     db_manager.close_all_db_connections(engine, Session)
                 except Exception as ex:
