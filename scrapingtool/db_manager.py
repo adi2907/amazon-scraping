@@ -1748,6 +1748,39 @@ def test_indices(csv_file='ProductListing.csv'):
 
 
 
+def import_product_data(session, csv_file, table='ProductListing'):
+    import os, pandas as pd
+    from string import Template
+
+    df = pd.read_csv(csv_file, sep=',', encoding='utf-8-sig')
+
+    offset = 0
+
+    df['duplicate_set'] += offset
+
+    results = {}
+
+    for pid, duplicate_set in zip(df['product_id'], df['duplicate_set']):
+        results[pid] = duplicate_set
+
+    try:
+        for idx, pid in enumerate(results):
+            if idx % 100 == 0:
+                logger.info(f"{idx}")
+            queryset = session.query(ProductListing).filter(ProductListing.product_id == pid)
+            for instance in queryset:
+                instance.duplicate_set = results[pid]          
+        try:
+            session.commit()
+            logger.info(f"Finished updating duplicate_sets")
+        except Exception as ex:
+            session.rollback()
+            logger.critical(f"Error during updating duplicate_set: {ex}")
+        
+    except Exception as ex:
+        logger.critical(f"Error during updating duplicate_set: {ex}")
+
+
 def find_archived_products(session, table='ProductListing'):
     from sqlalchemy import asc, desc
 
@@ -2015,6 +2048,8 @@ if __name__ == '__main__':
     parser.add_argument('--dump_from_cache', help='Dump from Cache', default=False, action='store_true')
     parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
 
+    parser.add_argument('--import_product_data', help='Import Data (Duplicate Sets)', default=False, action='store_true')
+
     parser.add_argument('--csv', help='An external CSV file', type=str, default=None)
     parser.add_argument('--table', help='The database table', type=str, default=None)
     parser.add_argument('--export_to_csv', help='Export to CSV', default=False, action='store_true')
@@ -2041,6 +2076,7 @@ if __name__ == '__main__':
     _update_listing_from_details = args.update_listing_from_details
     _close_all_db_connections = args.close_all_db_connections
     _update_duplicate_sets = args.update_duplicate_sets
+    _import_product_data = args.import_product_data
 
     _csv = args.csv
     _table = args.table
@@ -2136,6 +2172,10 @@ if __name__ == '__main__':
         update_alert_flags(session)
     if _update_product_data == True:
         update_product_data(engine, dump=False)
+    if _import_product_data == True:
+        if _csv is None:
+            raise ValueError(f"Must provide a csv file")
+        import_product_data(session, _csv, table='ProductListing')
     if _update_product_listing_from_cache == True:
         update_product_listing_from_cache(session, "headphones")
     if _update_active_products == True:
