@@ -1757,8 +1757,20 @@ def update_from_daily_product_listing(session, table='ProductListing'):
     for instance in queryset:
         pids.add(instance.product_id)
     
-    for pid in pids:
-        engine.execute('UPDATE %s SET %s = %s WHERE %s.product_id = "%s"' % (table, "is_active", "True", table, pid))
+    q = session.query(ProductListing).all()
+    
+    for instance in q:
+        if instance.pid in pids:
+            instance.is_active = True
+        else:
+            instance.is_active = False
+    
+    try:
+        session.commit()
+        logger.info(f"Updated is_active field!")
+    except Exception as ex:
+        session.rollback()
+        logger.critical(f"Error when updating is_active: {ex}")
 
 
 def import_product_data(session, csv_file, table='ProductListing'):
