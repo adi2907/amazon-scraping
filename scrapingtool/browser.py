@@ -116,12 +116,14 @@ def run_category(browser='Firefox'):
                                     for page_num in page_results[category]:
                                         for title in page_results[category][page_num]:
                                             pid = page_results[category][page_num][title]['product_id']
+                                            '''
                                             if pid in active_products:
                                                 logger.info(f"Already got this PID {pid}. Stopping this category {category}...")
                                                 break_flag = True
                                                 break
                                             else:
-                                                active_products.add(pid)
+                                            '''
+                                            active_products.add(pid)
                                         if break_flag == True:
                                             break
                                     if break_flag == True:
