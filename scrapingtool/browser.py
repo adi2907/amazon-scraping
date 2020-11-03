@@ -74,6 +74,8 @@ def run_category(browser='Firefox'):
 
                 assert len(listing_categories) == len(listing_templates)
 
+                break_flag = False
+
                 for category, template in domain_map[domain].items():
                     url = template.substitute(PAGE_NUM=1)
 
@@ -113,10 +115,22 @@ def run_category(browser='Firefox'):
                                 for category in page_results:
                                     for page_num in page_results[category]:
                                         for title in page_results[category][page_num]:
-                                            active_products.add(page_results[category][page_num][title]['product_id'])
+                                            pid = page_results[category][page_num][title]['product_id']
+                                            if pid in active_products:
+                                                logger.info(f"Already got this PID {pid}. Stopping this category {category}...")
+                                                break_flag = True
+                                                break
+                                            else:
+                                                active_products.add(pid)
+                                        if break_flag == True:
+                                            break
+                                    if break_flag == True:
+                                        break
                             except Exception as ex:
                                 logger.critical(f"Error when adding to set: {ex}")
-                                
+                            
+                            if break_flag == True:
+                                break
 
                             if not status:
                                 logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
