@@ -170,7 +170,7 @@ def process_archived_pids(category):
     logger.info(f"Finished fetching archived products for Category: {category}")
 
 
-def update_archive_listing(session, category, table='ProductListing'):
+def update_archive_listing(category, table='ProductListing'):
     from sqlalchemy import asc, desc
     global cache, cache_file
     global credentials
@@ -252,4 +252,4 @@ if __name__ == '__main__':
         if _categories is None:
             raise ValueError(f"Need to specify list of categories for updating archived PIDs")
         for category in _categories:
-            update_archive_listing(db_session, category)
+            update_archive_listing(category)
