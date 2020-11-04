@@ -8,6 +8,8 @@ import os
 import pickle
 import re
 import sqlite3
+from contextlib import contextmanager
+from unicodedata import normalize
 
 import pymysql
 from decouple import UndefinedValueError, config
@@ -18,7 +20,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
-from unicodedata import normalize
 
 import tokenize_titles
 from utils import create_logger, subcategory_map
@@ -224,7 +225,25 @@ def get_credentials():
 
 def connect_to_db(db_name, connection_params):
     engine = Database(dbname=db_name, **(connection_params)).db_engine
-    return engine
+    SessionFactory = sessionmaker(bind=engine, autocommit=False, autoflush=True)
+    return engine, SessionFactory
+
+
+@contextmanager
+def session_scope(sessionmaker=None):
+    if sessionmaker is None:
+        SessionFactory = sessionmaker(bind=engine, autocommit=False, autoflush=True)
+        session = SessionFactory()
+    else:
+        session = sessionmaker()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def apply_schema(cls):
@@ -1774,8 +1793,10 @@ def update_from_daily_product_listing(session, table='ProductListing'):
 
 
 def import_product_data(session, csv_file, table='ProductListing'):
-    import os, pandas as pd
+    import os
     from string import Template
+
+    import pandas as pd
 
     df = pd.read_csv(csv_file, sep=',', encoding='utf-8-sig')
 

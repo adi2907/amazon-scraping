@@ -11,8 +11,11 @@ from decouple import UndefinedValueError, config
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlitedict import SqliteDict
 
-import cache, db_manager, parse_data, proxy
-from utils import create_logger
+import cache
+import db_manager
+import parse_data
+import proxy
+from utils import create_logger, domain_map, domain_to_db
 
 logger = create_logger('fetch_archived')
 
@@ -28,6 +31,10 @@ try:
 except UndefinedValueError:
     OS = 'Windows'
 
+try:
+    multithreading = config('MULTITHREADING')
+except UndefinedValueError:
+    multithreading = False
 
 try:
     speedup = config('speedup')
@@ -65,24 +72,7 @@ last_product_detail = False
 terminate = False
 
 # Database Session setup
-try:
-    DB_USER = config('DB_USER')
-    DB_PASSWORD = config('DB_PASSWORD')
-    DB_PORT = config('DB_PORT')
-    DB_NAME = config('DB_NAME')
-    DB_SERVER = config('DB_SERVER')
-    DB_TYPE = config('DB_TYPE')
-    engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
-except UndefinedValueError:
-    DB_TYPE = 'sqlite'
-    engine = db_manager.Database(dbtype=DB_TYPE).db_engine
-    logger.warning("Using the default db.sqlite Database")
-    logger.newline()
-
-
-Session = sessionmaker(bind=engine)
-
-db_session = Session()
+credentials = db_manager.get_credentials()
 
 
 def exit_gracefully(signum, frame):
@@ -109,17 +99,11 @@ def scrape_product_detail(category, product_url):
     global my_proxy
     global cache, cache_file
     # session = requests.Session()
-    server_url = 'https://www.amazon.in'
+    server_url = 'https://' + domain_map[category]
 
     product_id = parse_data.get_product_id(product_url)
 
     logger.info(f"Going to Details page for PID {product_id}")
-
-    obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
-
-    if obj is None:
-        logger.critical(f"Row with PID {product_id} doesn't exist in ProductListing. Returning....")
-        return {}
         
     response = my_proxy.get(server_url)
     setattr(my_proxy, 'category', category)
@@ -158,74 +142,40 @@ def scrape_product_detail(category, product_url):
 
 
 def process_archived_pids(category):
-    global db_session
-    
-    pids = cache.smembers(f"ARCHIVED_PRODUCTS_{category}")
-    for pid in pids:
-        pid = pid.decode()
-        instance = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == pid).first()
-        if not instance:
-            logger.warning(f"PID {pid} not in ProductListing. Skipping this product")
-            continue
+    global multithreading
+    from sqlalchemy import asc, desc
+    global credentials
 
-        url = instance.product_url
-        logger.info(f"Scraping Details for: {instance.short_title}")
+    _, SessionFactory = db_manager.connect_to_db(config('DB_NAME'), credentials)
+
+    info = {}
+
+    with db_manager.session_scope(SessionFactory) as session:
+        queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False).order_by(asc('category'))
+        logger.info(f"Found {queryset.count()} inactive products totally")
+        for instance in queryset:
+            info[instance.product_id] = instance.product_url
+
+    
+    for pid in info:
+        url = info[pid]
+        logger.info(f"Scraping Details for: {pid}")
         try:
             scrape_product_detail(category, url)
-            logger.info(f"Finished details for this product: {instance.product_id}")
+            logger.info(f"Finished details for this product: {pid}")
         except Exception as ex:
             traceback.print_exc()
-            logger.critical(f"Exception when fetching Product Details for PID {instance.product_id}: {ex}")
+            logger.critical(f"Exception when fetching Product Details for PID {pid}: {ex}")
     
     logger.info(f"Finished fetching archived products for Category: {category}")
 
 
-def find_archived_products(session, categories=[], table='ProductListing'):
-    from sqlalchemy import asc, desc
-    global cache, cache_file
-    
-    _table = db_manager.table_map[table]
-
-    queryset = session.query(_table).order_by(asc('category')).order_by(asc('short_title')).order_by(asc('duplicate_set')).order_by(desc('total_ratings'))
-
-    prev = None
-
-    count = 0
-
-    with SqliteDict(cache_file, autocommit=True) as mydict:
-        # Take a backup
-        for category in categories:
-            mydict[f"ARCHIVED_PRODUCTS_{category}"] = set()
-            for pid in cache.smembers(f"ARCHIVED_PRODUCTS_{category}"):
-                _pid = pid.decode()
-                cache.sadd(f"ARCHIVED_PRODUCTS_{category}_BACKUP", _pid)
-                mydict[f"ARCHIVED_PRODUCTS_{category}"].add(_pid)
-    
-    for category in categories:
-        # Delete the current ones
-        cache.delete(f"ARCHIVED_PRODUCTS_{category}")
-    
-    for instance in queryset:
-        if prev is None:
-            prev = instance
-            continue
-        
-        if prev.category == instance.category and ((prev.duplicate_set != instance.duplicate_set and prev.short_title == instance.short_title) or (prev.duplicate_set == instance.duplicate_set and ((prev.short_title != instance.short_title) or (prev.total_ratings != instance.total_ratings)))):
-            # Possibly an archived product
-            # Constraint: price(prev) >= price(curr), so prev is more recent
-            cache.sadd(f"ARCHIVED_PRODUCTS_{instance.category}", instance.product_id)
-            count += 1
-            continue
-
-        prev = instance
-        continue
-
-    logger.info(f"Found {count} archived products totally")
-
-
 def update_archive_listing(session, category, table='ProductListing'):
     from sqlalchemy import asc, desc
-    global cache, db_session, cache_file
+    global cache, cache_file
+    global credentials
+
+    _, Session = db_manager.connect_to_db(config('DB_NAME'), credentials)
 
     _table = db_manager.table_map[table]
 
@@ -236,37 +186,33 @@ def update_archive_listing(session, category, table='ProductListing'):
     archived_pids = [pid.decode() for pid in archived_pids]
 
     with SqliteDict(cache_file, autocommit=False) as mydict:
-        for pid in archived_pids:
-            instance = db_session.query(_table).filter(_table.product_id == pid).first()
-            if instance is None:
-                logger.warning(f"For PID {pid}, no such instance in {table}")
-                continue
+        with db_manager.session_scope(Session) as session:
+            for pid in archived_pids:
+                instance = session.query(_table).filter(_table.product_id == pid).first()
+                if instance is None:
+                    logger.warning(f"For PID {pid}, no such instance in {table}")
+                    continue
 
-            detail = mydict.get(f"ARCHIVED_DETAILS_{pid}")
+                detail = mydict.get(f"ARCHIVED_DETAILS_{pid}")
 
-            if detail is None:
-                logger.warning(f"For PID {pid}, no such detail info in cache")
-                continue
+                if detail is None:
+                    logger.warning(f"For PID {pid}, no such detail info in cache")
+                    continue
 
-            for field in required_details:
-                if field == "num_reviews" and detail.get('num_reviews') is not None:
-                    num_reviews = int(detail[field].split()[0].replace(',', '').replace('.', ''))
-                    if hasattr(instance, "total_ratings"):
-                        setattr(instance, "total_ratings", num_reviews)
-                elif field == "curr_price" and detail.get('curr_price') is not None:
-                    price = float(detail[field].replace(',', ''))
-                    if hasattr(instance, "price"):
-                        setattr(instance, "price", price)
-                elif field == "avg_rating" and detail.get('avg_rating') is not None and isinstance(detail.get('avg_rating'), float):
-                    avg_rating = detail['avg_rating']
-                    if hasattr(instance, "avg_rating"):
-                        setattr(instance, "avg_rating", avg_rating)
-        
-            try:
-                db_session.commit()
-            except Exception as ex:
-                db_session.rollback()
-                logger.critical(f"Error when trying to commit the session for PID {pid}: {ex}")
+                for field in required_details:
+                    if field == "num_reviews" and detail.get('num_reviews') is not None:
+                        num_reviews = int(detail[field].split()[0].replace(',', '').replace('.', ''))
+                        if hasattr(instance, "total_ratings"):
+                            setattr(instance, "total_ratings", num_reviews)
+                    elif field == "curr_price" and detail.get('curr_price') is not None:
+                        price = float(detail[field].replace(',', ''))
+                        if hasattr(instance, "price"):
+                            setattr(instance, "price", price)
+                    elif field == "avg_rating" and detail.get('avg_rating') is not None and isinstance(detail.get('avg_rating'), float):
+                        avg_rating = detail['avg_rating']
+                        if hasattr(instance, "avg_rating"):
+                            setattr(instance, "avg_rating", avg_rating)
+                session.add(instance)
     
     logger.info(f"Updated Archive Products for category: {category}")
 

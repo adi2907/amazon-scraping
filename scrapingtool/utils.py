@@ -33,6 +33,15 @@ old_listing_templates = [
 listing_categories = ['smartphones', 'headphones', 'ceiling fan', 'refrigerator', 'washing machine']
 #listing_categories = ['headphones']
 
+category_to_domain = {
+    'smartphones': 'amazon.in',
+    'headphones': 'amazon.in',
+    'ceiling fan': 'amazon.in',
+    'refrigerator': 'amazon.in',
+    'washing machine': 'amazon.in',
+    'hair color': 'amazon.com'
+}
+
 domain_map = {
     'amazon.in': {
         'smartphones': Template('https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A976419031%2Cn%3A1389401031%2Cn%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031&dc&qid=1597812891&rnid=976420031&ref=sr_nr_n_$PAGE_NUM'),

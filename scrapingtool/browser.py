@@ -51,8 +51,6 @@ def run_category(browser='Firefox'):
         driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
     
     from sqlalchemy.orm import sessionmaker
-
-    active_products = set()
     
     try:
         for domain in domain_map:
@@ -62,9 +60,7 @@ def run_category(browser='Firefox'):
             server_url = f'https://www.{domain}'
             
             try:
-                engine = db_manager.connect_to_db(domain_to_db[domain], connection_params)
-                Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
-                session = Session()
+                engine, Session = db_manager.connect_to_db(domain_to_db[domain], connection_params)
                 engine.execute(f"UPDATE ProductListing SET is_active = False")
             except Exception as ex:
                 traceback.print_exc()
@@ -73,8 +69,6 @@ def run_category(browser='Firefox'):
             try:
 
                 assert len(listing_categories) == len(listing_templates)
-
-                break_flag = False
 
                 for category, template in domain_map[domain].items():
                     url = template.substitute(PAGE_NUM=1)
@@ -109,35 +103,15 @@ def run_category(browser='Firefox'):
                             page_results = dict()
                             page_results[category] = dict()
                             page_results[category][curr] = product_info
-                            status = db_manager.insert_product_listing(session, page_results, domain=domain)
-
-                            try:
-                                for category in page_results:
-                                    for page_num in page_results[category]:
-                                        for title in page_results[category][page_num]:
-                                            pid = page_results[category][page_num][title]['product_id']
-                                            '''
-                                            if pid in active_products:
-                                                logger.info(f"Already got this PID {pid}. Stopping this category {category}...")
-                                                break_flag = True
-                                                break
-                                            else:
-                                            '''
-                                            active_products.add(pid)
-                                        if break_flag == True:
-                                            break
-                                    if break_flag == True:
-                                        break
-                            except Exception as ex:
-                                logger.critical(f"Error when adding to set: {ex}")
                             
-                            if break_flag == True:
-                                break
+                            with db_manager.session_scope(Session) as _session:
+                                status = db_manager.insert_product_listing(_session, page_results, domain=domain)
 
                             if not status:
                                 logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
 
-                            status = db_manager.insert_daily_product_listing(session, page_results)
+                            with db_manager.session_scope(Session) as _session:
+                                status = db_manager.insert_daily_product_listing(_session, page_results)
 
                             if not status:
                                 logger.warning(f"Error while inserting DAILY LISTING Page {curr} of category - {category}")
@@ -208,13 +182,13 @@ def run_category(browser='Firefox'):
                 logger.info(f"Updating duplicate indices...")
                 # Update set indexes
                 try:
-                    db_manager.update_duplicate_set(session, table='ProductListing', insert=True)
-                    logger.info("Updated indexes!")
+                    with db_manager.session_scope(Session) as _session:
+                        db_manager.update_duplicate_set(_session, table='ProductListing', insert=True)
+                        logger.info("Updated indexes!")
                 except Exception as ex:
                     logger.critical(f"Error when updating listing indexes: {ex}")
                 
                 try:
-                    session.close()
                     db_manager.close_all_db_connections(engine, Session)
                 except Exception as ex:
                     logger.critical(f"Error when trying to close all sessions: {ex}")
@@ -360,15 +334,10 @@ def insert_category_to_db(category, domain='all'):
                 continue
         try:
             try:
-                engine = db_manager.connect_to_db(domain_to_db[_domain], connection_params)
-                Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
-                session = Session()
+                engine, Session = db_manager.connect_to_db(domain_to_db[_domain], connection_params)
             except Exception as ex:
                 traceback.print_exc()
                 logger.critical(f"Error during initiation session: {ex}")
-            
-            Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
-            session = Session()
 
             for category, _ in domain_map[domain].items():
 
@@ -395,14 +364,14 @@ def insert_category_to_db(category, domain='all'):
                     #    print(page_results)
                     #continue
 
-                    status = db_manager.insert_product_listing(session, page_results, domain=_domain)
+                    with db_manager.session_scope(Session) as session:
+                        status = db_manager.insert_product_listing(session, page_results, domain=_domain)
 
                     if not status:
                         print(f"Error while inserting Page {idx + 1} of category - {category}")
                         continue
         finally:
             try:
-                session.close()
                 db_manager.close_all_db_connections(engine, Session)
             except Exception as ex:
                 logger.critical(f"Error when trying to close all sessions: {ex}")
