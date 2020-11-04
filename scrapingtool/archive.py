@@ -240,7 +240,8 @@ if __name__ == '__main__':
     if _find_archived_products == True:
         if _categories is None:
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
-        find_archived_products(db_session, categories=_categories)
+        for category in _categories:
+            process_archived_pids(category=category)
     if _process_archived_pids == True:
         if _categories is None:
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
