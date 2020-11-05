@@ -17,7 +17,7 @@ def fetch_instances(ec2, filters=[]):
         print(instance.id, instance.instance_type)
 
 
-def pretty_print(ec2):
+def pretty_print_instances(ec2):
     for i in ec2.instances.all():
 
         print("Id: {0}\tState: {1}\tLaunched: {2}\tRoot Device Name: {3}".format(
@@ -96,11 +96,16 @@ def pretty_print(ec2):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--fetch_instances', help='Fetch all instances', default=False, action='store_true')
+    parser.add_argument('--pretty_print_instances', help='Pretty Print all instances', default=False, action='store_true')
 
     args = parser.parse_args()
 
     _fetch_instances = args.fetch_instances
+    _pretty_print_instances = args.pretty_print_instances
 
     if _fetch_instances == True:
         _, ec2 = start_session()
         fetch_instances(ec2)
+    if _pretty_print_instances == True:
+        _, ec2 = start_session()
+        pretty_print_instances(ec2)
