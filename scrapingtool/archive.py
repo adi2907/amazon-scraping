@@ -148,17 +148,19 @@ def process_archived_pids(category, top_n=None):
 
     _, SessionFactory = db_manager.connect_to_db(config('DB_NAME'), credentials)
 
+    _info = OrderedDict()
     info = OrderedDict()
 
     with db_manager.session_scope(SessionFactory) as session:
         queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == category).order_by(asc('category')).order_by(desc('total_ratings'))
         logger.info(f"Found {queryset.count()} inactive products totally")
         for instance in queryset:
-            info[instance.product_id] = instance.product_url
+            _info[instance.product_id] = instance.product_url
 
-    for idx, pid in enumerate(info):
+    for idx, pid in enumerate(_info):
         if top_n is not None and idx >= top_n:
             break
+        info[pid] = _info[pid]
 
     for pid in info:
         url = info[pid]
