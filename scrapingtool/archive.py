@@ -1,6 +1,7 @@
 import argparse
 import random
 import signal
+import requests
 import sys
 import time
 import traceback
@@ -15,7 +16,7 @@ import cache
 import db_manager
 import parse_data
 import proxy
-from utils import create_logger, domain_map, domain_to_db
+from utils import create_logger, domain_map, domain_to_db, category_to_domain
 
 logger = create_logger('fetch_archived')
 
@@ -62,11 +63,9 @@ logger.info(f"ultra_fast is {ultra_fast}")
 my_proxy = proxy.Proxy(OS=OS)
 
 try:
-    my_proxy.change_identity()
+    use_tor = config('USE_TOR', cast=bool)
 except:
-    logger.warning('No Proxy available via Tor relay. Mode = Normal')
-    logger.newline()
-    my_proxy = None
+    use_tor = False
 
 last_product_detail = False
 terminate = False
@@ -91,7 +90,7 @@ def exit_gracefully(signum, frame):
         logger.info("Exiting Immediately...")
         sys.exit(1)
 
-    # restore the exit gracefully handler here    
+    # restore the exit gracefully handler here
     signal.signal(signal.SIGINT, exit_gracefully)
 
 
@@ -99,7 +98,7 @@ def scrape_product_detail(category, product_url):
     global my_proxy
     global cache, cache_file
     # session = requests.Session()
-    server_url = 'https://' + domain_map[category]
+    server_url = 'https://' + category_to_domain[category]
 
     product_id = parse_data.get_product_id(product_url)
 
@@ -135,28 +134,32 @@ def scrape_product_detail(category, product_url):
             my_proxy.goto_product_listing(category)
 
     details['product_id'] = product_id # Add the product ID
-    
+
     # Store to cache first
     with SqliteDict(cache_file, autocommit=True) as mydict:
         mydict[f"ARCHIVED_DETAILS_{product_id}"] = details
 
 
-def process_archived_pids(category):
+def process_archived_pids(category, top_n=None):
     global multithreading
     from sqlalchemy import asc, desc
+    from collections import OrderedDict
     global credentials
 
     _, SessionFactory = db_manager.connect_to_db(config('DB_NAME'), credentials)
 
-    info = {}
+    info = OrderedDict()
 
     with db_manager.session_scope(SessionFactory) as session:
-        queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False).order_by(asc('category'))
+        queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == category).order_by(asc('category')).order_by(desc('total_ratings'))
         logger.info(f"Found {queryset.count()} inactive products totally")
         for instance in queryset:
             info[instance.product_id] = instance.product_url
 
-    
+    for idx, pid in enumerate(info):
+        if top_n is not None and idx >= top_n:
+            break
+
     for pid in info:
         url = info[pid]
         logger.info(f"Scraping Details for: {pid}")
@@ -166,7 +169,7 @@ def process_archived_pids(category):
         except Exception as ex:
             traceback.print_exc()
             logger.critical(f"Exception when fetching Product Details for PID {pid}: {ex}")
-    
+
     logger.info(f"Finished fetching archived products for Category: {category}")
 
 
@@ -213,7 +216,7 @@ def update_archive_listing(category, table='ProductListing'):
                         if hasattr(instance, "avg_rating"):
                             setattr(instance, "avg_rating", avg_rating)
                 session.add(instance)
-    
+
     logger.info(f"Updated Archive Products for category: {category}")
 
 
