@@ -227,6 +227,7 @@ if __name__ == '__main__':
     parser.add_argument('--find_archived_products', help='Find all archived products from existing ones on Product Listing', default=False, action='store_true')
     parser.add_argument('--process_archived_pids', help='Fetch Product Details of potentially Archived Products', default=False, action='store_true')
     parser.add_argument('--update_archive_listing', help='Updated Product Listing of Archived Products', default=False, action='store_true')
+    parser.add_argument('--top_n', help='Get only the Top N SKUs', default=None, type=int)
 
     args = parser.parse_args()
 
@@ -234,6 +235,7 @@ if __name__ == '__main__':
     _find_archived_products = args.find_archived_products
     _process_archived_pids = args.process_archived_pids
     _update_archive_listing = args.update_archive_listing
+    _top_n = args.top_n
 
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
@@ -244,12 +246,12 @@ if __name__ == '__main__':
         if _categories is None:
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
         for category in _categories:
-            process_archived_pids(category=category)
+            process_archived_pids(category=category, top_n=_top_n)
     if _process_archived_pids == True:
         if _categories is None:
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
         for category in _categories:
-            process_archived_pids(category)
+            process_archived_pids(category, top_n=_top_n)
             time.sleep(120)
     if _update_archive_listing == True:
         if _categories is None:
