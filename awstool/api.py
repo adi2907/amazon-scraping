@@ -126,6 +126,11 @@ def create_instance(ec2, security_group_id, key_pair='medium_keypair', volume_si
     return response
 
 
+def stop_instances(ec2, instance_ids):
+    response = ec2.instances.filter(InstanceIds=instance_ids).terminate()
+    return response
+
+
 def terminate_instances(ec2, instance_ids):
     response = ec2.instances.filter(InstanceIds=instance_ids).terminate()
     return response
@@ -136,7 +141,8 @@ if __name__ == '__main__':
     parser.add_argument('--fetch_instances', help='Fetch all instances', default=False, action='store_true')
     parser.add_argument('--pretty_print_instances', help='Pretty Print all instances', default=False, action='store_true')
     parser.add_argument('--create_instance', help='Creates a new EC2 instance', default=False, action='store_true')
-    parser.add_argument('--terminate_instance', help='Terminates an EC2 instance', default=False, action='store_true')
+    parser.add_argument('--stop_instances', help='Stops EC2 instances', default=False, action='store_true')
+    parser.add_argument('--terminate_instances', help='Terminates EC2 instances', default=False, action='store_true')
 
     parser.add_argument('--instance_ids', help='List of EC2 instance ids', default=None, type=lambda s: [item.strip() for item in s.split(',')])
 
@@ -145,7 +151,8 @@ if __name__ == '__main__':
     _fetch_instances = args.fetch_instances
     _pretty_print_instances = args.pretty_print_instances
     _create_instance = args.create_instance
-    _terminate_instance = args.terminate_instance
+    _stop_instances = args.stop_instances
+    _terminate_instances = args.terminate_instances
     _instance_ids = args.instance_ids
 
     if _fetch_instances == True:
@@ -158,10 +165,17 @@ if __name__ == '__main__':
         _, ec2 = start_session()
         response = create_instance(ec2, config('SECURITY_GROUP_ID'), key_pair=config('KEY_PAIR_NAME'), volume_size=64, image_id=config('INSTANCE_AMI'), num_instances=1)
         print(f"{response}")
-    if _terminate_instance == True:
+    if _terminate_instances == True:
         if _instance_ids in [None, []]:
             raise ValueError(f"Must send a list of Instance IDs to terminate")
         _, ec2 = start_session()
         response = terminate_instances(ec2, _instance_ids)
         print(f"{response}")
-        print(f"Terminated instance!")
+        print(f"Terminated instances!")
+    if _stop_instances == True:
+        if _instance_ids in [None, []]:
+            raise ValueError(f"Must send a list of Instance IDs to stop")
+        _, ec2 = start_session()
+        response = stop_instances(ec2, _instance_ids)
+        print(f"{response}")
+        print(f"Stopped instances!")
