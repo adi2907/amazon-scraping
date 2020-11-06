@@ -162,7 +162,7 @@ def sentiment_analysis(category):
     df = pd.read_csv(CLEANED_UP_FILE, sep=",", encoding="utf-8")
     keywords = preprocess(category)
     nlp = load_model()
-    aspect_based_sa(nlp, keywords, 'Very good sound quality', category)
+    # aspect_based_sa(nlp, keywords, 'Very good sound quality', category)
     analyse(df, nlp, keywords, category)
 
 
