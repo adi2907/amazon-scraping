@@ -127,7 +127,7 @@ def create_instance(ec2, security_group_id, key_pair='medium_keypair', volume_si
 
 
 def stop_instances(ec2, instance_ids):
-    response = ec2.instances.filter(InstanceIds=instance_ids).terminate()
+    response = ec2.instances.filter(InstanceIds=instance_ids).stop()
     return response
 
 
