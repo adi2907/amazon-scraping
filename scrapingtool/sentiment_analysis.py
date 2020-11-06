@@ -220,20 +220,22 @@ if __name__ == '__main__':
 
     if category is not None:
         if month is None or year is None:
-            raise ValueError(f"Need to specify --month and --year")
-        try:
-            DB_USER = config('DB_USER')
-            DB_PASSWORD = config('DB_PASSWORD')
-            DB_PORT = config('DB_PORT')
-            DB_NAME = config('DB_NAME')
-            DB_SERVER = config('DB_SERVER')
-            DB_TYPE = config('DB_TYPE')
-            engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
-        except:
-            DB_TYPE = 'sqlite'
-            engine = db_manager.Database(dbtype=DB_TYPE).db_engine
-        # Fetch
-        fetch_category_info(engine, category, month, year)
+            pass
+            # raise ValueError(f"Need to specify --month and --year")
+        else:
+            try:
+                DB_USER = config('DB_USER')
+                DB_PASSWORD = config('DB_PASSWORD')
+                DB_PORT = config('DB_PORT')
+                DB_NAME = config('DB_NAME')
+                DB_SERVER = config('DB_SERVER')
+                DB_TYPE = config('DB_TYPE')
+                engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
+            except:
+                DB_TYPE = 'sqlite'
+                engine = db_manager.Database(dbtype=DB_TYPE).db_engine
+            # Fetch
+            fetch_category_info(engine, category, month, year)
     else:
         raise ValueError(f"Need to specify --category argument")
 
