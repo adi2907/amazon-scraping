@@ -104,7 +104,7 @@ def create_instance(ec2, security_group_id, volume_size=64, image_id='ami-0cda37
         num_instances
         security_group_id (Necessary)
     '''
-    ec2.create_instances(ImageId=image_id, MinCount=1, MaxCount=num_instances, InstanceType=instance_type,
+    response = ec2.create_instances(ImageId=image_id, MinCount=1, MaxCount=num_instances, InstanceType=instance_type,
         BlockDeviceMappings=[
             {
                 'DeviceName': '/dev/xvda',
@@ -115,10 +115,6 @@ def create_instance(ec2, security_group_id, volume_size=64, image_id='ami-0cda37
                 },
             },
         ],
-        ImageId=image_id,
-        InstanceType=instance_type,
-        MaxCount=1,
-        MinCount=1,
         Monitoring={
             'Enabled': False
         },
