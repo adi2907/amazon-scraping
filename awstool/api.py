@@ -97,7 +97,7 @@ def pretty_print_instances(ec2):
         print("--------------------")
 
 
-def create_instance(ec2, security_group_id, volume_size=64, image_id='ami-0cda377a1b884a1bc', instance_type='t2.medium', num_instances=1):
+def create_instance(ec2, security_group_id, key_pair='medium_keypair', volume_size=64, image_id='ami-0cda377a1b884a1bc', instance_type='t2.medium', num_instances=1):
     '''
         volume_size (GB)
         instance_type
@@ -105,6 +105,7 @@ def create_instance(ec2, security_group_id, volume_size=64, image_id='ami-0cda37
         security_group_id (Necessary)
     '''
     response = ec2.create_instances(ImageId=image_id, MinCount=1, MaxCount=num_instances, InstanceType=instance_type,
+        KeyName=key_pair,
         BlockDeviceMappings=[
             {
                 'DeviceName': '/dev/xvda',
@@ -145,5 +146,5 @@ if __name__ == '__main__':
         pretty_print_instances(ec2)
     if _create_instance == True:
         _, ec2 = start_session()
-        response = create_instance(ec2, config('SECURITY_GROUP_ID'), volume_size=64, image_id=config('INSTANCE_AMI'), num_instances=1)
+        response = create_instance(ec2, config('SECURITY_GROUP_ID'), key_pair=config('KEY_PAIR_NAME'), volume_size=64, image_id=config('INSTANCE_AMI'), num_instances=1)
         print(f"{response}")
