@@ -159,11 +159,11 @@ def clean_up_reviews(category):
 
 
 def sentiment_analysis(category):
-    #df = pd.read_csv(CLEANED_UP_FILE, sep=",", encoding="utf-8")
+    df = pd.read_csv(CLEANED_UP_FILE, sep=",", encoding="utf-8")
     keywords = preprocess(category)
     nlp = load_model()
     aspect_based_sa(nlp, keywords, 'Very good sound quality', category)
-    #analyse(df, nlp, keywords, category)
+    analyse(df, nlp, keywords, category)
 
 
 def fetch_category_info(engine, category, month, year):
