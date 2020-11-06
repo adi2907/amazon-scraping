@@ -1,4 +1,5 @@
 import argparse
+import csv
 import glob
 import os
 import pickle
@@ -7,15 +8,8 @@ import time
 from datetime import datetime
 
 import pandas as pd
-import spacy
+import stanza
 from decouple import config
-from spacy.matcher import PhraseMatcher
-from transformers import pipeline
-
-try:
-    import en_core_web_sm
-except ImportError:
-    raise ValueError(f"Please download the English CNN model using 'python -m spacy download en_core_web_sm'")
 
 import db_manager
 
@@ -27,11 +21,6 @@ CLEANED_UP_FILE = 'Preprocessed.csv'
 
 OUTPUT_FILE = 'sentiments'
 
-try:
-    sentiment_classifier = pipeline('sentiment-analysis')
-    nlp = en_core_web_sm.load()
-except:
-    print(f"Warning: Please install PyTorch / Tensorflow. Crucial features won't work")
 
 def preprocess_reviews(category):
     df = pd.read_csv(REVIEWS_FILE, sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
@@ -39,52 +28,44 @@ def preprocess_reviews(category):
     return df
 
 
+def load_model(download=False):
+    if download == True:
+        stanza.download('en')    
+    nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment')
+    return nlp
+
+
+def aspect_based_sa(nlp, keywords, review, category):
+    aspect_dict = {}
+    param_list = []
+    head_list = [_list[1:] for _list in keywords if _list[0]==category]
+    for _list in head_list:
+        param_list.append([x for x in _list if x])
+    doc = nlp(review)
+    for sentence in doc.sentences:
+        for _list in param_list:
+            for element in _list:
+                if element in sentence.text:
+                    if sentence.sentiment != 1:
+                        aspect = _list[0]
+                        aspect_dict[aspect]=("positive" if sentence.sentiment>1 else "negative")
+    return aspect_dict
+
+
 def preprocess(category):
-  # nlp = spacy.load("en_core_web_sm")
-  category_str = category+'.*'
-  keyword_dict = pd.read_csv(PARAMETERS_FILE).filter(regex=category_str)
-
-  # Remove the super category from the header
-  new_header = keyword_dict.iloc[0]
-
-  keyword_dict=keyword_dict[1:]
-  keyword_dict.columns = new_header
-  header_list=list(keyword_dict.iloc[0])
-  return keyword_dict, header_list
+    # Read parameters file
+    with open(PARAMETERS_FILE) as f:
+        reader=csv.reader(f)
+        data = list(reader)
+    return data
 
 
-def aspect_based_sa(review, keyword_dict, header_list):
-    try:
-      #Create Spacy matcher with list of synonmys for aspects
-      matcher = PhraseMatcher(nlp.vocab)
-      for word in header_list:
-        synonym_list = [nlp(text) for text in keyword_dict[word].dropna(axis = 0)]
-        matcher.add(word, None, *synonym_list)
-      #Break review into sentences and analyse sentiment on each
-      absa_dict = {}
-
-      doc = nlp(review)
-      for sentence in doc.sents:
-        matches = matcher(nlp(sentence.text))
-        for match_id, start, end in matches:
-            aspect = nlp.vocab.strings[match_id]
-            sent_id = sentiment_classifier(sentence.text)[0]
-            sentiment = 1 if sent_id['label'] == 'POSITIVE' else -1
-            score = sent_id['score']
-            if score > 0.7:
-              absa_dict[aspect] = sentiment
-    except Exception as ex:
-        print(ex)
-        return {"NaN": True}
-    return absa_dict
-
-
-def analyse(df, keyword_dict, header_list):
+def analyse(df, nlp, keywords, category):
     sentiments = []
     idx = 0
 
     for i in range(0, df.count()['body']):
-        if df['category'][i] != "headphones":
+        if df['category'][i] != category:
             sentiments.append({'id': i})
             continue
 
@@ -92,8 +73,10 @@ def analyse(df, keyword_dict, header_list):
         _id = df['id'][idx]
         product_id = df['product_id'][idx]
 
+        # nlp, keywords, review, category
+
         if isinstance(df['body'][idx], str):
-            sentiments.append({'id': i, **aspect_based_sa(df['body'][idx], keyword_dict, header_list)})
+            sentiments.append({'id': i, **aspect_based_sa(nlp, keywords, review, category)})
         else:
             sentiments.append({'id': i})
 
@@ -176,9 +159,11 @@ def clean_up_reviews(category):
 
 
 def sentiment_analysis(category):
-    df = pd.read_csv(CLEANED_UP_FILE, sep=",", encoding="utf-8")
-    a, b = preprocess(category)
-    analyse(df, a, b)
+    #df = pd.read_csv(CLEANED_UP_FILE, sep=",", encoding="utf-8")
+    keywords = preprocess(category)
+    nlp = load_model()
+    aspect_based_sa(nlp, keywords, 'Very good sound quality', category)
+    #analyse(df, nlp, keywords, category)
 
 
 def fetch_category_info(engine, category, month, year):
