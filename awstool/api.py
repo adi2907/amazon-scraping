@@ -1,6 +1,7 @@
 import argparse
 
 import boto3
+from decouple import config
 from termcolor import colored
 
 
@@ -96,15 +97,50 @@ def pretty_print_instances(ec2):
         print("--------------------")
 
 
+def create_instance(ec2, security_group_id, volume_size=64, image_id='ami-0cda377a1b884a1bc', instance_type='t2.medium', num_instances=1):
+    '''
+        volume_size (GB)
+        instance_type
+        num_instances
+        security_group_id (Necessary)
+    '''
+    ec2.create_instances(ImageId=config('INSTANCE_IMAGE_ID'), MinCount=1, MaxCount=num_instances)
+    response = ec2.run_instances(
+        BlockDeviceMappings=[
+            {
+                'DeviceName': '/dev/xvda',
+                'Ebs': {
+                    'DeleteOnTermination': True,
+                    'VolumeSize': volume_size,
+                    'VolumeType': 'gp2'
+                },
+            },
+        ],
+        ImageId=image_id,
+        InstanceType=instance_type,
+        MaxCount=1,
+        MinCount=1,
+        Monitoring={
+            'Enabled': False
+        },
+        SecurityGroupIds=[
+            security_group_id,
+        ],
+    )
+    return response
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--fetch_instances', help='Fetch all instances', default=False, action='store_true')
     parser.add_argument('--pretty_print_instances', help='Pretty Print all instances', default=False, action='store_true')
+    parser.add_argument('--create_instance', help='Creates a new EC2 instance', default=False, action='store_true')
 
     args = parser.parse_args()
 
     _fetch_instances = args.fetch_instances
     _pretty_print_instances = args.pretty_print_instances
+    _create_instance = args.create_instance
 
     if _fetch_instances == True:
         _, ec2 = start_session()
@@ -112,3 +148,7 @@ if __name__ == '__main__':
     if _pretty_print_instances == True:
         _, ec2 = start_session()
         pretty_print_instances(ec2)
+    if _create_instance == True:
+        _, ec2 = start_session()
+        response = create_instance(ec2, config('SECURITY_GROUP_ID'), volume_size=64, image_id=config('INSTANCE_AMI'), num_instances=1)
+        print(f"{response}")
