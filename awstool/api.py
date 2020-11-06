@@ -70,13 +70,16 @@ def pretty_print_instances(ec2):
                 colored(dev['Ebs']['AttachTime'], 'cyan')
             ))
 
-        print("\tTags:")
-        for idx, tag in enumerate(i.tags, start=1):
-            print("\t- [{0}] Key: {1}\tValue: {2}".format(
-                idx,
-                colored(tag['Key'], 'cyan'),
-                colored(tag['Value'], 'cyan')
-            ))
+        try:
+            print("\tTags:")
+            for idx, tag in enumerate(i.tags, start=1):
+                print("\t- [{0}] Key: {1}\tValue: {2}".format(
+                    idx,
+                    colored(tag['Key'], 'cyan'),
+                    colored(tag['Value'], 'cyan')
+                ))
+        except:
+            pass
 
         print("\tProduct codes:")
         for idx, details in enumerate(i.product_codes, start=1):
