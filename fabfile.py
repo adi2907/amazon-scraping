@@ -4,6 +4,18 @@ from decouple import config
 from fabric import SerialGroup, task
 
 
+def setup_git_ssh(conn):
+    CLONE_COMMAND = 'git clone git@github.com:almetech/python-scraping.git'
+    commands = [
+        'chmod 600 ~/.ssh/id_rsa',
+        'ssh -o StrictHostKeyChecking=no git@github.com',
+        CLONE_COMMAND,
+    ]
+    for command in commands:
+        result = conn.run(command)
+        print(result, result.exited)
+
+
 @task
 def setup(ctx):
     if not os.path.exists('active_instances.txt'):
@@ -14,8 +26,6 @@ def setup(ctx):
 
     conn_params = []
     INSTANCE_USERNAME = 'ubuntu'
-
-    CLONE_COMMAND = 'git clone git@github.com:almetech/python-scraping.git'
     
     with open('active_instances.txt', 'r') as f:
         for line in f:
@@ -38,8 +48,7 @@ def setup(ctx):
             template_key = f.read().strip()
         conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
         
-        result = conn.run(CLONE_COMMAND)
-        print(result, result.exited)
+        setup_git_ssh(conn)
         
         with open('setup.sh', 'r') as f:
             for line in f:
