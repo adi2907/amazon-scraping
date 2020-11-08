@@ -12,17 +12,18 @@ def start_session(region="ap-south-1"):
     return session, ec2
 
 
-def fetch_instances(ec2, filters=[{'Name': 'instance-state-name', 'Values': ['running']}]):
+def fetch_instances(ec2, filters=[{'Name': 'instance-state-name', 'Values': ['running']}], default=True):
     instances = ec2.instances.filter(Filters=filters)
     active_instances = []
 
     for instance in instances:
         active_instances.append(instance.public_dns_name)
         print(instance.id, instance.instance_type, instance.state['Name'], instance.public_dns_name)
-    
-    with open(os.path.join(os.getcwd(), 'active_instances.txt'), 'w') as f:
-        for public_dns in active_instances:
-            f.write(public_dns + '\n')
+
+    if default == False:    
+        with open(os.path.join(os.getcwd(), 'active_instances.txt'), 'w') as f:
+            for public_dns in active_instances:
+                f.write(public_dns + '\n')
 
 
 def pretty_print_instances(ec2):
@@ -151,7 +152,7 @@ def get_created_instance_details(ec2):
         for line in f:
             _ids.append(line.strip())
     
-    return fetch_instances(ec2, filters=[{'Name': 'instance-id', 'Values': _ids}])
+    return fetch_instances(ec2, filters=[{'Name': 'instance-id', 'Values': _ids}], default=False)
 
 
 def stop_instances(ec2, instance_ids):
