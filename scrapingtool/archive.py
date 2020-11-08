@@ -1,12 +1,13 @@
 import argparse
+import concurrent.futures
 import random
 import signal
-import requests
 import sys
 import time
 import traceback
 from datetime import datetime
 
+import requests
 from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -16,7 +17,7 @@ import cache
 import db_manager
 import parse_data
 import proxy
-from utils import create_logger, domain_map, domain_to_db, category_to_domain
+from utils import category_to_domain, create_logger, domain_map, domain_to_db
 
 logger = create_logger('fetch_archived')
 
@@ -94,56 +95,68 @@ def exit_gracefully(signum, frame):
     signal.signal(signal.SIGINT, exit_gracefully)
 
 
-def scrape_product_detail(category, product_url):
+def scrape_product_detail(category, product_urls):
     global my_proxy
     global cache, cache_file
     # session = requests.Session()
     server_url = 'https://' + category_to_domain[category]
 
-    product_id = parse_data.get_product_id(product_url)
-
-    logger.info(f"Going to Details page for PID {product_id}")
-        
-    response = my_proxy.get(server_url)
-    setattr(my_proxy, 'category', category)
+    if not isinstance(product_urls, list):
+        product_urls = [product_urls]
     
-    assert response.status_code == 200
-    cookies = dict(response.cookies)
-    time.sleep(3)
+    _, SessionFactory = db_manager.connect_to_db(config('DB_NAME'), credentials)
 
-    while True:
-        response = my_proxy.get(server_url + product_url, product_url=product_url)
+    for product_url in product_urls:
+        product_id = parse_data.get_product_id(product_url)
+
+        logger.info(f"Going to Details page for PID {product_id}")
+            
+        response = my_proxy.get(server_url)
+        setattr(my_proxy, 'category', category)
         
-        if hasattr(response, 'cookies'):
-            cookies = {**cookies, **dict(response.cookies)}
+        assert response.status_code == 200
+        cookies = dict(response.cookies)
+        time.sleep(3)
+
+        while True:
+            response = my_proxy.get(server_url + product_url, product_url=product_url)
+            
+            if hasattr(response, 'cookies'):
+                cookies = {**cookies, **dict(response.cookies)}
+            
+            time.sleep(3) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
+            html = response.content
+            
+            soup = BeautifulSoup(html, 'lxml')
+            
+            # Get the product details
+            try:
+                details = parse_data.get_product_data(soup, html=html)
+                break
+            except ValueError:
+                logger.warning(f"Written html to {category}_{product_url}.html")
+                logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
+                logger.warning("Trying again...")
+                time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
+                my_proxy.goto_product_listing(category)
+
+        details['product_id'] = product_id # Add the product ID
+
+        # Store to cache first
+        with SqliteDict(cache_file, autocommit=True) as mydict:
+            mydict[f"ARCHIVED_DETAILS_{product_id}"] = details
         
-        time.sleep(3) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-        html = response.content
-        
-        soup = BeautifulSoup(html, 'lxml')
-        
-        # Get the product details
-        try:
-            details = parse_data.get_product_data(soup, html=html)
-            break
-        except ValueError:
-            logger.warning(f"Written html to {category}_{product_url}.html")
-            logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
-            logger.warning("Trying again...")
-            time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-            my_proxy.goto_product_listing(category)
-
-    details['product_id'] = product_id # Add the product ID
-
-    # Store to cache first
-    with SqliteDict(cache_file, autocommit=True) as mydict:
-        mydict[f"ARCHIVED_DETAILS_{product_id}"] = details
+        with db_manager.session_scope(SessionFactory) as session:
+            instance = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == product_id).first()
+            instance.date_completed = datetime.now()
+            session.add(instance)
 
 
-def process_archived_pids(category, top_n=None, instance_id=None, num_instances=None):
+def process_archived_pids(category, top_n=None, instance_id=None, num_instances=None, num_threads=5):
     global multithreading
-    from sqlalchemy import asc, desc
     from collections import OrderedDict
+
+    from sqlalchemy import asc, desc
     global cache_file
     global credentials
 
@@ -173,28 +186,39 @@ def process_archived_pids(category, top_n=None, instance_id=None, num_instances=
             if idx >= (num_ids * instance_id) and idx < (num_ids * (instance_id + 1)):
                 info[pid] = _info[pid]
 
-    for pid in info:
-        url = info[pid]
-        logger.info(f"Scraping Details for: {pid}")
-        try:
-            scrape_product_detail(category, url)
-            logger.info(f"Finished details for this product: {pid}")
+    
+    if multithreading == True and num_threads is not None and num_threads > 0:
+        urls = list(_info.values())        
+        split_urls = [urls[(i*len(urls)) // num_threads: ((i+1)*len(urls)) // num_threads] for i in range(num_threads)]
 
-            with SqliteDict(cache_file, autocommit=True) as mydict:
-                date_completed = datetime.now()
-                mydict[f"ARCHIVED_INFO_{category}"][pid] = date_completed
-        
-        except Exception as ex:
-            traceback.print_exc()
-            logger.critical(f"Exception when fetching Product Details for PID {pid}: {ex}")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+            future_to_category = {executor.submit(scrape_product_detail, category, urls): category for urls in split_urls}
 
-    for pid in info:
-        with db_manager.session_scope(SessionFactory) as session:
-            instance = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == pid).first()
-            with SqliteDict(cache_file, autocommit=True) as mydict:
-                if pid in mydict[f"ARCHIVED_INFO_{category}"]:
-                    instance.date_completed = mydict[f"ARCHIVED_INFO_{category}"][pid]
-                    session.add(instance)
+        for future in concurrent.futures.as_completed(future_to_category):
+            category = future_to_category[future]
+            try:
+                _ = future.result()
+            except Exception as exc:
+                logger.critical('%r generated an exception: %s' % (category, exc))
+                logger.critical(f"Thread {category} generated an exception {exc}")
+                logger.critical("".join(traceback.TracebackException.from_exception(exc).format()))
+            else:
+                logger.info(f"Category {category} is done!")
+    else:
+        for pid in info:
+            url = info[pid]
+            logger.info(f"Scraping Details for: {pid}")
+            try:
+                scrape_product_detail(category, url)
+                logger.info(f"Finished details for this product: {pid}")
+
+                with SqliteDict(cache_file, autocommit=True) as mydict:
+                    date_completed = datetime.now()
+                    mydict[f"ARCHIVED_INFO_{category}"][pid] = date_completed
+            
+            except Exception as ex:
+                traceback.print_exc()
+                logger.critical(f"Exception when fetching Product Details for PID {pid}: {ex}")
     
     logger.info(f"Updated date_completed!")
 
@@ -257,6 +281,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_archive_listing', help='Updated Product Listing of Archived Products', default=False, action='store_true')
     parser.add_argument('--instance_id', help='Get the instance id (from 0 to num_instances - 1)', default=None, type=int)
     parser.add_argument('--num_instances', help='Get the number of instances', default=None, type=int)
+    parser.add_argument('--num_threads', help='Get the number of worker threads to scrape the Archive Details', default=None, type=int)
     parser.add_argument('--top_n', help='Get only the Top N SKUs', default=None, type=int)
 
     args = parser.parse_args()
@@ -268,6 +293,7 @@ if __name__ == '__main__':
 
     _instance_id = args.instance_id
     _num_instances = args.num_instances
+    _num_threads = args.num_threads
     _top_n = args.top_n
 
     if _instance_id is not None or _num_instances is not None:
@@ -276,6 +302,9 @@ if __name__ == '__main__':
         if _instance_id >= _num_instances:
             raise ValueError(f"instance_d must be between 0 to num_intances - 1")
         assert _instance_id >= 0 and _instance_id < _num_instances
+    
+    if _num_threads is not None:
+        assert _num_threads > 0 and _num_threads <= 100
 
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
@@ -291,7 +320,7 @@ if __name__ == '__main__':
         if _categories is None:
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
         for category in _categories:
-            process_archived_pids(category, top_n=_top_n, instance_id=_instance_id, num_instances=_num_instances)
+            process_archived_pids(category, top_n=_top_n, instance_id=_instance_id, num_instances=_num_instances, num_threads=_num_threads)
             time.sleep(120)
     if _update_archive_listing == True:
         if _categories is None:
