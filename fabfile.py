@@ -1,9 +1,12 @@
-from decouple import config
-from fabric import SerialGroup, task
 import os
 
+from decouple import config
+from fabric import SerialGroup, task
+from fabric.api import env
+
+
 @task
-def test(ctx):
+def setup(ctx):
     if not os.path.exists('active_instances.txt'):
         raise ValueError(f"Please list the active instances on active_instances.txt. Run `python awstool/api.py --fetch_instances` to dump the currently active instances")
     
@@ -24,6 +27,7 @@ def test(ctx):
             'key_filename': config('SSH_KEY_FILE'),
         })
     ctx.CONNS = conns
+    env.forward_agent = True # Needed to ssh using git via the remote host
     for conn in ctx.CONNS:
         # Add the SSH key from `aws_key.pem` (the template permission file)
         with open('aws_private_key.pem', 'r') as f:
