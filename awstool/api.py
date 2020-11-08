@@ -140,6 +140,11 @@ def create_instance(ec2, security_group_id, key_pair='medium_keypair', volume_si
     return instances
 
 
+def reset_state():
+    os.remove('created_instance_ids.txt')
+    os.remove('active_instances.txt')
+
+
 def get_created_instance_details(ec2):
     _ids = []
     with open('created_instance_ids.txt', 'r') as f:
@@ -167,6 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('--get_created_instance_details', help='Fetch the newly create instance details', default=False, action='store_true')
     parser.add_argument('--stop_instances', help='Stops EC2 instances', default=False, action='store_true')
     parser.add_argument('--terminate_instances', help='Terminates EC2 instances', default=False, action='store_true')
+    parser.add_argument('--reset_state', help='Reset state', default=False, action='store_true')
 
     parser.add_argument('--instance_ids', help='List of EC2 instance ids', default=None, type=lambda s: [item.strip() for item in s.split(',')])
 
@@ -179,6 +185,7 @@ if __name__ == '__main__':
     _stop_instances = args.stop_instances
     _terminate_instances = args.terminate_instances
     _instance_ids = args.instance_ids
+    _reset_state = args.reset_state
 
     if _fetch_instances == True:
         _, ec2 = start_session()
@@ -208,3 +215,5 @@ if __name__ == '__main__':
         response = stop_instances(ec2, _instance_ids)
         print(f"{response}")
         print(f"Stopped instances!")
+    if _reset_state == True:
+        reset_state()
