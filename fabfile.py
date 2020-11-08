@@ -24,7 +24,7 @@ def setup(ctx):
     #    conn_params.append('ubuntu' + '@' + 'ec2-65-0-105-15.ap-south-1.compute.amazonaws.com')
 
     upgrade_response = Responder(
-        pattern=r'What would you like to do about menu.lst\?',
+        pattern=r'What would you like to do about menu\.lst\?',
         response='2\n',
     )
 
