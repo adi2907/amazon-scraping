@@ -140,11 +140,16 @@ def scrape_product_detail(category, product_url):
         mydict[f"ARCHIVED_DETAILS_{product_id}"] = details
 
 
-def process_archived_pids(category, top_n=None):
+def process_archived_pids(category, top_n=None, instance_id=None, num_instances=None):
     global multithreading
     from sqlalchemy import asc, desc
     from collections import OrderedDict
+    global cache_file
     global credentials
+
+    with SqliteDict(cache_file, autocommit=True) as mydict:
+        if f"ARCHIVED_INFO_{category}" not in mydict:
+            mydict[f"ARCHIVED_INFO_{category}"] = {}
 
     _, SessionFactory = db_manager.connect_to_db(config('DB_NAME'), credentials)
 
@@ -157,10 +162,16 @@ def process_archived_pids(category, top_n=None):
         for instance in queryset:
             _info[instance.product_id] = instance.product_url
 
-    for idx, pid in enumerate(_info):
-        if top_n is not None and idx >= top_n:
-            break
-        info[pid] = _info[pid]
+    if num_instances is None:
+        for idx, pid in enumerate(_info):
+            if top_n is not None and idx >= top_n:
+                break
+            info[pid] = _info[pid]
+    else:
+        num_ids = (len(_info.keys()) // num_instances) + 1
+        for idx, pid in enumerate(_info):
+            if idx >= (num_ids * instance_id) and idx < (num_ids * (instance_id + 1)):
+                info[pid] = _info[pid]
 
     for pid in info:
         url = info[pid]
@@ -168,9 +179,24 @@ def process_archived_pids(category, top_n=None):
         try:
             scrape_product_detail(category, url)
             logger.info(f"Finished details for this product: {pid}")
+
+            with SqliteDict(cache_file, autocommit=True) as mydict:
+                date_completed = datetime.now()
+                mydict[f"ARCHIVED_INFO_{category}"][pid] = date_completed
+        
         except Exception as ex:
             traceback.print_exc()
             logger.critical(f"Exception when fetching Product Details for PID {pid}: {ex}")
+
+    for pid in info:
+        with db_manager.session_scope(SessionFactory) as session:
+            instance = session.query(db_manager.ProductListing).filter(db_manager.product_id == pid).first()
+            with SqliteDict(cache_file, autocommit=True) as mydict:
+                if pid in mydict[f"ARCHIVED_INFO_{category}"]:
+                    instance.date_completed = mydict[f"ARCHIVED_INFO_{category}"][pid]
+                    session.add(instance)
+    
+    logger.info(f"Updated date_completed!")
 
     logger.info(f"Finished fetching archived products for Category: {category}")
 
@@ -229,6 +255,8 @@ if __name__ == '__main__':
     parser.add_argument('--find_archived_products', help='Find all archived products from existing ones on Product Listing', default=False, action='store_true')
     parser.add_argument('--process_archived_pids', help='Fetch Product Details of potentially Archived Products', default=False, action='store_true')
     parser.add_argument('--update_archive_listing', help='Updated Product Listing of Archived Products', default=False, action='store_true')
+    parser.add_argument('--instance_id', help='Get the instance id (from 0 to num_instances - 1)', default=None, type=int)
+    parser.add_argument('--num_instances', help='Get the number of instances', default=None, type=int)
     parser.add_argument('--top_n', help='Get only the Top N SKUs', default=None, type=int)
 
     args = parser.parse_args()
@@ -237,7 +265,17 @@ if __name__ == '__main__':
     _find_archived_products = args.find_archived_products
     _process_archived_pids = args.process_archived_pids
     _update_archive_listing = args.update_archive_listing
+
+    _instance_id = args.instance_id
+    _num_instances = args.num_instances
     _top_n = args.top_n
+
+    if _instance_id is not None or _num_instances is not None:
+        if _instance_id is None or _num_instances is None:
+            raise ValueError(f"Both --instance_id and --num_instances must be specified")
+        if _instance_id >= _num_instances:
+            raise ValueError(f"instance_d must be between 0 to num_intances - 1")
+        assert _instance_id >= 0 and _instance_id < _num_instances
 
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
@@ -253,7 +291,7 @@ if __name__ == '__main__':
         if _categories is None:
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
         for category in _categories:
-            process_archived_pids(category, top_n=_top_n)
+            process_archived_pids(category, top_n=_top_n, instance_id=_instance_id, num_instances=_num_instances)
             time.sleep(120)
     if _update_archive_listing == True:
         if _categories is None:
