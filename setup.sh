@@ -8,7 +8,7 @@ sudo apt install -y redis-server
 pip3 install -U pip
 chmod 600 ~/.ssh/id_rsa
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-git clone git@github.com:almetech/python-scraping.git
+test -d "python-scraping" && echo "python-scraping directory already exists! Skipping git clone...\n" || git clone git@github.com:almetech/python-scraping.git
 pip3 install -r python-scraping/requirements.txt
 echo "Finished setup!"
 echo "Testing dummy script..."

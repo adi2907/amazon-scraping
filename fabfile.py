@@ -21,7 +21,7 @@ def setup(ctx):
             conn_params.append(INSTANCE_USERNAME + '@' + line.strip())
     
     #if conn_params == []:
-    #    conn_params.append('ubuntu' + '@' + 'ec2-65-0-105-15.ap-south-1.compute.amazonaws.com')
+    #    conn_params.append('ubuntu' + '@' + 'ec2-65-0-173-241.ap-south-1.compute.amazonaws.com')
 
     upgrade_response = Responder(
         pattern=r'What would you like to do about menu\.lst\?',
@@ -53,6 +53,11 @@ def setup(ctx):
                     else:
                         result = conn.run(cmd)
                 print(result, result.exited)
+        
+        # Copy .env file
+        with open('.env', 'r') as f:
+            environment = f.read().strip()
+        conn.run(f'echo "{environment}" > ~/python-scraping/.env')
 
         #conn.run('touch test.txt')
         #conn.run('echo "HELLO WORLD" > test.txt')
