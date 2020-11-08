@@ -64,7 +64,7 @@ def setup(ctx):
         conn.run(f'echo "{environment}" > ~/python-scraping/.env')
 
         # Now start
-        # conn.run(f'cd python-scraping && python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {idx} --num_instances {num_instances}')
+        # conn.run(f'cd python-scraping && python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {idx} --num_instances {num_instances} --num_threads 5')
 
         #conn.run('touch test.txt')
         #conn.run('echo "HELLO WORLD" > test.txt')
