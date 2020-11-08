@@ -2,7 +2,6 @@ import os
 
 from decouple import config
 from fabric import SerialGroup, task
-from fabric.api import env
 
 
 @task
@@ -27,7 +26,7 @@ def setup(ctx):
             'key_filename': config('SSH_KEY_FILE'),
         })
     ctx.CONNS = conns
-    env.forward_agent = True # Needed to ssh using git via the remote host
+    ctx.config.run.env['forward_agent'] = True # Needed to ssh using git via the remote host
     for conn in ctx.CONNS:
         # Add the SSH key from `aws_key.pem` (the template permission file)
         with open('aws_private_key.pem', 'r') as f:
