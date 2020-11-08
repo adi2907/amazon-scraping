@@ -1,5 +1,6 @@
 sudo apt update -y
 sudo apt upgrade -y
+sudo apt install fabric -y
 sudo apt install mysql -y
 sudo apt install python3-pip -y
 sudo apt install -y firefox
