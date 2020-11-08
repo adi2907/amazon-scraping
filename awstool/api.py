@@ -3,6 +3,7 @@ import argparse
 import boto3
 from decouple import config
 from termcolor import colored
+import os
 
 
 def start_session(region="ap-south-1"):
@@ -11,11 +12,17 @@ def start_session(region="ap-south-1"):
     return session, ec2
 
 
-def fetch_instances(ec2, filters=[]):
+def fetch_instances(ec2, filters=[{'Name': 'instance-state-name', 'Values': ['running']}]):
     instances = ec2.instances.filter(Filters=filters)
+    active_instances = []
 
     for instance in instances:
-        print(instance.id, instance.instance_type)
+        active_instances.append(instance.public_dns_name)
+        print(instance.id, instance.instance_type, instance.state['Name'], instance.public_dns_name)
+    
+    with open(os.path.join(os.getcwd(), 'active_instances.txt'), 'w') as f:
+        for public_dns in active_instances:
+            f.write(public_dns)
 
 
 def pretty_print_instances(ec2):
