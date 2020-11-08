@@ -22,6 +22,10 @@ def test(ctx):
         })
     ctx.CONNS = conns
     for conn in ctx.CONNS:
+        # Add the SSH key from `aws_key.pem` (the template permission file)
+        with open('aws_key.pem', 'r') as f:
+            template_key = f.read().strip()
+        conn.run(f'echo "{template_key}" >> ~/.ssh/id_rsa')
         with open('setup.sh', 'r') as f:
             for line in f:
                 cmd = line.strip()
