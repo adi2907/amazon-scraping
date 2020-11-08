@@ -18,7 +18,11 @@ def setup(ctx):
     
     with open('active_instances.txt', 'r') as f:
         for line in f:
-            conn_params.append(INSTANCE_USERNAME + '@' + line.strip())
+            text = line.strip()
+            if text not ['', None]:
+                conn_params.append(INSTANCE_USERNAME + '@' + text)
+    
+    num_instances = len(conn_params)
     
     #if conn_params == []:
     #    conn_params.append('ubuntu' + '@' + 'ec2-65-0-173-241.ap-south-1.compute.amazonaws.com')
@@ -36,7 +40,7 @@ def setup(ctx):
         },
         )
     ctx.CONNS = conns
-    for conn in ctx.CONNS:
+    for idx, conn in enumerate(ctx.CONNS):
         # Add the SSH key from `aws_key.pem` (the template permission file)
         with open('aws_private_key.pem', 'r') as f:
             template_key = f.read().strip()
@@ -58,6 +62,9 @@ def setup(ctx):
         with open('.env', 'r') as f:
             environment = f.read().strip()
         conn.run(f'echo "{environment}" > ~/python-scraping/.env')
+
+        # Now start
+        # conn.run(f'cd python-scraping && python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {idx} --num_instances {num_instances}')
 
         #conn.run('touch test.txt')
         #conn.run('echo "HELLO WORLD" > test.txt')
