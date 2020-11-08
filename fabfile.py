@@ -35,9 +35,6 @@ def setup(ctx):
         with open('aws_private_key.pem', 'r') as f:
             template_key = f.read().strip()
         conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
-                
-        result = conn.run('git clone git@github.com:almetech/python-scraping.git')
-        print(result, result.exited)
         
         with open('setup.sh', 'r') as f:
             for line in f:
