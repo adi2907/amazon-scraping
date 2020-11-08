@@ -22,7 +22,7 @@ def fetch_instances(ec2, filters=[{'Name': 'instance-state-name', 'Values': ['ru
     
     with open(os.path.join(os.getcwd(), 'active_instances.txt'), 'w') as f:
         for public_dns in active_instances:
-            f.write(public_dns)
+            f.write(public_dns + '\n')
 
 
 def pretty_print_instances(ec2):
