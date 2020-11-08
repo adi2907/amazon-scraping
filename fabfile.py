@@ -5,11 +5,9 @@ from fabric import SerialGroup, task
 
 
 def setup_git_ssh(conn):
-    CLONE_COMMAND = 'git clone git@github.com:almetech/python-scraping.git'
     commands = [
         'chmod 600 ~/.ssh/id_rsa',
         'ssh -o StrictHostKeyChecking=no git@github.com',
-        CLONE_COMMAND,
     ]
     for command in commands:
         result = conn.run(command)
@@ -49,6 +47,9 @@ def setup(ctx):
         conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
         
         setup_git_ssh(conn)
+        
+        result = conn.run('git clone git@github.com:almetech/python-scraping.git')
+        print(result, result.exited)
         
         with open('setup.sh', 'r') as f:
             for line in f:
