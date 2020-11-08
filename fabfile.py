@@ -7,7 +7,7 @@ def test(ctx):
     if not os.path.exists('active_instances.txt'):
         raise ValueError(f"Please list the active instances on active_instances.txt. Run `python awstool/api.py --fetch_instances` to dump the currently active instances")
     
-    if not os.path.exist('aws_private_key.pem'):
+    if not os.path.exists('aws_private_key.pem'):
         raise ValueError(f"Please get the private key template at aws_private_key.pem")
 
     conn_params = []
