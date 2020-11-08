@@ -190,7 +190,7 @@ def process_archived_pids(category, top_n=None, instance_id=None, num_instances=
 
     for pid in info:
         with db_manager.session_scope(SessionFactory) as session:
-            instance = session.query(db_manager.ProductListing).filter(db_manager.product_id == pid).first()
+            instance = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == pid).first()
             with SqliteDict(cache_file, autocommit=True) as mydict:
                 if pid in mydict[f"ARCHIVED_INFO_{category}"]:
                     instance.date_completed = mydict[f"ARCHIVED_INFO_{category}"][pid]
