@@ -49,7 +49,7 @@ def setup(ctx):
                     result = conn.run(cmd, watchers=[upgrade_response])
                 else:
                     if cmd.startswith('git'):
-                        result = conn.run(cmd, watchers=[Responder(pattern='Are you sure you want to continue connecting (yes/no)?', response='yes\n')])
+                        result = conn.run(cmd, watchers=[Responder(pattern='Are you sure you want to continue connecting \(yes/no\)\?', response='yes\n')])
                     else:
                         result = conn.run(cmd)
                 print(result, result.exited)
