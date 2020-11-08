@@ -10,3 +10,6 @@ chmod 600 ~/.ssh/id_rsa
 git clone git@github.com:almetech/python-scraping.git
 pip3 install -r python-scraping/requirements.txt
 echo "Finished setup!"
+echo "Testing dummy script..."
+cd python-scraping && python3 scrapingtool/proxy.py
+echo "Finished script Test!"

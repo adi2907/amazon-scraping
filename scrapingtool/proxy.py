@@ -501,6 +501,6 @@ def test_proxy(proxy: Proxy, change: bool = False) -> None:
 if __name__ == '__main__':
     proxy = Proxy(proxy_port=9050, control_port=9051, use_tor=False, use_proxy=False)
     #print(proxy.proxy_list)
-    print(proxy.get_ip(override=False)) # Set to true if no proxy is used
+    print(proxy.get_ip(override=True)) # Set to true if no proxy is used
     #proxy.change_identity()
     #print(proxy.get_ip())
