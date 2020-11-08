@@ -60,7 +60,7 @@ except UndefinedValueError:
 
 logger.info(f"ultra_fast is {ultra_fast}")
 
-my_proxy = proxy.Proxy(OS=OS, use_tor=False, use_proxy=False)s
+my_proxy = proxy.Proxy(OS=OS, use_tor=False, use_proxy=False)
 
 try:
     use_tor = config('USE_TOR', cast=bool)
