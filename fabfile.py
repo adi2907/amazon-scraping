@@ -25,7 +25,6 @@ def setup(ctx):
         {
             'key_filename': config('SSH_KEY_FILE'),
         },
-        forward_agent=True, # Needed to ssh using git via the remote host
         )
     ctx.CONNS = conns
     for conn in ctx.CONNS:
