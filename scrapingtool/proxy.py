@@ -116,11 +116,12 @@ class Proxy():
         return count
     
 
-    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True, country='in', stream_isolation=False, server_url='https://www.amazon.in'):
+    def __init__(self, proxy_port=9050, control_port=9051, OS='Windows', use_tor=True, country='in', stream_isolation=False, server_url='https://www.amazon.in', use_proxy=True):
         self.proxy_port = proxy_port
         self.control_port = control_port
         self.stream_isolation = stream_isolation
         self.server_url = server_url
+        self.use_proxy = use_proxy
         
         if self.stream_isolation == False:
             self.proxies = {
@@ -133,6 +134,12 @@ class Proxy():
             self.proxies = {
                 'http': f'socks5h://{username}:{password}@127.0.0.1:{self.proxy_port}',
                 'https': f'socks5h://{username}:{password}@127.0.0.1:{self.proxy_port}',
+            }
+        
+        if self.use_proxy == False:
+            self.proxies = {
+                'http': None,
+                'https': None,
             }
         
         if OS == 'Windows':
@@ -208,6 +215,9 @@ class Proxy():
     
 
     def switch_proxy(self):
+        if self.use_proxy == False:
+            return
+        
         if len(self.proxy_list) < 10:
             raise ValueError(f"Proxy List must have atleast 10 elements")
         
@@ -234,6 +244,9 @@ class Proxy():
         Returns:
             str: An IP Address
         """
+        if self.use_proxy == False:
+            return
+        
         retries = 0
         limit = 50
         urls = [to_http("https://ident.me", use_tor=self.use_tor), to_http("http://myip.dnsomatic.com", use_tor=self.use_tor), to_http("https://checkip.amazonaws.com", use_tor=self.use_tor)]
@@ -258,6 +271,9 @@ class Proxy():
     def change_identity(self):
         """Method which will change both the IP address as well as the user agent
         """
+        if self.use_proxy == False:
+            return
+        
         # Reset the state of the proxy
         self.reset()
 
