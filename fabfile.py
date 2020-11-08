@@ -24,9 +24,10 @@ def setup(ctx):
         connect_kwargs=
         {
             'key_filename': config('SSH_KEY_FILE'),
-        })
+        },
+        forward_agent=True, # Needed to ssh using git via the remote host
+        )
     ctx.CONNS = conns
-    ctx.config.run.env['forward_agent'] = True # Needed to ssh using git via the remote host
     for conn in ctx.CONNS:
         # Add the SSH key from `aws_key.pem` (the template permission file)
         with open('aws_private_key.pem', 'r') as f:
