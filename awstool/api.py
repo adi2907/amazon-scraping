@@ -111,7 +111,7 @@ def create_instance(ec2, security_group_id, key_pair='medium_keypair', volume_si
         num_instances
         security_group_id (Necessary)
     '''
-    response = ec2.create_instances(ImageId=image_id, MinCount=1, MaxCount=num_instances, InstanceType=instance_type,
+    instances = ec2.create_instances(ImageId=image_id, MinCount=1, MaxCount=num_instances, InstanceType=instance_type,
         KeyName=key_pair,
         BlockDeviceMappings=[
             {
@@ -130,7 +130,23 @@ def create_instance(ec2, security_group_id, key_pair='medium_keypair', volume_si
             security_group_id,
         ],
     )
-    return response
+    
+    with open('created_instance_ids.txt', 'a') as f:
+        for instance in instances:
+            f.write(instance.instance_id + '\n')
+    
+    print(f"Written created instance ids to `created_instance_ids.txt`!")
+
+    return instances
+
+
+def get_created_instance_details(ec2):
+    _ids = []
+    with open('created_instance_ids.txt', 'r') as f:
+        for line in f:
+            _ids.append(line.strip())
+    
+    return fetch_instances(ec2, filters=[{'Name': 'instance-id', 'Values': _ids}])
 
 
 def stop_instances(ec2, instance_ids):
@@ -148,6 +164,7 @@ if __name__ == '__main__':
     parser.add_argument('--fetch_instances', help='Fetch all instances', default=False, action='store_true')
     parser.add_argument('--pretty_print_instances', help='Pretty Print all instances', default=False, action='store_true')
     parser.add_argument('--create_instance', help='Creates a new EC2 instance', default=False, action='store_true')
+    parser.add_argument('--get_created_instance_details', help='Fetch the newly create instance details', default=False, action='store_true')
     parser.add_argument('--stop_instances', help='Stops EC2 instances', default=False, action='store_true')
     parser.add_argument('--terminate_instances', help='Terminates EC2 instances', default=False, action='store_true')
 
@@ -158,6 +175,7 @@ if __name__ == '__main__':
     _fetch_instances = args.fetch_instances
     _pretty_print_instances = args.pretty_print_instances
     _create_instance = args.create_instance
+    _get_created_instance_details = args.get_created_instance_details
     _stop_instances = args.stop_instances
     _terminate_instances = args.terminate_instances
     _instance_ids = args.instance_ids
@@ -172,6 +190,10 @@ if __name__ == '__main__':
         _, ec2 = start_session()
         response = create_instance(ec2, config('SECURITY_GROUP_ID'), key_pair=config('KEY_PAIR_NAME'), volume_size=64, image_id=config('INSTANCE_AMI'), num_instances=1)
         print(f"{response}")
+    if _get_created_instance_details == True:
+        _, ec2 = start_session()
+        response = get_created_instance_details(ec2)
+        print(response)
     if _terminate_instances == True:
         if _instance_ids in [None, []]:
             raise ValueError(f"Must send a list of Instance IDs to terminate")
