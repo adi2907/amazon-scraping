@@ -14,10 +14,15 @@ def setup(ctx):
 
     conn_params = []
     INSTANCE_USERNAME = 'ubuntu'
+
+    CLONE_COMMAND = 'git clone git@github.com:almetech/python-scraping.git'
     
     with open('active_instances.txt', 'r') as f:
         for line in f:
             conn_params.append(INSTANCE_USERNAME + '@' + line.strip())
+    
+    #if conn_params == []:
+    #    conn_params.append('ubuntu' + '@' + 'ec2-65-0-105-15.ap-south-1.compute.amazonaws.com')
 
     conns = SerialGroup(
         *(conn_params),
@@ -32,6 +37,10 @@ def setup(ctx):
         with open('aws_private_key.pem', 'r') as f:
             template_key = f.read().strip()
         conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
+        
+        result = conn.run(CLONE_COMMAND)
+        print(result, result.exited)
+        
         with open('setup.sh', 'r') as f:
             for line in f:
                 cmd = line.strip()
