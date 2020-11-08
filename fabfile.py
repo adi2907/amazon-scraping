@@ -7,6 +7,9 @@ def test(ctx):
     if not os.path.exists('active_instances.txt'):
         raise ValueError(f"Please list the active instances on active_instances.txt. Run `python awstool/api.py --fetch_instances` to dump the currently active instances")
     
+    if not os.path.exist('aws_private_key.pem'):
+        raise ValueError(f"Please get the private key template at aws_private_key.pem")
+
     conn_params = []
     INSTANCE_USERNAME = 'ubuntu'
     
@@ -23,7 +26,7 @@ def test(ctx):
     ctx.CONNS = conns
     for conn in ctx.CONNS:
         # Add the SSH key from `aws_key.pem` (the template permission file)
-        with open('aws_[rivate_key.pem', 'r') as f:
+        with open('aws_private_key.pem', 'r') as f:
             template_key = f.read().strip()
         conn.run(f'echo "{template_key}" >> ~/.ssh/id_rsa')
         with open('setup.sh', 'r') as f:
