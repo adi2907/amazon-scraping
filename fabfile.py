@@ -19,7 +19,7 @@ def setup(ctx):
     with open('active_instances.txt', 'r') as f:
         for line in f:
             text = line.strip()
-            if text not ['', None]:
+            if text not in ['', None]:
                 conn_params.append(INSTANCE_USERNAME + '@' + text)
     
     num_instances = len(conn_params)
