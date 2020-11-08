@@ -4,16 +4,6 @@ from decouple import config
 from fabric import SerialGroup, task
 
 
-def setup_git_ssh(conn):
-    commands = [
-        'chmod 600 ~/.ssh/id_rsa',
-        'ssh -o StrictHostKeyChecking=no git@github.com',
-    ]
-    for command in commands:
-        result = conn.run(command)
-        print(result, result.exited)
-
-
 @task
 def setup(ctx):
     if not os.path.exists('active_instances.txt'):
@@ -45,9 +35,7 @@ def setup(ctx):
         with open('aws_private_key.pem', 'r') as f:
             template_key = f.read().strip()
         conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
-        
-        setup_git_ssh(conn)
-        
+                
         result = conn.run('git clone git@github.com:almetech/python-scraping.git')
         print(result, result.exited)
         
