@@ -235,7 +235,7 @@ class Proxy():
         logger.info(f"Switch to proxy {new_proxy}")
     
 
-    def get_ip(self) -> str:
+    def get_ip(self, override=False) -> str:
         """Fetches the IP Address of the machine
 
         Raises:
@@ -244,7 +244,7 @@ class Proxy():
         Returns:
             str: An IP Address
         """
-        if self.use_proxy == False:
+        if self.use_proxy == False and override == False:
             return
         
         retries = 0
@@ -499,8 +499,8 @@ def test_proxy(proxy: Proxy, change: bool = False) -> None:
 
 
 if __name__ == '__main__':
-    proxy = Proxy(proxy_port=9050, control_port=9051, use_tor=False)
+    proxy = Proxy(proxy_port=9050, control_port=9051, use_tor=False, use_proxy=False)
     #print(proxy.proxy_list)
-    print(proxy.get_ip())
+    print(proxy.get_ip(override=False)) # Set to true if no proxy is used
     #proxy.change_identity()
     #print(proxy.get_ip())
