@@ -48,7 +48,10 @@ def setup(ctx):
                 if idx in [0, 1]:
                     result = conn.run(cmd, watchers=[upgrade_response])
                 else:
-                    result = conn.run(cmd)
+                    if cmd.startswith('git'):
+                        result = conn.run(cmd, watchers=[Responder(pattern='Are you sure you want to continue connecting (yes/no)?', response='yes\n')])
+                    else:
+                        result = conn.run(cmd)
                 print(result, result.exited)
 
         #conn.run('touch test.txt')
