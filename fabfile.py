@@ -2,6 +2,7 @@ import os
 
 from decouple import config
 from fabric import SerialGroup, task
+from invoke import Responder
 
 
 @task
@@ -22,6 +23,11 @@ def setup(ctx):
     #if conn_params == []:
     #    conn_params.append('ubuntu' + '@' + 'ec2-65-0-105-15.ap-south-1.compute.amazonaws.com')
 
+    upgrade_response = Responder(
+        pattern=r'A new version of .* is available .*',
+        response='2\n',
+    )
+
     conns = SerialGroup(
         *(conn_params),
         connect_kwargs=
@@ -37,9 +43,12 @@ def setup(ctx):
         conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
         
         with open('setup.sh', 'r') as f:
-            for line in f:
+            for idx, line in enumerate(f):
                 cmd = line.strip()
-                result = conn.run(cmd)
+                if idx in [0, 1]:
+                    result = conn.run(cmd, watchers=[upgrade_response])
+                else:
+                    result = conn.run(cmd)
                 print(result, result.exited)
 
         #conn.run('touch test.txt')
