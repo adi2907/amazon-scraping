@@ -70,6 +70,8 @@ def run_category(browser='Firefox'):
 
                 assert len(listing_categories) == len(listing_templates)
 
+                prev_url = ''
+
                 for category, template in domain_map[domain].items():
                     url = template.substitute(PAGE_NUM=1)
 
@@ -81,6 +83,9 @@ def run_category(browser='Firefox'):
                     driver.get(url)
 
                     while True:
+                        if url == prev_url:
+                            logger.warning(f"Got the same URL {url}. Skipping the rest...")
+                            break
                         print(f"At Page Number {curr}")
                         print("Sleeping...")
                         time.sleep(12) # Wait for some time to load
@@ -138,6 +143,7 @@ def run_category(browser='Firefox'):
                             try:
                                 #url = element.get_attribute("href")
                                 e = driver.find_element_by_css_selector(".a-last > a:nth-child(1)")
+                                tmp = url
                                 url = e.get_attribute("href")
                                 print(url)
                                 if url is not None:
@@ -164,6 +170,7 @@ def run_category(browser='Firefox'):
 
                                     print("Went to the next URL")
                                     flag = False
+                                    prev_url = tmp
                                     break
                             except Exception as ex:
                                 print(ex)
