@@ -144,7 +144,28 @@ def scrape_product_detail(category, product_urls):
         
         with db_manager.session_scope(SessionFactory) as session:
             instance = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == product_id).first()
+            if instance is None:
+                logger.warning(f"For PID {product_id}, no such instance in ProductListing")
+                continue
+
             instance.date_completed = datetime.now()
+            
+            required_details = ["num_reviews", "curr_price", "avg_rating"]
+
+            for field in required_details:
+                if field == "num_reviews" and details.get('num_reviews') is not None:
+                    num_reviews = int(details[field].split()[0].replace(',', '').replace('.', ''))
+                    if hasattr(instance, "total_ratings"):
+                        setattr(instance, "total_ratings", num_reviews)
+                elif field == "curr_price" and details.get('curr_price') is not None:
+                    price = float(details[field].replace(',', ''))
+                    if hasattr(instance, "price"):
+                        setattr(instance, "price", price)
+                elif field == "avg_rating" and details.get('avg_rating') is not None and isinstance(details.get('avg_rating'), float):
+                    avg_rating = details['avg_rating']
+                    if hasattr(instance, "avg_rating"):
+                        setattr(instance, "avg_rating", avg_rating)
+            
             session.add(instance)
 
 
