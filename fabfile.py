@@ -66,7 +66,7 @@ def setup(ctx):
         # Now start
         conn.run("tmux new -d -s cron")
         command = f'cd python-scraping && python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {idx} --num_instances {num_instances} --num_threads 5'
-        conn.run(f"tmux send -t cron.0 {command} ENTER")
+        conn.run(f"tmux send -t cron.0 {command.replace(' ', '\ ')} ENTER")
         # conn.run(f'cd python-scraping && python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {idx} --num_instances {num_instances} --num_threads 5')
 
         #conn.run('touch test.txt')
