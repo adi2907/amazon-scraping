@@ -40,7 +40,7 @@ def setup(ctx):
         },
         )
     ctx.CONNS = conns
-    idx = 0
+    instance_number = 0
     for _, conn in enumerate(ctx.CONNS):
         # Add the SSH key from `aws_key.pem` (the template permission file)
         with open('aws_private_key.pem', 'r') as f:
@@ -66,12 +66,12 @@ def setup(ctx):
 
         # Now start
         conn.run("tmux new -d -s cron")
-        command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {idx} --num_instances {num_instances} --num_threads 5'
+        command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {instance_number} --num_instances {num_instances} --num_threads 5'
         command = command.replace(' ', r'\ ')
         conn.run(r"tmux send -t cron.0 cd\ python-scraping ENTER")
         conn.run(f"tmux send -t cron.0 {command} ENTER")
         
-        idx += 1
+        instance_number += 1
         # conn.run(f'cd python-scraping && python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {idx} --num_instances {num_instances} --num_threads 5')
 
         #conn.run('touch test.txt')
