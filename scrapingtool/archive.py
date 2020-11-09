@@ -115,14 +115,10 @@ def scrape_product_detail(category, product_urls):
         setattr(my_proxy, 'category', category)
         
         assert response.status_code == 200
-        cookies = dict(response.cookies)
         time.sleep(3)
 
         while True:
             response = my_proxy.get(server_url + product_url, product_url=product_url)
-            
-            if hasattr(response, 'cookies'):
-                cookies = {**cookies, **dict(response.cookies)}
             
             time.sleep(3) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             html = response.content
