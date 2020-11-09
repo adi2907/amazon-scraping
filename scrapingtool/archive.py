@@ -187,7 +187,7 @@ def process_archived_pids(category, top_n=None, instance_id=None, num_instances=
     info = OrderedDict()
 
     with db_manager.session_scope(SessionFactory) as session:
-        queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == category, db_manager.ProductListing.date_completed < datetime.today().date()).order_by(asc('category')).order_by(desc('total_ratings'))
+        queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == category, db_manager.ProductListing.date_completed == None | (db_manager.ProductListing.date_completed < datetime.today().date())).order_by(asc('category')).order_by(desc('total_ratings'))
         logger.info(f"Found {queryset.count()} inactive products totally")
         for instance in queryset:
             _info[instance.product_id] = instance.product_url
