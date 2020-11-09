@@ -34,7 +34,7 @@ except UndefinedValueError:
     OS = 'Windows'
 
 try:
-    multithreading = config('MULTITHREADING')
+    multithreading = config('MULTITHREADING', cast=bool)
 except UndefinedValueError:
     multithreading = False
 
