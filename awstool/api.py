@@ -175,6 +175,7 @@ if __name__ == '__main__':
     parser.add_argument('--terminate_instances', help='Terminates EC2 instances', default=False, action='store_true')
     parser.add_argument('--reset_state', help='Reset state', default=False, action='store_true')
 
+    parser.add_argument('--num_instances', help='Number of instances to create', default=1, type=int)
     parser.add_argument('--instance_ids', help='List of EC2 instance ids', default=None, type=lambda s: [item.strip() for item in s.split(',')])
 
     args = parser.parse_args()
@@ -187,6 +188,7 @@ if __name__ == '__main__':
     _terminate_instances = args.terminate_instances
     _instance_ids = args.instance_ids
     _reset_state = args.reset_state
+    _num_instances = args.num_instances
 
     if _fetch_instances == True:
         _, ec2 = start_session()
@@ -196,7 +198,7 @@ if __name__ == '__main__':
         pretty_print_instances(ec2)
     if _create_instance == True:
         _, ec2 = start_session()
-        response = create_instance(ec2, config('SECURITY_GROUP_ID'), key_pair=config('KEY_PAIR_NAME'), volume_size=64, image_id=config('INSTANCE_AMI'), num_instances=1)
+        response = create_instance(ec2, config('SECURITY_GROUP_ID'), key_pair=config('KEY_PAIR_NAME'), volume_size=16, image_id=config('INSTANCE_AMI'), num_instances=_num_instances)
         print(f"{response}")
     if _get_created_instance_details == True:
         _, ec2 = start_session()
