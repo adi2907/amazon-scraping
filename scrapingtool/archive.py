@@ -338,7 +338,7 @@ if __name__ == '__main__':
             raise ValueError(f"Need to specify list of categories for processing archived PIDs")
         for category in _categories:
             process_archived_pids(category, top_n=_top_n, instance_id=_instance_id, num_instances=_num_instances, num_threads=_num_threads)
-            time.sleep(120)
+            logger.info(f"Completed category {category}!")
     if _update_archive_listing == True:
         if _categories is None:
             raise ValueError(f"Need to specify list of categories for updating archived PIDs")
