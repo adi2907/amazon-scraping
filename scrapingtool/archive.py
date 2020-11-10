@@ -32,7 +32,7 @@ today = datetime.today().strftime("%d-%m-%y")
 try:
     OS = config('OS')
 except UndefinedValueError:
-    OS = 'Windows'
+    OS = 'Linux'
 
 try:
     multithreading = config('MULTITHREADING', cast=bool)
