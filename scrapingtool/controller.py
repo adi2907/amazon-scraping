@@ -5,6 +5,7 @@ import signal
 import subprocess
 import sys
 import time
+import os
 import traceback
 from datetime import datetime, timedelta
 
@@ -20,7 +21,7 @@ cache.connect('master', use_redis=True)
 
 today = datetime.today().strftime("%d-%m-%y")
 
-def monitor():
+def monitor(category="headphones"):
     global cache
     INTERVAL = 60 * 20
     
@@ -40,13 +41,21 @@ def monitor():
         logger.info(f"Sleeping for {INTERVAL} seconds...")
         time.sleep(INTERVAL)
         logger.info(f"Woke Up! Checking status")
+        
+        if not os.path.exists('pid.txt'):
+            logger.info(f"pid.txt does not exist. Assuming that the process has completed")
+            logger.info('Exiting....')
+            exit(0)
+        
+        with open('pid.txt', 'r') as f:
+            pid = f.read().strip()
         key = f"TIMESTAMP_ID_{instance_id}"
         value = cache.get(key)
         if value is None:
             # Expired
             logger.warning(f"The process has timed out! Killing and restarting again")
             subprocess.run(["kill", "-15", f"{pid}"])
-            command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {instance_id} --num_instances {num_instances} --num_threads 5'.split(' ')
+            command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "{category}" --instance_id {instance_id} --num_instances {num_instances} --num_threads 5'.split(' ')
             p = subprocess.Popen(command)
             logger.info(f"Restarted with new pid {p.pid}")
             with open('pid.txt', 'w') as f:
@@ -61,4 +70,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
 
-    monitor()
+    monitor(category="headphones")

@@ -240,6 +240,10 @@ def process_archived_pids(category, top_n=None, instance_id=None, num_instances=
                 logger.critical("".join(traceback.TracebackException.from_exception(exc).format()))
             else:
                 logger.info(f"Category {category} is done!")
+
+        if os.path.exists('pid.txt'):
+            os.remove('pid.txt')
+
     else:
         for pid in info:
             url = info[pid]
