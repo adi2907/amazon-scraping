@@ -52,7 +52,7 @@ class Retry():
         def wrapper1(func):
             @wraps(func)
             def wrapper2(self, *args, **kwargs):
-                for idx in range(20):
+                for idx in range(50):
                     try:
                         if idx in [0, 1]:
                             self.backoff = max(self.backoff // 2, 1)
