@@ -52,8 +52,10 @@ class Retry():
         def wrapper1(func):
             @wraps(func)
             def wrapper2(self, *args, **kwargs):
-                for _ in range(20):
+                for idx in range(20):
                     try:
+                        if idx in [0, 1]:
+                            self.backoff = max(self.backoff // 2, 1)
                         return func(self, *args, **kwargs)
                     except Exception as ex:
                         if (predicate(ex) == True):
@@ -89,7 +91,7 @@ class Retry():
                                     #    logger.warning(f"Appending URL {args[0]} to stack. We'll go to it later")
                                     #break
                             
-                            self.delay = self.backoff
+                            self.delay = min(self.backoff, 60)
                             self.penalty = max(2, self.penalty+1)
                             time.sleep(random.randint(self.delay, self.delay + 5))
                         else:
