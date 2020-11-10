@@ -1,5 +1,6 @@
 import argparse
 import concurrent.futures
+import os
 import random
 import signal
 import sys
@@ -95,7 +96,7 @@ def exit_gracefully(signum, frame):
     signal.signal(signal.SIGINT, exit_gracefully)
 
 
-def scrape_product_detail(category, product_urls):
+def scrape_product_detail(category, product_urls, instance_id=None):
     global my_proxy
     global cache, cache_file
     # session = requests.Session()
@@ -104,69 +105,73 @@ def scrape_product_detail(category, product_urls):
     if not isinstance(product_urls, list):
         product_urls = [product_urls]
     
-    _, SessionFactory = db_manager.connect_to_db(config('DB_NAME'), credentials)
+    try:
+        engine, SessionFactory = db_manager.connect_to_db(config('DB_NAME'), credentials)
 
-    for product_url in product_urls:
-        product_id = parse_data.get_product_id(product_url)
+        for product_url in product_urls:
+            product_id = parse_data.get_product_id(product_url)
 
-        logger.info(f"Going to Details page for PID {product_id}")
+            logger.info(f"Going to Details page for PID {product_id}")
+                
+            response = my_proxy.get(server_url)
+            setattr(my_proxy, 'category', category)
             
-        response = my_proxy.get(server_url)
-        setattr(my_proxy, 'category', category)
-        
-        assert response.status_code == 200
-        time.sleep(3)
+            assert response.status_code == 200
+            time.sleep(3)
 
-        while True:
-            response = my_proxy.get(server_url + product_url, product_url=product_url)
-            
-            time.sleep(3) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-            html = response.content
-            
-            soup = BeautifulSoup(html, 'lxml')
-            
-            # Get the product details
-            try:
-                details = parse_data.get_product_data(soup, html=html)
-                break
-            except ValueError:
-                logger.warning(f"Written html to {category}_{product_url}.html")
-                logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
-                logger.warning("Trying again...")
-                time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-                my_proxy.goto_product_listing(category)
+            while True:
+                response = my_proxy.get(server_url + product_url, product_url=product_url)
+                
+                time.sleep(3) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
+                html = response.content
+                
+                soup = BeautifulSoup(html, 'lxml')
+                
+                # Get the product details
+                try:
+                    details = parse_data.get_product_data(soup, html=html)
+                    break
+                except ValueError:
+                    logger.warning(f"Written html to {category}_{product_url}.html")
+                    logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
+                    logger.warning("Trying again...")
+                    time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
+                    my_proxy.goto_product_listing(category)
 
-        details['product_id'] = product_id # Add the product ID
+            details['product_id'] = product_id # Add the product ID
 
-        # Store to cache first
-        with SqliteDict(cache_file, autocommit=True) as mydict:
-            mydict[f"ARCHIVED_DETAILS_{product_id}"] = details
-        
-        with db_manager.session_scope(SessionFactory) as session:
-            instance = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == product_id).first()
-            if instance is None:
-                logger.warning(f"For PID {product_id}, no such instance in ProductListing")
-                continue
-
-            instance.date_completed = datetime.now()
+            # Store to cache first
+            with SqliteDict(cache_file, autocommit=True) as mydict:
+                mydict[f"ARCHIVED_DETAILS_{product_id}"] = details
             
-            required_details = ["num_reviews", "curr_price", "avg_rating"]
+            with db_manager.session_scope(SessionFactory) as session:
+                instance = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == product_id).first()
+                if instance is None:
+                    logger.warning(f"For PID {product_id}, no such instance in ProductListing")
+                    continue
 
-            for field in required_details:
-                if field == "num_reviews" and details.get('num_reviews') is not None:
-                    num_reviews = int(details[field].split()[0].replace(',', '').replace('.', ''))
-                    if hasattr(instance, "total_ratings"):
-                        setattr(instance, "total_ratings", num_reviews)
-                elif field == "curr_price" and details.get('curr_price') is not None:
-                    price = float(details[field].replace(',', ''))
-                    if hasattr(instance, "price"):
-                        setattr(instance, "price", price)
-                elif field == "avg_rating" and details.get('avg_rating') is not None and isinstance(details.get('avg_rating'), float):
-                    avg_rating = details['avg_rating']
-                    if hasattr(instance, "avg_rating"):
-                        setattr(instance, "avg_rating", avg_rating)
-            
-            session.add(instance)
+                instance.date_completed = datetime.now()
+                
+                required_details = ["num_reviews", "curr_price", "avg_rating"]
+
+                for field in required_details:
+                    if field == "num_reviews" and details.get('num_reviews') is not None:
+                        num_reviews = int(details[field].split()[0].replace(',', '').replace('.', ''))
+                        if hasattr(instance, "total_ratings"):
+                            setattr(instance, "total_ratings", num_reviews)
+                    elif field == "curr_price" and details.get('curr_price') is not None:
+                        price = float(details[field].replace(',', ''))
+                        if hasattr(instance, "price"):
+                            setattr(instance, "price", price)
+                    elif field == "avg_rating" and details.get('avg_rating') is not None and isinstance(details.get('avg_rating'), float):
+                        avg_rating = details['avg_rating']
+                        if hasattr(instance, "avg_rating"):
+                            setattr(instance, "avg_rating", avg_rating)
+                
+                session.add(instance)
+            cache.set(f"TIMESTAMP_ID_{instance_id}", True, timeout=60 * 20)
+    finally:
+        db_manager.close_all_db_connections(engine, SessionFactory)
 
 
 def process_archived_pids(category, top_n=None, instance_id=None, num_instances=None, num_threads=5):
@@ -176,6 +181,20 @@ def process_archived_pids(category, top_n=None, instance_id=None, num_instances=
     from sqlalchemy import asc, desc
     global cache_file
     global credentials
+    global OS
+
+    if OS == 'Linux':
+        pid = os.getpid()
+        with open('pid.txt', 'w') as f:
+            f.write(str(pid))
+    else:
+        raise ValueError(f"Only supported in Linux")
+
+    with open('num_instances.txt', 'w') as f:
+        f.write(str(num_instances))
+    
+    with open('instance_id.txt', 'w') as f:
+        f.write(str(instance_id))
 
     with SqliteDict(cache_file, autocommit=True) as mydict:
         if f"ARCHIVED_INFO_{category}" not in mydict:
@@ -209,7 +228,7 @@ def process_archived_pids(category, top_n=None, instance_id=None, num_instances=
         split_urls = [urls[(i*len(urls)) // num_threads: ((i+1)*len(urls)) // num_threads] for i in range(num_threads)]
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-            future_to_category = {executor.submit(scrape_product_detail, category, urls): category for urls in split_urls}
+            future_to_category = {executor.submit(scrape_product_detail, category, urls, instance_id): category for urls in split_urls}
 
         for future in concurrent.futures.as_completed(future_to_category):
             category = future_to_category[future]
