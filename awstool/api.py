@@ -176,6 +176,7 @@ if __name__ == '__main__':
     parser.add_argument('--reset_state', help='Reset state', default=False, action='store_true')
 
     parser.add_argument('--num_instances', help='Number of instances to create', default=1, type=int)
+    parser.add_argument('--filename', help='Name of file', default=None, type=str)
     parser.add_argument('--instance_ids', help='List of EC2 instance ids', default=None, type=lambda s: [item.strip() for item in s.split(',')])
 
     args = parser.parse_args()
@@ -189,6 +190,7 @@ if __name__ == '__main__':
     _instance_ids = args.instance_ids
     _reset_state = args.reset_state
     _num_instances = args.num_instances
+    _filename = args.filename
 
     if _fetch_instances == True:
         _, ec2 = start_session()
@@ -212,6 +214,13 @@ if __name__ == '__main__':
         print(f"{response}")
         print(f"Terminated instances!")
     if _stop_instances == True:
+        if _filename is not None:
+            _instance_ids = []
+            with open(_filename, 'r') as f:
+                for line in f:
+                    text = line.strip()
+                    if text is not None:
+                        _instance_ids.append(line.strip())
         if _instance_ids in [None, []]:
             raise ValueError(f"Must send a list of Instance IDs to stop")
         _, ec2 = start_session()
