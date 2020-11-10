@@ -169,7 +169,7 @@ def scrape_product_detail(category, product_urls, instance_id=None):
                             setattr(instance, "avg_rating", avg_rating)
                 
                 session.add(instance)
-            cache.set(f"TIMESTAMP_ID_{instance_id}", True, timeout=60 * 20)
+            cache.set(f"TIMESTAMP_ID_{instance_id}", 1, timeout=60 * 20)
     finally:
         db_manager.close_all_db_connections(engine, SessionFactory)
 
