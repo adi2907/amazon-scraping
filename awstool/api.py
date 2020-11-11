@@ -142,8 +142,10 @@ def create_instance(ec2, security_group_id, key_pair='medium_keypair', volume_si
 
 
 def reset_state():
-    os.remove('created_instance_ids.txt')
-    os.remove('active_instances.txt')
+    if os.path.exists('created_instance_ids.txt'):
+        os.remove('created_instance_ids.txt')
+    if os.path.exists('active_instances.txt'):
+        os.remove('active_instances.txt')
 
 
 def get_created_instance_details(ec2):
