@@ -1568,7 +1568,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
         non_null_queryset = session.query(_table).filter(ProductListing.duplicate_set != None).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
         info = {instance.product_id: instance.duplicate_set for instance in non_null_queryset if instance.duplicate_set is not None}
 
-    DELTA = 0.1
+    DELTA = 0.01
 
     def get_max(info):
         maxval = num_sets
