@@ -250,7 +250,6 @@ def process_archived_pids(category, top_n=None, instance_id=None, num_instances=
     if multithreading == True and num_threads is not None and num_threads > 0:
         urls = list(info.values())        
         split_urls = [urls[(i*len(urls)) // num_threads: ((i+1)*len(urls)) // num_threads] for i in range(num_threads)]
-        random.shuffle(split_urls)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
             future_to_category = {executor.submit(scrape_product_detail, category, urls, instance_id): category for urls in split_urls}
