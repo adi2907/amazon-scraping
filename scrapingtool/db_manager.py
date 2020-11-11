@@ -410,6 +410,10 @@ def insert_product_listing(session, data, table='ProductListing', domain='amazon
                         row['is_duplicate'] = None
                         row['is_active'] = True
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
+                        # Update the date
+                        date = datetime.datetime.now(timezone('Asia/Kolkata'))#.date()
+                        if hasattr(result, 'date_completed'):
+                            setattr(result, 'date_completed', date)
                         session.add(obj)
                         session.commit()
                         continue
@@ -427,6 +431,10 @@ def insert_product_listing(session, data, table='ProductListing', domain='amazon
                                 setattr(result, field, row[field])
                         setattr(result, 'is_duplicate', temp)
                         setattr(result, 'is_active', True)
+                        # Update the date
+                        date = datetime.datetime.now(timezone('Asia/Kolkata'))#.date()
+                        if hasattr(result, 'date_completed'):
+                            setattr(result, 'date_completed', date)
                         if short_title is not None:
                             setattr(result, 'short_title', short_title)
                         try:
