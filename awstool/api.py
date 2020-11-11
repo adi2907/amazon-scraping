@@ -215,7 +215,8 @@ if __name__ == '__main__':
                     if text is not None:
                         _instance_ids.append(line.strip())
         if _instance_ids in [None, []]:
-            raise ValueError(f"Must send a list of Instance IDs to terminate")
+            print(f"Must send a list of Instance IDs to terminate")
+            exit(0)
         _, ec2 = start_session()
         response = terminate_instances(ec2, _instance_ids)
         print(f"{response}")
@@ -229,7 +230,8 @@ if __name__ == '__main__':
                     if text is not None:
                         _instance_ids.append(line.strip())
         if _instance_ids in [None, []]:
-            raise ValueError(f"Must send a list of Instance IDs to stop")
+            print(f"Must send a list of Instance IDs to stop")
+            exit(0)
         _, ec2 = start_session()
         response = stop_instances(ec2, _instance_ids)
         print(f"{response}")
