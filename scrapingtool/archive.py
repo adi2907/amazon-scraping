@@ -113,14 +113,35 @@ def scrape_product_detail(category, product_urls, instance_id=None):
 
             logger.info(f"Going to Details page for PID {product_id}")
                 
-            response = my_proxy.get(server_url)
+            try:
+                response = my_proxy.get(server_url)
+            except TimeoutError:
+                logger.warning(f"For PID {product_id}, couldn't go to {server_url}, request timed out. Skipping this for now...")
+                with SqliteDict(cache_file, autocommit=True) as mydict:
+                    key = f"INCOMPLETE_ARCHIVED_PIDS"
+                    if key not in mydict:
+                        mydict[key] = {}
+                    mydict[key][product_id] = server_url + product_url
+                continue
+            
             setattr(my_proxy, 'category', category)
             
             assert response.status_code == 200
             time.sleep(3)
 
             while True:
-                response = my_proxy.get(server_url + product_url, product_url=product_url)
+                try:
+                    response = my_proxy.get(server_url + product_url, product_url=product_url)
+                except TimeoutError:
+                    with SqliteDict(cache_file, autocommit=True) as mydict:
+                        key = f"INCOMPLETE_ARCHIVED_PIDS"
+                        if key not in mydict:
+                            mydict[key] = {}
+                        mydict[key][product_id] = server_url + product_url
+                    
+                    logger.warning(f"For url {server_url + product_url}, request timed out. Skipping this for now...")
+                    break_flag = True
+                    break
                 
                 time.sleep(3) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
                 html = response.content
@@ -138,6 +159,9 @@ def scrape_product_detail(category, product_urls, instance_id=None):
                     time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
                     my_proxy.goto_product_listing(category)
 
+            if break_flag == True:
+                continue
+            
             details['product_id'] = product_id # Add the product ID
 
             # Store to cache first
