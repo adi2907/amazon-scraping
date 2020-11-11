@@ -207,6 +207,13 @@ if __name__ == '__main__':
         response = get_created_instance_details(ec2)
         print(response)
     if _terminate_instances == True:
+        if _filename is not None:
+            _instance_ids = []
+            with open(_filename, 'r') as f:
+                for line in f:
+                    text = line.strip()
+                    if text is not None:
+                        _instance_ids.append(line.strip())
         if _instance_ids in [None, []]:
             raise ValueError(f"Must send a list of Instance IDs to terminate")
         _, ec2 = start_session()
