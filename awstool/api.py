@@ -209,6 +209,9 @@ if __name__ == '__main__':
     if _terminate_instances == True:
         if _filename is not None:
             _instance_ids = []
+            if not os.path.exists(_filename):
+                print(f"No such file: {_filename}")
+                exit(0)
             with open(_filename, 'r') as f:
                 for line in f:
                     text = line.strip()
@@ -224,6 +227,9 @@ if __name__ == '__main__':
     if _stop_instances == True:
         if _filename is not None:
             _instance_ids = []
+            if not os.path.exists(_filename):
+                print(f"No such file: {_filename}")
+                exit(0)
             with open(_filename, 'r') as f:
                 for line in f:
                     text = line.strip()
