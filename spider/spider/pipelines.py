@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from decouple import config
 from itemadapter import ItemAdapter
-from scrapingtool import db_manager
+from scrapingtool import db_manager, cache
 from scrapy.exceptions import DropItem
 
 
@@ -30,6 +30,12 @@ class SpiderPipeline:
 
     def close_spider(self, spider):
         db_manager.close_all_db_connections(self.engine, self.SessionFactory)
+        try:
+            _cache = cache.Cache()
+            _cache.connect('master', use_redis=True)
+            _cache.set(f"SCRAPING_COMPLETED", 1, timeout=6 * 24 * 24)
+        except Exception as ex:
+            print(f"Error when setting cache: {ex}")
 
     def process_item(self, item, spider):
         if spider.name == 'archive_details_spider':

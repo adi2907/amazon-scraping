@@ -25,15 +25,6 @@ def monitor(category="headphones"):
     global cache
     INTERVAL = 60 * 20
     
-    with open('instance_id.txt', 'r') as f:
-        instance_id = f.read().strip()
-    
-    with open('num_instances.txt', 'r') as f:
-        num_instances = f.read().strip()
-    
-    with open('pid.txt', 'r') as f:
-        pid = f.read().strip()
-    
     logger.info(f"Started the monitor program!")
     
     # Listen for events
@@ -41,26 +32,14 @@ def monitor(category="headphones"):
         logger.info(f"Sleeping for {INTERVAL} seconds...")
         time.sleep(INTERVAL)
         logger.info(f"Woke Up! Checking status")
-        
-        if not os.path.exists('pid.txt'):
-            logger.info(f"pid.txt does not exist. Assuming that the process has completed")
-            logger.info('Exiting....')
-            exit(0)
-        
-        with open('pid.txt', 'r') as f:
-            pid = f.read().strip()
-        key = f"TIMESTAMP_ID_{instance_id}"
+
+        key = f"SCRAPING_COMPLETED"
         value = cache.get(key)
-        if value is None:
+        if value == 1:
             # Expired
-            logger.warning(f"The process has timed out! Killing and restarting again")
-            subprocess.run(["kill", "-15", f"{pid}"])
-            command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "{category}" --instance_id {instance_id} --num_instances {num_instances} --num_threads 5'.split(' ')
+            logger.warning(f"Scraping done! Shutting down")
+            command = f'shutdown'.split(' ')
             p = subprocess.Popen(command)
-            logger.info(f"Restarted with new pid {p.pid}")
-            with open('pid.txt', 'w') as f:
-                f.write(str(p.pid))
-            pid = p.pid
         else:
             continue
 
