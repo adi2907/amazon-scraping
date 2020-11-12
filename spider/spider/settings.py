@@ -22,6 +22,10 @@ ROBOTSTXT_OBEY = False
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
 RETRY_TIMES = 20
 
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 1
+AUTOTHROTTLE_MAX_DELAY = 10
+
 #DOWNLOADER_MIDDLEWARES = {
 #    'scrapoxy.downloadmiddlewares.proxy.ProxyMiddleware': 100,
 #    'scrapoxy.downloadmiddlewares.wait.WaitMiddleware': 101,
