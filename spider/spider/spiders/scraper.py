@@ -15,7 +15,7 @@ class ArchiveScraper(Spider):
     name = u'archive_details_spider'
     logger = create_logger('archive_spider')
 
-    def start_requests(self, domain="amazon.in", category="headphones", start_idx=0, end_idx=100, *args, **kwargs):
+    def start_requests(self, category="headphones", start_idx=0, end_idx=100, *args, **kwargs):
         """This is our first request to grab all the urls.
         """
 
@@ -46,7 +46,7 @@ class ArchiveScraper(Spider):
         for pid in info:
             self.logger.info(f"Scraping PID {pid} at url {info[pid]}")
             request = Request(
-                url=domain + info[pid],
+                url=u'https://amazon.in' + info[pid],
                 callback=self.parse_response,
             )
             request.meta['product_id'] = pid
