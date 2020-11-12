@@ -75,6 +75,18 @@ terminate = False
 # Database Session setup
 credentials = db_manager.get_credentials()
 
+# Mockup Headers
+headers = {
+    'authority': 'www.amazon.in',
+    'upgrade-insecure-requests': '1',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.193 Safari/537.36',
+    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+    'sec-fetch-site': 'none',
+    'sec-fetch-mode': 'navigate',
+    'sec-fetch-dest': 'document',
+    'accept-language': 'en-US,en;q=0.9',
+}
+
 
 def exit_gracefully(signum, frame):
     # restore the original signal handler as otherwise evil things will happen
@@ -114,7 +126,7 @@ def scrape_product_detail(category, product_urls, instance_id=None):
             logger.info(f"Going to Details page for PID {product_id}")
                 
             try:
-                response = my_proxy.get(server_url)
+                response = my_proxy.get(server_url, headers=headers)
             except TimeoutError:
                 logger.warning(f"For PID {product_id}, couldn't go to {server_url}, request timed out. Skipping this for now...")
                 with SqliteDict(cache_file, autocommit=True) as mydict:
@@ -129,9 +141,11 @@ def scrape_product_detail(category, product_urls, instance_id=None):
             assert response.status_code == 200
             time.sleep(3)
 
+            break_flag = False
+
             while True:
                 try:
-                    response = my_proxy.get(server_url + product_url, product_url=product_url)
+                    response = my_proxy.get(server_url + product_url, product_url=product_url, headers=headers)
                 except TimeoutError:
                     with SqliteDict(cache_file, autocommit=True) as mydict:
                         key = f"INCOMPLETE_ARCHIVED_PIDS"
