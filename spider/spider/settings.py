@@ -20,7 +20,7 @@ NEWSPIDER_MODULE = 'spider.spiders'
 ROBOTSTXT_OBEY = False
 
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
-RETRY_TIMES = 3
+RETRY_TIMES = 10
 
 #DOWNLOADER_MIDDLEWARES = {
 #    'scrapoxy.downloadmiddlewares.proxy.ProxyMiddleware': 100,
