@@ -34,7 +34,10 @@ class ArchiveScraper(Spider):
             if idx >= int(self.start_idx) and idx < int(self.end_idx):
                 pass
             else:
-                break
+                if idx < int(self.start_idx):
+                    continue
+                else:
+                    break
             info[pid] = _info[pid]
         
         for pid in info:
