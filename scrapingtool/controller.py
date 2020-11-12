@@ -35,7 +35,7 @@ def monitor(category="headphones"):
 
         key = f"SCRAPING_COMPLETED"
         value = cache.get(key)
-        if value == 1:
+        if value is not None:
             # Expired
             logger.warning(f"Scraping done! Shutting down")
             command = f'shutdown'.split(' ')
