@@ -211,6 +211,15 @@ def get_credentials():
     from decouple import config
 
     try:
+        if config('DB_TYPE') == 'sqlite':
+            connection_params = {
+                'dbtype': config('DB_TYPE'),
+            }
+            return connection_params
+    except:
+        pass
+
+    try:
         connection_params = {
             'dbtype': config('DB_TYPE'),
             'username': config('DB_USER'),
