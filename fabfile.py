@@ -63,6 +63,7 @@ def setup(ctx):
         with open('.env', 'r') as f:
             environment = f.read().strip()
         conn.run(f'echo "{environment}" > ~/python-scraping/.env')
+        conn.run(f'echo "{environment}" > ~/python-scraping/spider/.env')
 
         # Now start
         conn.run("tmux new -d -s cron")
