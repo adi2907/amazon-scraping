@@ -1,9 +1,11 @@
+import logging
 from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from bs4 import BeautifulSoup
 from decouple import config
 from scrapingtool import db_manager, parse_data
+from scrapingtool.utils import create_logger
 from scrapy import Request, Spider
 from sqlalchemy import asc, desc
 from sqlitedict import SqliteDict
@@ -11,6 +13,7 @@ from sqlitedict import SqliteDict
 
 class ArchiveScraper(Spider):
     name = u'archive_details_spider'
+    logger = create_logger('archive_spider')
 
     def start_requests(self, domain="amazon.in", category="headphones", start_idx=0, end_idx=100, *args, **kwargs):
         """This is our first request to grab all the urls.
@@ -26,7 +29,7 @@ class ArchiveScraper(Spider):
 
         with db_manager.session_scope(SessionFactory) as session:
             queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == self.category, (db_manager.ProductListing.date_completed == None) | (db_manager.ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
-            print(f"Found {queryset.count()} inactive products totally")
+            self.logger.info(f"Found {queryset.count()} inactive products totally")
             for instance in queryset:
                 _info[instance.product_id] = instance.product_url
         
@@ -41,9 +44,9 @@ class ArchiveScraper(Spider):
             info[pid] = _info[pid]
         
         for pid in info:
-            print(f"Scraping PID {pid} at url {info[pid]}")
+            self.logger.info(f"Scraping PID {pid} at url {info[pid]}")
             request = Request(
-                url=self.domain + info[pid],
+                url=domain + info[pid],
                 callback=self.parse_response,
             )
             request.meta['product_id'] = pid
