@@ -86,3 +86,87 @@ def setup(ctx):
         #print(result, result.exited)
         #result = conn.sudo('service tor status')
         #print(result, result.exited)
+
+
+@task
+def terminate(ctx):
+    if not os.path.exists('active_instances.txt'):
+        raise ValueError(f"Please list the active instances on active_instances.txt. Run `python awstool/api.py --fetch_instances` to dump the currently active instances")
+    
+    if not os.path.exists('aws_private_key.pem'):
+        raise ValueError(f"Please get the private key template at aws_private_key.pem")
+
+    conn_params = []
+    INSTANCE_USERNAME = 'ubuntu'
+    
+    with open('active_instances.txt', 'r') as f:
+        for line in f:
+            text = line.strip()
+            if text not in ['', None]:
+                conn_params.append(INSTANCE_USERNAME + '@' + text)
+    
+    num_instances = len(conn_params)
+
+    upgrade_response = Responder(
+        pattern=r'What would you like to do about menu\.lst\?',
+        response='2\n',
+    )
+
+    conns = SerialGroup(
+        *(conn_params),
+        connect_kwargs=
+        {
+            'key_filename': config('SSH_KEY_FILE'),
+        },
+        )
+    ctx.CONNS = conns
+    instance_number = 0
+    for _, conn in enumerate(ctx.CONNS):
+        # Send it twice
+        conn.run(r"tmux send -t cron.0 C-c")
+        conn.run(r"tmux send -t cron.0 C-c")
+
+        result = conn.sudo(r"shutdown")
+        print(result, result.exited)
+        
+        instance_number += 1
+
+
+@task
+def retry(ctx):
+    if not os.path.exists('active_instances.txt'):
+        raise ValueError(f"Please list the active instances on active_instances.txt. Run `python awstool/api.py --fetch_instances` to dump the currently active instances")
+    
+    if not os.path.exists('aws_private_key.pem'):
+        raise ValueError(f"Please get the private key template at aws_private_key.pem")
+
+    conn_params = []
+    INSTANCE_USERNAME = 'ubuntu'
+    
+    with open('active_instances.txt', 'r') as f:
+        for line in f:
+            text = line.strip()
+            if text not in ['', None]:
+                conn_params.append(INSTANCE_USERNAME + '@' + text)
+    
+    num_instances = len(conn_params)
+
+    conns = SerialGroup(
+        *(conn_params),
+        connect_kwargs=
+        {
+            'key_filename': config('SSH_KEY_FILE'),
+        },
+        )
+    ctx.CONNS = conns
+    instance_number = 0
+    for _, conn in enumerate(ctx.CONNS):
+        # Send it twice
+        conn.run(r"tmux send -t cron.0 C-c")
+        conn.run(r"tmux send -t cron.0 C-c")
+
+        command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {instance_number} --num_instances {num_instances} --num_threads 5'
+        command = command.replace(' ', r'\ ')
+        conn.run(f"tmux send -t cron.0 {command} ENTER")
+        
+        instance_number += 1
