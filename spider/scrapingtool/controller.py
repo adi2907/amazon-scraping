@@ -38,7 +38,7 @@ def monitor(category="headphones"):
         if value is not None:
             # Expired
             logger.warning(f"Scraping done! Shutting down")
-            command = f'shutdown'.split(' ')
+            command = f'sudo shutdown'.split(' ')
             p = subprocess.Popen(command)
         else:
             continue
