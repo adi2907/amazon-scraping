@@ -12,5 +12,5 @@ test -d "python-scraping" && echo "python-scraping directory already exists! Ski
 pip3 install -r python-scraping/requirements.txt
 echo "Finished setup!"
 echo "Testing dummy script..."
-cd python-scraping && python3 scrapingtool/proxy.py
+cd python-scraping && git pull && python3 scrapingtool/proxy.py
 echo "Finished script Test!"
