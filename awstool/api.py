@@ -157,6 +157,11 @@ def get_created_instance_details(ec2):
     return fetch_instances(ec2, filters=[{'Name': 'instance-id', 'Values': _ids}], default=False)
 
 
+def start_instances(ec2, instance_ids):
+    response = ec2.start_instances(InstanceIds=instance_ids)
+    return response
+
+
 def stop_instances(ec2, instance_ids):
     response = ec2.instances.filter(InstanceIds=instance_ids).stop()
     return response
@@ -173,6 +178,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretty_print_instances', help='Pretty Print all instances', default=False, action='store_true')
     parser.add_argument('--create_instance', help='Creates a new EC2 instance', default=False, action='store_true')
     parser.add_argument('--get_created_instance_details', help='Fetch the newly create instance details', default=False, action='store_true')
+    parser.add_argument('--start_instances', help='Start existing EC2 instances', default=False, action='store_true')
     parser.add_argument('--stop_instances', help='Stops EC2 instances', default=False, action='store_true')
     parser.add_argument('--terminate_instances', help='Terminates EC2 instances', default=False, action='store_true')
     parser.add_argument('--reset_state', help='Reset state', default=False, action='store_true')
@@ -187,6 +193,7 @@ if __name__ == '__main__':
     _pretty_print_instances = args.pretty_print_instances
     _create_instance = args.create_instance
     _get_created_instance_details = args.get_created_instance_details
+    _start_instances = args.start_instances
     _stop_instances = args.stop_instances
     _terminate_instances = args.terminate_instances
     _instance_ids = args.instance_ids
@@ -207,6 +214,13 @@ if __name__ == '__main__':
     if _get_created_instance_details == True:
         _, ec2 = start_session()
         response = get_created_instance_details(ec2)
+        print(response)
+    if _start_instances == True:
+        if _instance_ids in [None, []]:
+            print(f"Must send a list of Instance IDs to terminate")
+            exit(0)
+        _, ec2 = start_session()
+        response = start_instances(ec2, _instance_ids)
         print(response)
     if _terminate_instances == True:
         if _filename is not None:

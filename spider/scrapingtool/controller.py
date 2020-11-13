@@ -21,7 +21,7 @@ cache.connect('master', use_redis=True)
 
 today = datetime.today().strftime("%d-%m-%y")
 
-def monitor(category="headphones"):
+def monitor(category="headphones", instance_id=0):
     global cache
     INTERVAL = 60 * 20
     
@@ -33,7 +33,7 @@ def monitor(category="headphones"):
         time.sleep(INTERVAL)
         logger.info(f"Woke Up! Checking status")
 
-        key = f"SCRAPING_COMPLETED"
+        key = f"SCRAPING_COMPLETED_{instance_id}"
         value = cache.get(key)
         if value is not None:
             # Expired
@@ -48,5 +48,8 @@ if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
+    parser.add_argument('--instance_id', help='Get the instance id (from 0 to num_instances - 1)', default=None, type=int)
 
-    monitor(category="headphones")
+    instance_id = args.instance_id
+
+    monitor(category="headphones", instance_id=instance_id)
