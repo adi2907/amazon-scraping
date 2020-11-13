@@ -12,6 +12,11 @@ def start_session(region="ap-south-1"):
     return session, ec2
 
 
+def start_client(region="ap-south-1"):
+    ec2 = boto3.client('ec2', region_name=region)
+    return ec2
+
+
 def fetch_instances(ec2, filters=[{'Name': 'instance-state-name', 'Values': ['running']}], default=True):
     instances = ec2.instances.filter(Filters=filters)
     active_instances = []
@@ -158,7 +163,7 @@ def get_created_instance_details(ec2):
 
 
 def start_instances(ec2, instance_ids):
-    response = ec2.start_instances(InstanceIds=instance_ids)
+    response = ec2.client.start_instances(InstanceIds=instance_ids)
     return response
 
 
