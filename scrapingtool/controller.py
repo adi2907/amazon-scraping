@@ -47,8 +47,8 @@ def monitor(category="headphones", instance_id=0):
 if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
-    args = parser.parse_args()
     parser.add_argument('--instance_id', help='Get the instance id (from 0 to num_instances - 1)', default=None, type=int)
+    args = parser.parse_args()
 
     instance_id = args.instance_id
 
