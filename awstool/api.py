@@ -216,6 +216,16 @@ if __name__ == '__main__':
         response = get_created_instance_details(ec2)
         print(response)
     if _start_instances == True:
+        if _filename is not None:
+            _instance_ids = []
+            if not os.path.exists(_filename):
+                print(f"No such file: {_filename}")
+                exit(0)
+            with open(_filename, 'r') as f:
+                for line in f:
+                    text = line.strip()
+                    if text is not None:
+                        _instance_ids.append(line.strip())
         if _instance_ids in [None, []]:
             print(f"Must send a list of Instance IDs to terminate")
             exit(0)
