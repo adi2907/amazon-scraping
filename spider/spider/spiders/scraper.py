@@ -15,7 +15,7 @@ class ArchiveScraper(Spider):
     name = u'archive_details_spider'
     logger = create_logger('archive_spider')
 
-    def start_requests(self, category="headphones", start_idx=0, end_idx=100, *args, **kwargs):
+    def start_requests(self, category="headphones", instance_id=0, start_idx=0, end_idx=100, *args, **kwargs):
         """This is our first request to grab all the urls.
         """
 

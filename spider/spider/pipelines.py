@@ -33,7 +33,8 @@ class SpiderPipeline:
         try:
             _cache = cache.Cache()
             _cache.connect('master', use_redis=True)
-            _cache.set(f"SCRAPING_COMPLETED", 1, timeout=6 * 24 * 24)
+            instance_id = spider.instance_id
+            _cache.set(f"SCRAPING_COMPLETED_{instance_id}", 1, timeout=6 * 24 * 24)
         except Exception as ex:
             print(f"Error when setting cache: {ex}")
 
