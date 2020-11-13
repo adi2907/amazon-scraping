@@ -162,8 +162,8 @@ def get_created_instance_details(ec2):
     return fetch_instances(ec2, filters=[{'Name': 'instance-id', 'Values': _ids}], default=False)
 
 
-def start_instances(ec2, instance_ids):
-    response = ec2.client.start_instances(InstanceIds=instance_ids)
+def start_instances(client, instance_ids):
+    response = client.start_instances(InstanceIds=instance_ids)
     return response
 
 
@@ -234,8 +234,8 @@ if __name__ == '__main__':
         if _instance_ids in [None, []]:
             print(f"Must send a list of Instance IDs to terminate")
             exit(0)
-        _, ec2 = start_session()
-        response = start_instances(ec2, _instance_ids)
+        client = start_client()
+        response = start_instances(client, _instance_ids)
         print(response)
     if _terminate_instances == True:
         if _filename is not None:
