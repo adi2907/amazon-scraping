@@ -1,5 +1,6 @@
 import itertools
 import math
+import os
 import random
 import socket
 import time
@@ -196,6 +197,14 @@ class Proxy():
     def get_proxy_list(self, country=None) -> list:
         """Fetches the list of active socks proxies
         """
+        if os.path.exists('proxy_list.txt'):
+            proxy_list = []
+            with open('proxy_list.txt', 'r') as f:
+                for line in f:
+                    proxy_list.append(line.strip())
+            if proxy_list != []:
+                return proxy_list
+        
         if country is None or country == 'all':
             # Fetch global proxies
             response = self.get(to_http('https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt', use_tor=self.use_tor), ref_count='constant')
@@ -220,8 +229,8 @@ class Proxy():
         if self.use_proxy == False:
             return
         
-        if len(self.proxy_list) < 10:
-            raise ValueError(f"Proxy List must have atleast 10 elements")
+        if len(self.proxy_list) < 2:
+            raise ValueError(f"Proxy List must have atleast 2 elements")
         
         proxy = self.proxies['https']
         new_proxy = random.choice(self.proxy_list)
