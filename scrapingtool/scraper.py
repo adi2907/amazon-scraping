@@ -1748,9 +1748,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                         if hasattr(obj, 'completed'):
                                             setattr(obj, 'completed', True)
                                             db_session.add(obj)
-                                else:
-                                    error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
-                                    break
+                                    else:
+                                        error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+                                        break
                             else:
                                 logger.info(f"For Product {product_id}, scraping reviews again. Curr Reviews = {curr_reviews}, while num_reviews = {total_ratings}")                                
                                 if jump_page == 0:
