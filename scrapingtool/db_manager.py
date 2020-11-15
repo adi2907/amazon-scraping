@@ -1589,6 +1589,40 @@ def update_brands(session, table='ProductListing', override=True):
         logger.critical(f"Error when commiting for update_brands()")
 
 
+def finalize_reviews(engine):
+    import os
+    import pandas as pd
+
+    QANDA_COMPRESSED = os.path.join(os.getcwd(), 'QandA.csv')
+
+    if not os.path.exists(QANDA_COMPRESSED):
+        raise ValueError("File not found")
+
+    df = pd.read_csv(QANDA_COMPRESSED, sep=",", encoding="utf-8", lineterminator='\n', usecols=["id", "date", "question", "answer", "is_duplicate", "duplicate_set"])
+
+    cleaned_df = df.drop_duplicates(subset=['duplicate_set'], keep='first')
+
+    cleaned_df['product_id'].to_csv(os.path.join(os.getcwd(), 'QandA_survivors.csv'), index=False)
+
+    for pid, duplicate_set in zip(cleaned_df['product_id'], cleaned_df['duplicate_set']):
+        engine.execute(f'UPDATE QandA SET product_id = {pid}  WHERE duplicate_set = {duplicate_set}')
+
+    REVIEWS_COMPRESSED = os.path.join(os.getcwd(), 'Reviews.csv')
+
+    if not os.path.exists(REVIEWS_COMPRESSED):
+        raise ValueError("File not found")
+
+    df = pd.read_csv(REVIEWS_COMPRESSED, sep=",", encoding="utf-8", usecols=["id", "review_date", "title", "body", "rating", "helpful_votes", "is_duplicate", "duplicate_set"])
+
+    cleaned_df = df.drop_duplicates(subset=['duplicate_set'], keep='first')
+
+    cleaned_df['product_id'].to_csv(os.path.join(os.getcwd(), 'Reviews_survivors.csv'), index=False)
+
+    for pid, duplicate_set in zip(cleaned_df['product_id'], cleaned_df['duplicate_set']):
+        engine.execute(f'UPDATE Reviews SET product_id = {pid} WHERE duplicate_set = {duplicate_set}')
+        engine.execute(f'UPDATE ProductDetails as t1 SET t1.date_completed = t1.date_completed + INTERVAL 1 MINUTE WHERE t1.product_id = {pid}')
+
+
 def update_product_data(engine, dump=False):
     import os
     import subprocess
@@ -1771,6 +1805,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_listing_from_details', help='Update Listing from Details (for possibly archived products)', default=False, action='store_true')
     parser.add_argument('--dump_from_cache', help='Dump from Cache', default=False, action='store_true')
     parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
+    parser.add_argument('--finalize_reviews', help='Finalize Reviews', default=False, action='store_true')
 
     parser.add_argument('--import_product_data', help='Import Data (Duplicate Sets)', default=False, action='store_true')
 
@@ -1803,6 +1838,7 @@ if __name__ == '__main__':
     _close_all_db_connections = args.close_all_db_connections
     _update_duplicate_sets = args.update_duplicate_sets
     _import_product_data = args.import_product_data
+    _finalize_reviews = args.finalize_reviews
 
     _csv = args.csv
     _table = args.table
@@ -1906,6 +1942,8 @@ if __name__ == '__main__':
         import_product_data(session, _csv, table='ProductListing')
     if _update_product_listing_from_cache == True:
         update_product_listing_from_cache(session, "headphones")
+    if _finalize_reviews == True:
+        finalize_reviews(engine)
     if _update_active_products == True:
         import cache
         cache = cache.Cache()
