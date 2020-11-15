@@ -56,6 +56,7 @@ tables = {
         'date_completed': 'DATETIME',
         'brand': 'TEXT(100)',
         'alert': 'BOOLEAN',
+        'detail_completed': 'DATETIME',
         },
     'ProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -82,6 +83,7 @@ tables = {
         'date_completed': 'DATETIME',
         'is_duplicate': 'BOOLEAN',
         'alert': 'BOOLEAN',
+        'duplicate_set': 'INTEGER',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',

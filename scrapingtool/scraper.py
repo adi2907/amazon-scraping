@@ -310,13 +310,11 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
                             continue
                         else:
-                            recent_obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc(text('date_completed'))).first()
+                            recent_obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc(text('detail_completed'))).first()
                             if recent_obj is None:
                                 error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
                                 continue
-                            
-                            instances = db_manager.query_table(db_session, 'ProductListing', 'all', filter_cond=({'duplicate_set': f'{a.duplicate_set}'}))
-                            
+                                                        
                             if cache.sismember("DUPLICATE_SETS", str(recent_obj.duplicate_set)):
                                 error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
                                 continue
@@ -326,7 +324,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             
                             product_url = recent_obj.product_url
                             
-                            recent_date = recent_obj.date_completed
+                            recent_date = recent_obj.detail_completed
 
                         if override == False and recent_date is not None:
                             _date = recent_date
@@ -336,9 +334,9 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                                 logger.info(f"Skipping this product. within the last week")
                                 continue
                             
-                        elif override == False and hasattr(recent_obj, 'date_completed') and recent_obj.date_completed is not None:
+                        elif override == False and hasattr(recent_obj, 'date_completed') and recent_obj.detail_completed is not None:
                             # Go until this point only
-                            _date = recent_obj.date_completed
+                            _date = recent_obj.detail_completed
                             logger.info(f"Set date as {_date}")
                             delta = datetime.now() - _date
                             if delta.days < 6:
@@ -389,7 +387,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                         
                         product_url = recent_obj.product_url
                         
-                        recent_date = recent_obj.date_completed
+                        recent_date = recent_obj.detail_completed
 
                     if override == False and recent_date is not None:
                         _date = recent_date
@@ -399,9 +397,9 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                             logger.info(f"Skipping this product. within the last week")
                             continue
                         
-                    elif override == False and hasattr(recent_obj, 'date_completed') and recent_obj.date_completed is not None:
+                    elif override == False and hasattr(recent_obj, 'detail_completed') and recent_obj.detail_completed is not None:
                         # Go until this point only
-                        _date = recent_obj.date_completed
+                        _date = recent_obj.detail_completed
                         logger.info(f"Set date as {_date}")
                         delta = datetime.now() - _date
                         if delta.days < 6:
@@ -753,13 +751,11 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                             error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
                                             continue
                                         else:
-                                            recent_obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc(text('date_completed'))).first()
+                                            recent_obj = db_session.query(db_manager.ProductDetails).filter(db_manager.ProductDetails.duplicate_set == a.duplicate_set).order_by(desc(text('date_completed'))).first()
                                             if recent_obj is None:
                                                 error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
                                                 continue
-                                            
-                                            instances = db_manager.query_table(db_session, 'ProductListing', 'all', filter_cond=({'duplicate_set': f'{a.duplicate_set}'}))
-                                            
+                                                                                        
                                             if cache.sismember("DUPLICATE_SETS", str(recent_obj.duplicate_set)):
                                                 error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
                                                 continue
