@@ -1598,7 +1598,7 @@ def finalize_reviews(engine):
     if not os.path.exists(QANDA_COMPRESSED):
         raise ValueError("File not found")
 
-    df = pd.read_csv(QANDA_COMPRESSED, sep=",", encoding="utf-8", lineterminator='\n', usecols=["id", "date", "question", "answer", "is_duplicate", "duplicate_set"])
+    df = pd.read_csv(QANDA_COMPRESSED, sep=",", encoding="utf-8", lineterminator='\n', usecols=["id", "product_id", "date", "question", "answer", "is_duplicate", "duplicate_set"])
 
     cleaned_df = df.drop_duplicates(subset=['duplicate_set'], keep='first')
 
@@ -1612,7 +1612,7 @@ def finalize_reviews(engine):
     if not os.path.exists(REVIEWS_COMPRESSED):
         raise ValueError("File not found")
 
-    df = pd.read_csv(REVIEWS_COMPRESSED, sep=",", encoding="utf-8", usecols=["id", "review_date", "title", "body", "rating", "helpful_votes", "is_duplicate", "duplicate_set"])
+    df = pd.read_csv(REVIEWS_COMPRESSED, sep=",", encoding="utf-8", usecols=["id", "product_id", "review_date", "title", "body", "rating", "helpful_votes", "is_duplicate", "duplicate_set"])
 
     cleaned_df = df.drop_duplicates(subset=['duplicate_set'], keep='first')
 
