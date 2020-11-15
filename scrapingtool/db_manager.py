@@ -1293,7 +1293,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             if obj1.product_id == obj2.product_id:
                 continue
             
-            a = ((obj1.avg_rating == obj2.avg_rating) or (obj1.avg_rating is not None and obj2.avg_rating is not None and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1)))
+            a = ((obj1.avg_rating == obj2.avg_rating) or ((obj1.avg_rating is not None) and (obj2.avg_rating is not None) and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1 + 0.001)))
             b = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))            
             
             if b == False:
