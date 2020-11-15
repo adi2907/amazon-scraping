@@ -1605,7 +1605,8 @@ def finalize_reviews(engine):
     cleaned_df['product_id'].to_csv(os.path.join(os.getcwd(), 'QandA_survivors.csv'), index=False)
 
     for pid, duplicate_set in zip(cleaned_df['product_id'], cleaned_df['duplicate_set']):
-        engine.execute(f"UPDATE QandA SET product_id = '{pid}'  WHERE duplicate_set = {duplicate_set}")
+        if duplicate_set == duplicate_set:
+            engine.execute(f"UPDATE QandA SET product_id = '{pid}'  WHERE duplicate_set = {duplicate_set}")
 
     REVIEWS_COMPRESSED = os.path.join(os.getcwd(), 'Reviews.csv')
 
@@ -1619,8 +1620,9 @@ def finalize_reviews(engine):
     cleaned_df['product_id'].to_csv(os.path.join(os.getcwd(), 'Reviews_survivors.csv'), index=False)
 
     for pid, duplicate_set in zip(cleaned_df['product_id'], cleaned_df['duplicate_set']):
-        engine.execute(f"UPDATE ProductDetails as t1 SET t1.date_completed = t1.date_completed + INTERVAL 1 MINUTE WHERE t1.product_id = '{pid}'")
-        engine.execute(f"UPDATE Reviews SET product_id = '{pid}' WHERE duplicate_set = {duplicate_set}")
+        if duplicate_set == duplicate_set:
+            engine.execute(f"UPDATE ProductDetails as t1 SET t1.date_completed = t1.date_completed + INTERVAL 1 MINUTE WHERE t1.product_id = '{pid}'")
+            engine.execute(f"UPDATE Reviews SET product_id = '{pid}' WHERE duplicate_set = {duplicate_set}")
 
 
 def update_product_data(engine, dump=False):
