@@ -188,3 +188,44 @@ def retry(ctx):
         conn.run(f"tmux send -t cron.0 {command} ENTER")
         
         instance_number += 1
+
+
+@task
+def setup_detail(ctx):
+    if not os.path.exists('allowed_hosts.txt'):
+        raise ValueError(f"Please list the allowed_hosts.txt")
+
+    conn_params = []
+    proxies = []
+    
+    INSTANCE_USERNAME = 'ubuntu'
+
+    with open('allowed_hosts.txt', 'r') as f:
+        for line in f:
+            ip_address = line.strip()
+            conn_params.append(INSTANCE_USERNAME + '@' + ip_address)
+    
+    with open('active_instances.txt', 'r'):
+        for line in f:
+            ip_address = line.strip().split('.')[0]
+            if ip_address.startswith('ec2-'):
+                ip_address = ip_address[4:].replace('-', '.')
+        proxies.append(ip_address + ':8888')
+    
+    proxy_list = ''
+
+    for proxy in proxies:
+        proxy_list += proxy + '\n'
+    
+    print(proxy_list)
+    
+    conns = SerialGroup(
+        *(conn_params),
+        connect_kwargs=
+        {
+            'key_filename': config('SSH_KEY_FILE'),
+        },
+        )
+    ctx.CONNS = conns
+    for _, conn in enumerate(ctx.CONNS):
+        conn.run(f'echo "{proxy_list}" > ~/updated/python-scraping/proxy_list.txt')
