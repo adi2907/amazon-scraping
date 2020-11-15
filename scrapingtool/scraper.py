@@ -265,7 +265,6 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
         if my_proxy is None:
             session = requests.Session()
         
-        db_session = Session()
         #db_session = scoped_session(Session)
     else:
         my_proxy = proxy.Proxy(OS=OS, stream_isolation=False, server_url=server_url) # Separate Proxy per thread
@@ -278,9 +277,6 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
 
         if my_proxy is None:
             session = requests.Session()
-        
-        db_session = Session()
-
     #listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
     
     for idx, product_id in enumerate(listing_pids):
@@ -299,28 +295,93 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                 cache.atomic_set_add(f"{category}_PIDS", product_id)
             else:
                 logger.info(f"PID {product_id} in set. Skipping this product")
-                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                if obj is not None:
-                    continue
+                with db_manager.session_scope(Session) as db_session:
+                    obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                    if obj is not None:
+                        continue
 
             if product_id is not None:
                 _date = threshold_date
-                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                with db_manager.session_scope(Session) as db_session:
+                    obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                 
-                recent_date = None
+                    recent_date = None
 
-                if obj is not None:
-                    if obj.completed == True:
+                    if obj is not None:
+                        if obj.completed == True:
+                            a = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                            if a is None:
+                                error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
+                                continue
+                            else:
+                                recent_obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc(text('detail_completed'))).first()
+                                if recent_obj is None:
+                                    error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
+                                    continue
+                                                            
+                                if cache.sismember("DUPLICATE_SETS", str(recent_obj.duplicate_set)):
+                                    error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
+                                    continue
+
+                                if recent_obj.duplicate_set is not None:
+                                    cache.sadd(f"DUPLICATE_SETS", str(recent_obj.duplicate_set))
+                                
+                                product_url = recent_obj.product_url
+                                
+                                recent_date = recent_obj.detail_completed
+
+                            if override == False and recent_date is not None:
+                                _date = recent_date
+                                logger.info(f"Set date as {_date}")
+                                delta = datetime.now() - _date
+                                if delta.days < 6:
+                                    logger.info(f"Skipping this product. within the last week")
+                                    continue
+                                
+                            elif override == False and hasattr(recent_obj, 'date_completed') and recent_obj.detail_completed is not None:
+                                # Go until this point only
+                                _date = recent_obj.detail_completed
+                                logger.info(f"Set date as {_date}")
+                                delta = datetime.now() - _date
+                                if delta.days < 6:
+                                    logger.info(f"Skipping this product. within the last week")
+                                    continue
+                            else:
+                                _date = threshold_date
+
+                        if hasattr(obj, 'product_details') and obj.product_details in (None, {}, '{}'):
+                            rescrape = 1
+                            error_logger.info(f"Product ID {product_id} has NULL product_details. Scraping it again...")
+                            #product_url = obj.product_url
+                            if hasattr(obj, 'completed') and obj.completed is None:
+                                rescrape = 2
+                        else:
+                            #product_url = obj.product_url
+                            if _date != threshold_date:
+                                rescrape = 0
+                            else:
+                                rescrape = 2
+                                if override == True:
+                                    pass
+                                else:
+                                    logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                    error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
+                                    continue
+                    else:
+                        error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping this from scratch")
+                        rescrape = 0
                         a = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
                         if a is None:
                             error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
                             continue
                         else:
-                            recent_obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc(text('detail_completed'))).first()
+                            recent_obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc(text('date_completed'))).first()
                             if recent_obj is None:
                                 error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
                                 continue
-                                                        
+                            
+                            instances = db_manager.query_table(db_session, 'ProductListing', 'all', filter_cond=({'duplicate_set': f'{a.duplicate_set}'}))
+                            
                             if cache.sismember("DUPLICATE_SETS", str(recent_obj.duplicate_set)):
                                 error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
                                 continue
@@ -340,7 +401,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                                 logger.info(f"Skipping this product. within the last week")
                                 continue
                             
-                        elif override == False and hasattr(recent_obj, 'date_completed') and recent_obj.detail_completed is not None:
+                        elif override == False and hasattr(recent_obj, 'detail_completed') and recent_obj.detail_completed is not None:
                             # Go until this point only
                             _date = recent_obj.detail_completed
                             logger.info(f"Set date as {_date}")
@@ -350,69 +411,6 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                                 continue
                         else:
                             _date = threshold_date
-
-                    if hasattr(obj, 'product_details') and obj.product_details in (None, {}, '{}'):
-                        rescrape = 1
-                        error_logger.info(f"Product ID {product_id} has NULL product_details. Scraping it again...")
-                        #product_url = obj.product_url
-                        if hasattr(obj, 'completed') and obj.completed is None:
-                            rescrape = 2
-                    else:
-                        #product_url = obj.product_url
-                        if _date != threshold_date:
-                            rescrape = 0
-                        else:
-                            rescrape = 2
-                            if override == True:
-                                pass
-                            else:
-                                logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                error_logger.info(f"Product with ID {product_id} already in ProductDetails. Skipping this product")
-                                continue
-                else:
-                    error_logger.info(f"{idx}: Product with ID {product_id} not in DB. Scraping this from scratch")
-                    rescrape = 0
-                    a = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                    if a is None:
-                        error_logger.info(f"{idx}: Product with ID {product_id} not in ProductListing. Skipping this, as this will give an integrityerror")
-                        continue
-                    else:
-                        recent_obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.duplicate_set == a.duplicate_set).order_by(desc(text('date_completed'))).first()
-                        if recent_obj is None:
-                            error_logger.info(f"{idx}: Product with ID {product_id} not in duplicate set filter")
-                            continue
-                        
-                        instances = db_manager.query_table(db_session, 'ProductListing', 'all', filter_cond=({'duplicate_set': f'{a.duplicate_set}'}))
-                        
-                        if cache.sismember("DUPLICATE_SETS", str(recent_obj.duplicate_set)):
-                            error_logger.info(f"{idx}: Product with ID {product_id} is a duplicate. Skipping this...")
-                            continue
-
-                        if recent_obj.duplicate_set is not None:
-                            cache.sadd(f"DUPLICATE_SETS", str(recent_obj.duplicate_set))
-                        
-                        product_url = recent_obj.product_url
-                        
-                        recent_date = recent_obj.detail_completed
-
-                    if override == False and recent_date is not None:
-                        _date = recent_date
-                        logger.info(f"Set date as {_date}")
-                        delta = datetime.now() - _date
-                        if delta.days < 6:
-                            logger.info(f"Skipping this product. within the last week")
-                            continue
-                        
-                    elif override == False and hasattr(recent_obj, 'detail_completed') and recent_obj.detail_completed is not None:
-                        # Go until this point only
-                        _date = recent_obj.detail_completed
-                        logger.info(f"Set date as {_date}")
-                        delta = datetime.now() - _date
-                        if delta.days < 6:
-                            logger.info(f"Skipping this product. within the last week")
-                            continue
-                    else:
-                        _date = threshold_date
             
             if override == True:
                 _date = threshold_date
@@ -1307,13 +1305,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     logger.info(f"Going to Details page for PID {product_id}")
 
-    obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == f'{product_id}').first()
+    with db_manager.session_scope(Session) as db_session:
+        obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == f'{product_id}').first()
 
-    if obj is None:
-        logger.critical(f"Row with PID {product_id} doesn't exist in ProductListing. Returning....")
-        return {}
+        if obj is None:
+            logger.critical(f"Row with PID {product_id} doesn't exist in ProductListing. Returning....")
+            return {}
     
-    duplicate_set = obj.duplicate_set
+        duplicate_set = obj.duplicate_set
 
     dont_update = False
 
@@ -1419,13 +1418,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if USE_DB == True:
         # Insert to the DB
         try:
-            status = db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
-            if status == False:
-                try:
-                    store_to_cache(f"DETAILS_{product_id}", details, html=html)
-                except NameError:
-                    store_to_cache(f"DETAILS_{product_id}", details, html=None)
-                store_to_cache(f"IS_SPONSORED_{product_id}", sponsored)
+            with db_manager.session_scope(Session) as db_session:
+                status = db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
+                if status == False:
+                    try:
+                        store_to_cache(f"DETAILS_{product_id}", details, html=html)
+                    except NameError:
+                        store_to_cache(f"DETAILS_{product_id}", details, html=None)
+                    store_to_cache(f"IS_SPONSORED_{product_id}", sponsored)
         except:
             try:
                 status = store_to_cache(f"DETAILS_{product_id}", details, html=html)
@@ -1444,13 +1444,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         if jump_page > 0:
             curr_reviews = REVIEWS_PER_PAGE * jump_page
         else:
-            num_reviews_none = 0
-            num_reviews_not_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num != None).count()
-            
-            if num_reviews_not_none == 0:
-                num_reviews_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num == None).count()
-            
-            curr_reviews = max(num_reviews_not_none, num_reviews_none)
+            with db_manager.session_scope(Session) as db_session:
+                num_reviews_none = 0
+                num_reviews_not_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num != None).count()
+                
+                if num_reviews_not_none == 0:
+                    num_reviews_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num == None).count()
+                
+                curr_reviews = max(num_reviews_not_none, num_reviews_none)
     
     # Get the qanda for this product
     if 'customer_lazy' in details and details['customer_lazy'] == True:
@@ -1549,12 +1550,13 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         except NameError:
                             store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
                     else:
-                        status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id, duplicate_set=duplicate_set)
-                        if status == False:
-                            try:
-                                store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
-                            except NameError:
-                                store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
+                        with db_manager.session_scope(Session) as db_session:
+                            status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id, duplicate_set=duplicate_set)
+                            if status == False:
+                                try:
+                                    store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
+                                except NameError:
+                                    store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
                 except:
                     try:
                         store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
@@ -1629,13 +1631,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         logger.warning(f"For ID {product_id}, reviews_url is not in details")
         if details is not None:
             logger.warning("Trying to search from DB....")
-            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+            with db_manager.session_scope(Session) as db_session:
+                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                reviews_url = obj.reviews_url
+                flag = True
     
     if obj is not None:
         if obj == True:
             pass
-        else:
-            reviews_url = obj.reviews_url
         
         prev_url = product_url
         curr = 0
@@ -1737,20 +1740,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             if curr_reviews >= round(int(0.9 * total_ratings)) and jump_page == 0:
                                 # Mark as completed
                                 logger.info(f"For Product {product_id}, marking as completed")
-                                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                                if obj is not None:
-                                    is_completed = True
-                                    logger.info(f"Product with ID {product_id} is completed = {is_completed}")
-                                    if hasattr(obj, 'completed'):
-                                        setattr(obj, 'completed', True)
-                                        try:
-                                            db_session.commit()
-                                            break
-                                        except:
-                                            db_session.rollback()
-                                            logger.warning(f"For Product {product_id}, there is an error with the data.")
-                                            logger.newline()
-                                            break
+                                with db_manager.session_scope(Session) as db_session:
+                                    obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                                    if obj is not None:
+                                        is_completed = True
+                                        logger.info(f"Product with ID {product_id} is completed = {is_completed}")
+                                        if hasattr(obj, 'completed'):
+                                            setattr(obj, 'completed', True)
+                                            db_session.add(obj)
                                 else:
                                     error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
                                     break
@@ -1782,12 +1779,13 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                 except NameError:
                                     store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
                             else:
-                                status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
-                                if not status:
-                                    try:
-                                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
-                                    except NameError:
-                                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
+                                with db_manager.session_scope(Session) as db_session:
+                                    status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
+                                    if not status:
+                                        try:
+                                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
+                                        except NameError:
+                                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
                         except:
                             store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
                     else:
@@ -1798,12 +1796,13 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                 pass
                         else:
                             try:
-                                status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
-                                if not status:
-                                    try:
-                                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
-                                    except NameError:
-                                        store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
+                                with db_manager.session_scope(Session) as db_session:
+                                    status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
+                                    if not status:
+                                        try:
+                                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
+                                        except NameError:
+                                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
                             except:
                                 try:
                                     store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
@@ -1893,22 +1892,18 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if dont_update == True:
         pass
     else:
-        obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-        if obj is not None:
-            logger.info(f"Product with ID {product_id} is completed = {is_completed}")
-            if hasattr(obj, 'completed'):
-                setattr(obj, 'completed', is_completed)
-                if obj.completed == True:
-                    if hasattr(obj, 'date_completed'):
-                        obj.date_completed = datetime.now()
-                try:
-                    db_session.commit()
-                except:
-                    db_session.rollback()
-                    logger.warning(f"For Product {product_id}, there is an error with the data.")
-                    logger.newline()
-        else:
-            error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+        with db_manager.session_scope(Session) as db_session:
+            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+            if obj is not None:
+                logger.info(f"Product with ID {product_id} is completed = {is_completed}")
+                if hasattr(obj, 'completed'):
+                    setattr(obj, 'completed', is_completed)
+                    if obj.completed == True:
+                        if hasattr(obj, 'date_completed'):
+                            obj.date_completed = datetime.now()
+                    db_session.add(obj)
+            else:
+                error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
 
     time.sleep(3)
 
