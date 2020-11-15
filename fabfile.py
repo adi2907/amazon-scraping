@@ -205,7 +205,7 @@ def setup_detail(ctx):
             ip_address = line.strip()
             conn_params.append(INSTANCE_USERNAME + '@' + ip_address)
     
-    with open('active_instances.txt', 'r'):
+    with open('active_instances.txt', 'r') as f:
         for line in f:
             ip_address = line.strip().split('.')[0]
             if ip_address.startswith('ec2-'):
