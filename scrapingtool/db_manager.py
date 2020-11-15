@@ -2090,6 +2090,19 @@ def close_all_db_connections(engine, SessionFactory):
     logger.info(f"Closed all DB connections!")
 
 
+def update_detail_completed(engine, SessionFactory):
+    with session_scope(SessionFactory) as session:
+        queryset = session.query(ProductDetails).all()
+        for obj in queryset:
+            a = session.query(ProductListing).filter(ProductListing.product_id == obj.product_id).first()
+            if a is not None:
+                obj.duplicate_set = a.duplicate_set
+                a.detail_completed = obj.date_completed
+                session.add(a)
+                session.add(obj)
+    logger.info(f"Updated detail_completed field!")
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
@@ -2106,6 +2119,7 @@ if __name__ == '__main__':
     parser.add_argument('--find_archived_products', help='Find archived products from ProductListing', default=False, action='store_true')
     parser.add_argument('--transfer_brands', help='Transfer brands from ProductListing', default=False, action='store_true')
     parser.add_argument('--update_brands', help='Update brands in ProductListing', default=False, action='store_true')
+    parser.add_argument('--update_detail_completed', help='Update detail_completed field in Listing from Details', default=False, action='store_true')
     parser.add_argument('--test_indices', help='Test Indices', default=False, action='store_true')
     parser.add_argument('--export_sets', help='Export Sets', default=False, action='store_true')
     parser.add_argument('--import_from_csv', help='Import a Schema from a CSV file', default=False, action='store_true')
@@ -2133,6 +2147,7 @@ if __name__ == '__main__':
     _update_active_products = args.update_active_products
     _find_archived_products = args.find_archived_products
     _update_from_daily_product_listing = args.update_from_daily_product_listing
+    _update_detail_completed = args.update_detail_completed
     _transfer_brands = args.transfer_brands
     _update_brands = args.update_brands
     _test_indices = args.test_indices
@@ -2256,6 +2271,8 @@ if __name__ == '__main__':
         update_active_products(engine, pids)
     if _find_archived_products == True:
         find_archived_products(session)
+    if _update_detail_completed == True:
+        update_detail_completed(engine, Session)
     if _transfer_brands == True:
         transfer_brands(engine)
     if _update_listing_from_details == True:
