@@ -210,12 +210,14 @@ def setup_detail(ctx):
             ip_address = line.strip().split('.')[0]
             if ip_address.startswith('ec2-'):
                 ip_address = ip_address[4:].replace('-', '.')
-        proxies.append(ip_address + ':8888')
+            proxies.append(ip_address + ':8888')
     
     proxy_list = ''
 
     for proxy in proxies:
-        proxy_list += proxy + '\n'
+        if proxy_list != '':
+            proxy_list += '\n'
+        proxy_list += proxy
     
     print(proxy_list)
     
