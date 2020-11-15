@@ -1297,7 +1297,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             b = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))            
             
             if b == False:
-                if obj1.total_ratings is not None and obj2.total_ratings is not None:
+                if (obj1.total_ratings is not None) and (obj2.total_ratings is not None):
                     if max(obj1.total_ratings, obj2.total_ratings) <= 100:
                         if abs(obj1.total_ratings - obj2.total_ratings) <= 5:
                             b = True
