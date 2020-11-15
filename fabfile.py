@@ -13,6 +13,9 @@ def setup(ctx):
     if not os.path.exists('aws_private_key.pem'):
         raise ValueError(f"Please get the private key template at aws_private_key.pem")
 
+    if not os.path.exists('allowed_hosts.txt'):
+        raise ValueError(f"Please provide allowed_hosts.txt file")
+
     conn_params = []
     INSTANCE_USERNAME = 'ubuntu'
     
@@ -67,6 +70,15 @@ def setup(ctx):
             environment = f.read().strip()
         conn.run(f'echo "{environment}" > ~/python-scraping/.env')
         conn.run(f'echo "{environment}" > ~/python-scraping/spider/.env')
+
+        with open('allowed_hosts.txt', 'r') as f:
+            for line in f:
+                ip_address = line.strip()
+                result = conn.sudo(f'echo -e "\nAllow {ip_address}\n" >> /etc/tinyproxy/tinyproxy.conf')
+                print(result)
+        
+        result = conn.sudo(f'sudo /etc/init.d/tinyproxy restart')
+        print(result)
 
         # Now start
         conn.run("tmux new -d -s cron")
