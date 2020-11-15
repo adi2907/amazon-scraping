@@ -235,6 +235,7 @@ def setup_detail(ctx):
         conn.run(f'echo "{proxy_list}" > ~/updated/python-scraping/proxy_list.txt')
 
 
+@task
 def setup_proxy(ctx):
     if not os.path.exists('active_instances.txt'):
         raise ValueError(f"Please list the active instances on active_instances.txt. Run `python awstool/api.py --fetch_instances` to dump the currently active instances")
