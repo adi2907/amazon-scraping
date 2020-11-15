@@ -1630,10 +1630,14 @@ def finalize_reviews(engine, Session):
                 if instance is None:
                     continue
                 _date = instance.date_completed
-                obj = session.query(ProductDetails).filter(ProductDetails.product_id == product_id).first()
+                obj = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
                 if obj is None:
                     continue
-                obj.date_completed = _date + datetime.timedelta(minutes=30)
+                if _date is not None:
+                    obj.date_completed = _date + datetime.timedelta(minutes=30)
+                else:
+                    # Default value
+                    obj.date_completed = datetime.datetime(year=2019, month=1, day=1)
                 session.add(obj)
             engine.execute(f"UPDATE Reviews SET product_id = '{pid}' WHERE duplicate_set = {duplicate_set}")
     
