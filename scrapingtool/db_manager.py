@@ -1589,9 +1589,10 @@ def update_brands(session, table='ProductListing', override=True):
         logger.critical(f"Error when commiting for update_brands()")
 
 
-def finalize_reviews(engine):
+def finalize_reviews(engine, Session):
     import os
     import pandas as pd
+    from sqlalchemy import desc
 
     QANDA_COMPRESSED = os.path.join(os.getcwd(), 'QandA.csv')
 
@@ -1607,6 +1608,9 @@ def finalize_reviews(engine):
     for pid, duplicate_set in zip(cleaned_df['product_id'], cleaned_df['duplicate_set']):
         if duplicate_set == duplicate_set:
             engine.execute(f"UPDATE QandA SET product_id = '{pid}'  WHERE duplicate_set = {duplicate_set}")
+    
+
+    logger.info(f"Updated QandA")
 
     REVIEWS_COMPRESSED = os.path.join(os.getcwd(), 'Reviews.csv')
 
@@ -1621,8 +1625,19 @@ def finalize_reviews(engine):
 
     for pid, duplicate_set in zip(cleaned_df['product_id'], cleaned_df['duplicate_set']):
         if duplicate_set == duplicate_set:
-            engine.execute(f"UPDATE ProductDetails as t1 SET t1.date_completed = t1.date_completed + INTERVAL 1 MINUTE WHERE t1.product_id = '{pid}'")
+            with session_scope(Session) as session:
+                instance = session.query(ProductDetails).filter(ProductDetails.duplicate_set == duplicate_set).order_by(desc('date_completed')).first()
+                if instance is None:
+                    continue
+                _date = instance.date_completed
+                obj = session.query(ProductDetails).filter(ProductDetails.product_id == product_id).first()
+                if obj is None:
+                    continue
+                obj.date_completed = _date + datetime.timedelta(minutes=30)
+                session.add(obj)
             engine.execute(f"UPDATE Reviews SET product_id = '{pid}' WHERE duplicate_set = {duplicate_set}")
+    
+    logger.info(f"Updated Reviews")
 
 
 def update_product_data(engine, dump=False):
@@ -1945,7 +1960,7 @@ if __name__ == '__main__':
     if _update_product_listing_from_cache == True:
         update_product_listing_from_cache(session, "headphones")
     if _finalize_reviews == True:
-        finalize_reviews(engine)
+        finalize_reviews(engine, Session)
     if _update_active_products == True:
         import cache
         cache = cache.Cache()
