@@ -303,8 +303,6 @@ def setup_proxy(ctx):
                 ip_address = line.strip()
                 result = conn.sudo(f'echo -e "\nAllow {ip_address}\n" | sudo tee -a /etc/tinyproxy/tinyproxy.conf')
                 print(result)
-                result = conn.sudo(f'echo -e "\nBind 0.0.0.0\n" | sudo tee -a /etc/tinyproxy/tinyproxy.conf')
-                print(result)
         
         result = conn.sudo(f'sudo service tinyproxy restart')
         print(result)
