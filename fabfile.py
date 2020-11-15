@@ -77,7 +77,7 @@ def setup(ctx):
                 result = conn.sudo(f'echo -e "\nAllow {ip_address}\n" | sudo tee -a /etc/tinyproxy/tinyproxy.conf')
                 print(result)
         
-        result = conn.sudo(f'sudo /etc/init.d/tinyproxy restart')
+        result = conn.sudo(f'sudo service tinyproxy restart')
         print(result)
 
         # Now start
