@@ -48,7 +48,7 @@ def aspect_based_sa(nlp, keywords, review, category):
                 if element in sentence.text:
                     if sentence.sentiment != 1:
                         aspect = _list[0]
-                        aspect_dict[aspect]=("positive" if sentence.sentiment>1 else "negative")
+                        aspect_dict[aspect]=(1 if sentence.sentiment>1 else -1)
     return aspect_dict
 
 
