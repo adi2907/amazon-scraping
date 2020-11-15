@@ -1598,7 +1598,7 @@ def finalize_reviews(engine):
     if not os.path.exists(QANDA_COMPRESSED):
         raise ValueError("File not found")
 
-    df = pd.read_csv(QANDA_COMPRESSED, sep=",", encoding="utf-8", lineterminator='\n', usecols=["id", "product_id", "duplicate_set"])
+    df = pd.read_csv(QANDA_COMPRESSED, sep=",", encoding="utf-8", usecols=["id", "product_id", "duplicate_set"])
 
     cleaned_df = df.drop_duplicates(subset=['duplicate_set'], keep='first')
 
