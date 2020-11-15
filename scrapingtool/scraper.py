@@ -131,13 +131,19 @@ try:
 except UndefinedValueError:
     USE_DB = True
 
+
+try:
+    USE_TOR = config('USE_TOR', cast=bool)
+except UndefinedValueError:
+    USE_TOR = False
+
 logger.info(f"USE_DB is - {USE_DB}")
 
 # Start the session
 session = requests.Session()
 
 # Use a proxy if possible
-my_proxy = proxy.Proxy(OS=OS)
+my_proxy = proxy.Proxy(OS=OS, use_tor=USE_TOR)
 
 try:
     my_proxy.change_identity()
