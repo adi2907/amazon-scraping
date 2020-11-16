@@ -84,7 +84,7 @@ Change your directory to `spider` (where you recently copied your `.env` file) a
 Command to run the archive scraping:
 
 ```bash
-scrapy crawl archive_details_spider -a category='headphones' -a instance_id=0 -a start_idx=0 -a end_idx=50 -o output.csv
+scrapy crawl archive_details_spider -a category='all' -a instance_id=0 -a start_idx=0 -a end_idx=5 -o output.csv
 ```
 
 4. Database Manager:
