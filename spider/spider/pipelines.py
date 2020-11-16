@@ -17,6 +17,8 @@ class SpiderPipeline:
     def __init__(self, credentials, db_name):
         self.credentials = credentials
         self.db_name = db_name
+        self.engine = None
+        self.SessionFactory = None
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -27,6 +29,7 @@ class SpiderPipeline:
 
     def open_spider(self, spider):
         self.engine, self.SessionFactory = db_manager.connect_to_db(self.db_name, self.credentials)
+        spider.activePipeline = self
 
     def close_spider(self, spider):
         db_manager.close_all_db_connections(self.engine, self.SessionFactory)

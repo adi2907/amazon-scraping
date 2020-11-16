@@ -21,9 +21,6 @@ class ArchiveScraper(Spider):
 
         super(ArchiveScraper, self).__init__(*args, **kwargs)
 
-        credentials = db_manager.get_credentials()
-        _, SessionFactory = db_manager.connect_to_db(config('DB_NAME'), credentials)
-
         _info = OrderedDict()
         info = OrderedDict()
 
@@ -33,6 +30,15 @@ class ArchiveScraper(Spider):
             _domain_map = {'amazon.in': {self.category: ''}}
         
         for domain in domain_map:
+            credentials = db_manager.get_credentials()
+            db_name = domain_map.get(domain, config('DB_NAME'))
+            
+            if self.activePipeline.engine is not None:
+                db_manager.close_all_db_connections(self.activePipeline.engine, self.activePipeline.SessionFactory)
+                self.activePipeline.db_name = db_name
+                self.activePipeline.credentials = credentials
+                self.activePipeline.engine, self.activePipeline.SessionFactory = db_manager.connect_to_db(db_name, credentials)
+            
             for category in domain_map[domain]:
                 with db_manager.session_scope(SessionFactory) as session:
                     queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == category, (db_manager.ProductListing.date_completed == None) | (db_manager.ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
