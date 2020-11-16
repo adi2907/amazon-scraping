@@ -1589,7 +1589,7 @@ def update_brands(session, table='ProductListing', override=True):
         logger.critical(f"Error when commiting for update_brands()")
 
 
-def finalize_reviews(engine, Session):
+def finalize_reviews_old(engine, Session):
     import os
     import pandas as pd
     from sqlalchemy import desc
@@ -1642,6 +1642,46 @@ def finalize_reviews(engine, Session):
             engine.execute(f"UPDATE Reviews SET product_id = '{pid}' WHERE duplicate_set = {duplicate_set}")
     
     logger.info(f"Updated Reviews")
+
+
+def finalize_reviews(engine, Session):
+    import pandas as pd
+    import os
+    import pickle
+
+    def read_reviews(filename='Updated_Reviews.csv'):
+        review_df = pd.read_csv(os.path.join(filename), sep=",", encoding="utf-8", usecols=["id", "product_id", "duplicate_set"])
+        return review_df
+
+    def construct_map(review_df):
+        small_df = review_df.drop_duplicates(subset=['duplicate_set'], keep='first')
+        mapping = small_df.groupby('duplicate_set')['product_id'].apply(lambda x: list(x)[0]).to_dict()
+        return mapping
+
+    def convert_df(review_df, mapping):
+        review_df['product_id'] = review_df['duplicate_set'].map(mapping)
+        return review_df
+    
+    review_df = read_reviews()
+    mapping = construct_map(review_df)
+    review_df = convert_df(review_df, mapping)
+
+    review_df.to_csv('final_reviews.csv', index=False, sep=",")
+
+    with open('mapping.pkl', 'wb') as f:
+        pickle.dump(mapping, f)
+
+    logger.info(f"Finished preprocessing! Now updating...")
+
+    curr = 1
+
+    for set_no, product_id in mapping.items():
+        rows = review_df[review_df['duplicate_set'] == set_no]
+        ids = ','.join(['"' + str(_id) + '"' for _id in rows['id']])
+        engine.execute(f'UPDATE Reviews SET product_id = "{product_id}" WHERE id in ({ids})')
+        curr += 1
+        if curr % 100 == 0:
+            logger.info(f"Curr = {curr}")
 
 
 def update_product_data(engine, dump=False):
