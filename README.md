@@ -67,6 +67,12 @@ python3 scrapingtool/scraper.py --categories "headphones" --override --listing -
 
 This will scrape the details of the headphones category, and will spawn 5 worker threads (need to set `MULTITHREADING=True` in `.env` if using `--num_workers` option)
 
+After the details scraping is done, you can run the below command to post-process everything and dump any pending data from the cache.
+
+```bash
+bash post_detail_scraping.sh
+```
+
 3. Archive Scraping Module:
 
 * For *updating* the listing information of archived products. By definition, any product which does not show up in the listing page for that day will be classified as an archived product
@@ -121,5 +127,32 @@ The sentiment analysis will be done for headphones category for the month of Oct
 The result of the analysis will be dumped into 2 files called `sentiment_analysis_headphones.csv` and `sentiment_counts_headphones.csv`.
 
 The csv files can be exported into an external database, as per the need.
+
+
+### Duplicate Sets
+
+An important field in the `ProductListing` table is the `duplicate_set` Integer field. All the products are divided into disjoint sets, each indexed with a positive integer. This integer will represent the duplicate set index of that product, and a lot of the scraping logic + API is heavily dependent on the correctness of this field.
+
+There needs to be an indexing done for the `ProductListing` table periodically, to ensure that the set indices are updated as per the live data.
+
+When the ProductListing is done daily, the new products are initially assigned to an index of `NULL`. When it gets inserted, however, the program will try to look for the proper spot to insert that product. If the new product is found to match with an existing group, it is assigned to that same group (duplicate_set). Otherwise, it will be assigned a new index.
+
+The re-indexing is done by comparing the `avg_rating` and `total_ratings` fields for all products across the same brand. The brand is assumed to be the first word of the product's title. If the ratings difference is less than 1% of the total ratings and the avg_rating difference is less than 0.1, both products are classified to be on the same duplicate set.
+
+This is called as a *partial indexing*, and is implemented in the function `scrapingtool/db_manager` - update_duplicate_sets() function.
+
+```bash
+bash run_partial_indexing.sh
+```
+
+Periodically, however, a complete re-indexing may need to be done, to update any of the old products as well, since they can go to another duplicate set.
+
+To run this full re-indexing, you can use the below command:
+
+```bash
+bash run_complete_reindexing.sh
+```
+
+This will completedly re-index all of the products across all the categories, and update the duplicate sets across relevant tables.
 
 ***********
