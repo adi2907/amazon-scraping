@@ -5,10 +5,11 @@ import sys
 import types
 from string import Template
 
-import dramatiq
-from decouple import config
-
-from taskqueue.broker import Broker
+try:
+    import dramatiq
+    from taskqueue.broker import Broker
+except:
+    from decouple import config
 
 url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
 

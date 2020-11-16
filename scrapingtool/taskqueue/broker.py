@@ -1,5 +1,7 @@
-import dramatiq
-
+try:
+    import dramatiq
+except:
+    pass
 
 class Broker():
     def __init__(self, broker_type='redis', connection_params={'host': '127.0.0.1', 'port': 6379, 'db': 0, 'password': ''}):
