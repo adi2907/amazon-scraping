@@ -1689,13 +1689,13 @@ def finalize_reviews(engine, Session):
 
     logger.info(f"Updating date_completed for ProductDetails...")
     
-    for duplicate_set in mapping:
+    for set_no, product_id in mapping.items():
         with session_scope(Session) as session:
-            instance = session.query(ProductDetails).filter(ProductDetails.duplicate_set == duplicate_set).order_by(desc('date_completed')).first()
+            instance = session.query(ProductDetails).filter(ProductDetails.duplicate_set == set_no).order_by(desc('date_completed')).first()
             if instance is None:
                 continue
             _date = instance.date_completed
-            obj = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
+            obj = session.query(ProductDetails).filter(ProductDetails.product_id == product_id).first()
             if obj is None:
                 continue
             if _date is not None:
