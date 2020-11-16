@@ -1137,23 +1137,6 @@ def mark_duplicates(session, category, table='ProductListing'):
     reviews = {}
     pids = {}
     
-    """
-    for obj in queryset:
-        short_title = ' '.join(word.lower() for word in obj.title.split()[:6])
-        if short_title not in reviews:
-            reviews[short_title] = session.query(table_map['Reviews']).filter(Reviews.product_id == obj.product_id, Reviews.is_duplicate != True).count()
-            pids[obj.product_id] = short_title 
-        else:
-            db_reviews = session.query(table_map['Reviews']).filter(Reviews.product_id == obj.product_id, Reviews.is_duplicate != True).count()
-            if reviews[short_title] >= db_reviews:
-                num_reviews = reviews[short_title]
-            else:
-                num_reviews = db_reviews
-                pids[obj.product_id] = short_title
-            
-            reviews[short_title] = num_reviews
-    """
-    
     prev = None
 
     duplicates = set()
@@ -1246,300 +1229,6 @@ def mark_duplicate_reduced(session, category):
     logger.info(f"Marked {count} products as duplicate!")
 
 
-def update_duplicate_set_old(session, table='ProductListing', insert=False):
-    from sqlalchemy import asc, desc, func
-    from sqlitedict import SqliteDict
-
-    _table = table_map[table]
-
-    try:
-        num_sets = session.query(func.max(ProductListing.duplicate_set)).scalar()
-    except Exception as ex:
-        logger.critical(f"Exception during fetching maximum value: {ex}")
-        return
-
-    queryset = session.query(_table).filter(ProductListing.duplicate_set.isnot(None), ~(ProductListing.is_duplicate.is_(True))).order_by(asc('category')).order_by(asc('short_title')).order_by(desc('total_ratings')).order_by(asc('title')).order_by(desc('price'))
-
-    null_queryset = session.query(_table).filter(ProductListing.duplicate_set == None).order_by(asc('category')).order_by(asc('short_title')).order_by(desc('total_ratings')).order_by(asc('title')).order_by(desc('price'))
-
-    temp = {}
-
-    inserted_items = []
-    inserted_idxs = []
-    
-    with SqliteDict('cache.sqlite3', autocommit=True) as cache:
-        idxs = cache.get(f'PRODUCTLISTING_DUPLICATE_INDEXES')
-        
-        if idxs is None:
-            idxs = {}
-        
-        idx = num_sets
-
-        flag = False
-        
-        for instance in null_queryset:
-            for obj in queryset:
-                # TODO: Set this back to 0
-                DELTA = 0.1
-
-                # Find duplicate set
-                a = (obj.short_title == instance.short_title)
-                A_PRICE = obj.old_price if obj.old_price is not None else obj.price
-                B_PRICE = instance.old_price if instance.old_price is not None else instance.price
-                
-                b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
-                
-                A_PRICE = obj.price
-                B_PRICE = instance.price
-                
-                b_prime = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
-
-                b = b | b_prime
-
-                c = ((obj.total_ratings == instance.total_ratings) or (obj.total_ratings is not None and instance.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= (0.1 + DELTA) * (max(obj.total_ratings, instance.total_ratings))))
-
-                d = (obj.avg_rating == instance.avg_rating)
-
-                if obj.total_ratings is not None and obj.total_ratings <= 100 and instance.total_ratings is not None and instance.total_ratings <= 100:
-                    c = ((obj.total_ratings == instance.total_ratings) or (obj.total_ratings is not None and instance.total_ratings is not None and abs(obj.total_ratings - instance.total_ratings) <= 5))
-                    flag = ((a & d) | (d & c) | (c & a))
-                else:
-                    flag = ((a & d) | (d & c) | (c & a))
-                    if not flag:
-                        override = c & (obj.avg_rating is not None and instance.avg_rating is not None and abs(obj.avg_rating - instance.avg_rating) <= 0.1)
-                        if override:
-                            flag = True
-
-                if flag and not a:
-                    # Be a bit careful
-                    if ''.join(obj.short_title.split(' ')[:2]) != ''.join(instance.short_title.split(' ')[:2]):
-                        # Check ProductDetails brand
-                        obj1 = session.query(ProductDetails).filter(ProductDetails.product_id == obj.product_id).first()
-                        obj2 = session.query(ProductDetails).filter(ProductDetails.product_id == instance.product_id).first()
-
-                        if obj1 is not None and obj2 is not None and obj1.brand == obj2.brand:
-                            pass
-                        else:
-                            # False positive
-                            logger.warning(f"WARNING: PIDS {obj.product_id} and {instance.product_id} were FALSE positives")
-                            logger.warning(f"WARNING: Titles {obj.short_title} and {instance.short_title} didn't match")
-                            flag = False
-                
-                if not flag:
-                    # No match
-                    continue
-                else:
-                    idxs[instance.product_id] = obj.duplicate_set
-                    temp[instance.product_id] = obj.duplicate_set
-                    break
-            
-            if flag == False:
-                # Check with the previously inserted items
-                dup = False
-                for _obj in inserted_items:
-                    DELTA = 0.1
-
-                    # Find duplicate set
-                    a = (_obj.short_title == instance.short_title)
-                    A_PRICE = _obj.old_price if _obj.old_price is not None else _obj.price
-                    B_PRICE = instance.old_price if instance.old_price is not None else instance.price
-                    
-                    b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
-                    
-                    A_PRICE = _obj.price
-                    B_PRICE = instance.price
-                    
-                    b_prime = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
-
-                    b = b | b_prime
-
-                    c = ((_obj.total_ratings == instance.total_ratings) or (instance.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= (DELTA) * (max(_obj.total_ratings, instance.total_ratings))))
-                    
-                    d = (_obj.avg_rating == instance.avg_rating)
-
-                    dup = ((a & b) | (b & c) | (c & a))
-                    
-                    if _obj.total_ratings is not None and _obj.total_ratings <= 100 and instance.total_ratings is not None and instance.total_ratings <= 100:
-                        c = ((_obj.total_ratings == instance.total_ratings) or (_obj.total_ratings is not None and instance.total_ratings is not None and abs(_obj.total_ratings - instance.total_ratings) <= 5))
-                        dup = ((a & d) | (d & c) | (c & a))
-                    else:
-                        dup = ((a & d) | (d & c) | (c & a))
-                        if not dup:
-                            override = c & (_obj.avg_rating is not None and instance.avg_rating is not None and abs(_obj.avg_rating - instance.avg_rating) <= 0.1)
-                            if override:
-                                dup = True
-
-                    if dup and not a:
-                        # Be a bit careful
-                        if ''.join(_obj.short_title.split(' ')[:2]) != ''.join(instance.short_title.split(' ')[:2]):
-                            # Check ProductDetails brand
-                            obj1 = session.query(ProductDetails).filter(ProductDetails.product_id == _obj.product_id).first()
-                            obj2 = session.query(ProductDetails).filter(ProductDetails.product_id == instance.product_id).first()
-
-                            if obj1 is not None and obj2 is not None and obj1.brand == obj2.brand:
-                                pass
-                            else:
-                                # False positive
-                                logger.warning(f"WARNING: PIDS {_obj.product_id} and {instance.product_id} were FALSE positives")
-                                logger.warning(f"WARNING: Titles {_obj.short_title} and {instance.short_title} didn't match")
-                                dup = False
-                    
-                    if not dup:
-                        # No match
-                        continue
-                    else:
-                        idxs[instance.product_id] = _obj.duplicate_set
-                        temp[instance.product_id] = _obj.duplicate_set
-                        break
-                
-                if dup == False:
-                    idx += 1
-                    idxs[instance.product_id] = idx
-                    temp[instance.product_id] = idx
-                    inserted_items.append(instance)
-                    inserted_idxs.append(idx)
-        
-        cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
-
-    if insert == True:
-        logger.info(f"Inserting indexes into the DB...")
-        
-        for product_id in temp:
-            instance = session.query(_table).filter(_table.product_id == product_id).first()
-            if instance:
-                setattr(instance, 'duplicate_set', temp[product_id])
-
-        try:
-            session.commit()
-        except Exception as ex:
-            session.rollback()
-            logger.critical(f"Exception: {ex} when trying to commit idxs")
-        
-        logger.info(f"Finished inserting!")
-
-
-def index_duplicate_sets_old(session, table='ProductListing', insert=False, strict=False):
-    from sqlalchemy import asc, desc
-    from sqlitedict import SqliteDict
-
-    _table = table_map[table]
-
-    queryset = session.query(_table).order_by(asc('category')).order_by(asc('short_title')).order_by(desc('total_ratings')).order_by(asc('title')).order_by(desc('price'))
-    
-    with SqliteDict('cache.sqlite3', autocommit=True) as cache:
-        idxs = {}
-        info = {}
-
-        prev = None
-
-        idx = 1
-        
-        for obj in queryset:
-            if prev is None:
-                prev = obj
-                continue
-
-            # TODO: Set this back to 0
-            if strict == False:
-                DELTA = 0.1
-            else:
-                DELTA = 0.08
-
-            # Find duplicate set
-            a = (obj.short_title == prev.short_title)
-            
-            #A_PRICE = obj.old_price if obj.old_price is not None else obj.price
-            #B_PRICE = prev.old_price if prev.old_price is not None else prev.price
-            
-            #b = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
-            
-            #A_PRICE = obj.price
-            #B_PRICE = prev.price
-            
-            #b_prime = ((A_PRICE == B_PRICE) or (A_PRICE is not None and B_PRICE is not None and abs(A_PRICE - B_PRICE) <= (DELTA) * (max(A_PRICE, B_PRICE))))
-
-            #b = b | b_prime
-            
-            c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= (DELTA) * (max(obj.total_ratings, prev.total_ratings))))
-
-            d = (obj.avg_rating == prev.avg_rating)
-
-            if obj.total_ratings is not None and obj.total_ratings <= 100 and prev.total_ratings is not None and prev.total_ratings <= 100:
-                c = ((obj.total_ratings == prev.total_ratings) or (obj.total_ratings is not None and prev.total_ratings is not None and abs(obj.total_ratings - prev.total_ratings) <= 5))
-                flag = ((a & d) | (d & c) | (c & a))
-            else:
-                flag = ((a & d) | (d & c) | (c & a))
-                if not flag:
-                    override = c & (obj.avg_rating is not None and prev.avg_rating is not None and abs(obj.avg_rating - prev.avg_rating) <= 0.1)
-                    if override:
-                        flag = True
-
-            if flag and not a:
-                # Be a bit careful
-                if ''.join(obj.short_title.split(' ')[:2]) != ''.join(prev.short_title.split(' ')[:2]):
-                    # Check ProductDetails brand
-                    obj1 = session.query(ProductDetails).filter(ProductDetails.product_id == obj.product_id).first()
-                    obj2 = session.query(ProductDetails).filter(ProductDetails.product_id == prev.product_id).first()
-
-                    if obj1 is not None and obj2 is not None and obj1.brand == obj2.brand:
-                        pass
-                    else:
-                        # False positive
-                        logger.warning(f"WARNING: PIDS {obj.product_id} and {prev.product_id} were FALSE positives")
-                        logger.warning(f"WARNING: Titles {obj.short_title} and {prev.short_title} didn't match")
-                        flag = False
-            
-            if not flag:
-                # No match
-                idxs[prev.product_id] = idx
-                idx += 1
-                idxs[obj.product_id] = idx
-            else:
-                idxs[prev.product_id] = idx
-                idxs[obj.product_id] = idx
-            
-            if idx not in info:
-                if flag == True:
-                    info[idx] = [{'id': prev.product_id, 'title': prev.short_title}, {'id': obj.product_id, 'title': obj.short_title}]
-                else:
-                    info[idx] = [{'id': prev.product_id}]
-                    info[idx + 1] = [{'id': obj.product_id, 'title': obj.short_title}]
-            else:
-                if flag == True:
-                    info[idx].extend([{'id': prev.product_id, 'title': prev.short_title}, {'id': obj.product_id, 'title': obj.short_title}])
-                else:
-                    info[idx].extend([{'id': prev.product_id, 'title': prev.short_title}])
-                    info[idx + 1] = [{'id': obj.product_id, 'title': obj.short_title}]
-
-            prev = obj
-        
-        cache[f'PRODUCTLISTING_DUPLICATE_INDEXES'] = idxs
-        cache[f'PRODUCTLISTING_DUPLICATE_INFO'] = info
-
-    logger.info(f"Got {idx} number of sets. Finished indexing all duplicate sets!")
-
-    if insert == True:
-        logger.info(f"Inserting indexes into the DB...")
-        
-        with SqliteDict('cache.sqlite3', autocommit=False) as cache:
-            idxs = cache.get(f"PRODUCTLISTING_DUPLICATE_INDEXES")
-            if not idxs:
-                logger.warning("idxs is None")
-            else:
-                for product_id in idxs:
-                    instance = session.query(_table).filter(_table.product_id == product_id).first()
-                    if instance:
-                        setattr(instance, 'duplicate_set', idxs[product_id])
-
-        try:
-            session.commit()
-        except Exception as ex:
-            session.rollback()
-            logger.critical(f"Exception: {ex} when trying to commit idxs")
-        
-        logger.info(f"Finished inserting!")
-
-
 def update_duplicate_set(session, table='ProductListing', insert=False, strict=False, very_strict=False):
     return index_duplicate_sets(session, table='ProductListing', insert=insert, strict=strict, index_all=False, very_strict=very_strict)
 
@@ -1560,6 +1249,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
         queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
     
     if index_all == False:
+        # Update indexes
         try:
             num_sets = session.query(func.max(ProductListing.duplicate_set)).scalar()
         except Exception as ex:
@@ -1568,6 +1258,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
         if num_sets is None or num_sets <= 0:
             num_sets = 1
     else:
+        # Completely re-index from scratch
         num_sets = 1
 
     idx = num_sets
@@ -1592,6 +1283,7 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
         if obj1.product_id in info:
             continue
         
+        # Query only for products which have the same brand as the one to be inserted
         q = session.query(_table).filter(ProductListing.category == obj1.category, ProductListing.brand == obj1.brand).order_by(desc('total_ratings'))
         
         duplicate_flag = False
@@ -1601,8 +1293,14 @@ def index_duplicate_sets(session, table='ProductListing', insert=False, strict=F
             if obj1.product_id == obj2.product_id:
                 continue
             
-            a = ((obj1.avg_rating == obj2.avg_rating) or (obj1.avg_rating is not None and obj2.avg_rating is not None and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1)))
+            a = ((obj1.avg_rating == obj2.avg_rating) or ((obj1.avg_rating is not None) and (obj2.avg_rating is not None) and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1 + 0.001)))
             b = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))            
+            
+            if b == False:
+                if (obj1.total_ratings is not None) and (obj2.total_ratings is not None):
+                    if max(obj1.total_ratings, obj2.total_ratings) <= 100:
+                        if abs(obj1.total_ratings - obj2.total_ratings) <= 5:
+                            b = True
             
             if (a & b):
                 duplicate_flag = True
@@ -1891,6 +1589,123 @@ def update_brands(session, table='ProductListing', override=True):
         logger.critical(f"Error when commiting for update_brands()")
 
 
+def finalize_reviews_old(engine, Session):
+    import os
+    import pandas as pd
+    from sqlalchemy import desc
+
+    QANDA_COMPRESSED = os.path.join(os.getcwd(), 'QandA.csv')
+
+    if not os.path.exists(QANDA_COMPRESSED):
+        raise ValueError("File not found")
+
+    df = pd.read_csv(QANDA_COMPRESSED, sep=",", encoding="utf-8", usecols=["id", "product_id", "duplicate_set"])
+
+    cleaned_df = df.drop_duplicates(subset=['duplicate_set'], keep='first')
+
+    cleaned_df['product_id'].to_csv(os.path.join(os.getcwd(), 'QandA_survivors.csv'), index=False)
+
+    for pid, duplicate_set in zip(cleaned_df['product_id'], cleaned_df['duplicate_set']):
+        if duplicate_set == duplicate_set:
+            engine.execute(f"UPDATE QandA SET product_id = '{pid}'  WHERE duplicate_set = {duplicate_set}")
+    
+
+    logger.info(f"Updated QandA")
+
+    REVIEWS_COMPRESSED = os.path.join(os.getcwd(), 'Reviews.csv')
+
+    if not os.path.exists(REVIEWS_COMPRESSED):
+        raise ValueError("File not found")
+
+    df = pd.read_csv(REVIEWS_COMPRESSED, sep=",", encoding="utf-8", usecols=["id", "product_id", "duplicate_set"])
+
+    cleaned_df = df.drop_duplicates(subset=['duplicate_set'], keep='first')
+
+    cleaned_df['product_id'].to_csv(os.path.join(os.getcwd(), 'Reviews_survivors.csv'), index=False)
+
+    for pid, duplicate_set in zip(cleaned_df['product_id'], cleaned_df['duplicate_set']):
+        if duplicate_set == duplicate_set:
+            with session_scope(Session) as session:
+                instance = session.query(ProductDetails).filter(ProductDetails.duplicate_set == duplicate_set).order_by(desc('date_completed')).first()
+                if instance is None:
+                    continue
+                _date = instance.date_completed
+                obj = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
+                if obj is None:
+                    continue
+                if _date is not None:
+                    obj.date_completed = _date + datetime.timedelta(minutes=30)
+                else:
+                    # Default value
+                    obj.date_completed = datetime.datetime(year=2019, month=1, day=1)
+                session.add(obj)
+            engine.execute(f"UPDATE Reviews SET product_id = '{pid}' WHERE duplicate_set = {duplicate_set}")
+    
+    logger.info(f"Updated Reviews")
+
+
+def finalize_reviews(engine, Session):
+    import pandas as pd
+    import os
+    import pickle
+    import time
+
+    def read_reviews(filename='Updated_Reviews.csv'):
+        review_df = pd.read_csv(os.path.join(filename), sep=",", encoding="utf-8", usecols=["id", "product_id", "duplicate_set"])
+        return review_df
+
+    def construct_map(review_df):
+        small_df = review_df.drop_duplicates(subset=['duplicate_set'], keep='first')
+        mapping = small_df.groupby('duplicate_set')['product_id'].apply(lambda x: list(x)[0]).to_dict()
+        return mapping
+
+    def convert_df(review_df, mapping):
+        review_df['product_id'] = review_df['duplicate_set'].map(mapping)
+        return review_df
+    
+    review_df = read_reviews()
+    mapping = construct_map(review_df)
+    review_df = convert_df(review_df, mapping)
+
+    review_df.to_csv('final_reviews.csv', index=False, sep=",")
+
+    with open('mapping.pkl', 'wb') as f:
+        pickle.dump(mapping, f)
+
+    logger.info(f"Finished preprocessing! Now going to update...")
+    time.sleep(10)
+    logger.info('Going to update in 20 seconds')
+    time.sleep(20)
+
+    curr = 1
+
+    for set_no, product_id in mapping.items():
+        rows = review_df[review_df['duplicate_set'] == set_no]
+        ids = ','.join(['"' + str(_id) + '"' for _id in rows['id']])
+        engine.execute(f'UPDATE Reviews SET product_id = "{product_id}" WHERE id in ({ids})')
+        curr += 1
+        if curr % 100 == 0:
+            logger.info(f"Curr = {curr}")
+
+    logger.info(f"Updating date_completed for ProductDetails...")
+    
+    for set_no, product_id in mapping.items():
+        with session_scope(Session) as session:
+            instance = session.query(ProductDetails).filter(ProductDetails.duplicate_set == set_no).order_by(desc('date_completed')).first()
+            if instance is None:
+                continue
+            _date = instance.date_completed
+            obj = session.query(ProductDetails).filter(ProductDetails.product_id == product_id).first()
+            if obj is None:
+                continue
+            if _date is not None:
+                obj.date_completed = _date + datetime.timedelta(minutes=30)
+            else:
+                # Default value
+                obj.date_completed = datetime.datetime(year=2019, month=1, day=1)
+            session.add(obj)
+
+
 def update_product_data(engine, dump=False):
     import os
     import subprocess
@@ -2073,6 +1888,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_listing_from_details', help='Update Listing from Details (for possibly archived products)', default=False, action='store_true')
     parser.add_argument('--dump_from_cache', help='Dump from Cache', default=False, action='store_true')
     parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
+    parser.add_argument('--finalize_reviews', help='Finalize Reviews', default=False, action='store_true')
 
     parser.add_argument('--import_product_data', help='Import Data (Duplicate Sets)', default=False, action='store_true')
 
@@ -2105,6 +1921,7 @@ if __name__ == '__main__':
     _close_all_db_connections = args.close_all_db_connections
     _update_duplicate_sets = args.update_duplicate_sets
     _import_product_data = args.import_product_data
+    _finalize_reviews = args.finalize_reviews
 
     _csv = args.csv
     _table = args.table
@@ -2208,6 +2025,8 @@ if __name__ == '__main__':
         import_product_data(session, _csv, table='ProductListing')
     if _update_product_listing_from_cache == True:
         update_product_listing_from_cache(session, "headphones")
+    if _finalize_reviews == True:
+        finalize_reviews(engine, Session)
     if _update_active_products == True:
         import cache
         cache = cache.Cache()

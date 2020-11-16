@@ -142,7 +142,7 @@ def start_archive(ctx):
 
         # Now start
         conn.run("tmux new -d -s cron")
-        command = f"scrapy crawl archive_details_spider -a category='headphones' -a instance_id={instance_number} -a start_idx={instance_number * ITEMS_PER_INSTANCE} -a end_idx={(instance_number + 1) * ITEMS_PER_INSTANCE} -o output.csv"
+        command = f"scrapy crawl archive_details_spider -a category='all' -a instance_id={instance_number} -a start_idx={instance_number * ITEMS_PER_INSTANCE} -a end_idx={(instance_number + 1) * ITEMS_PER_INSTANCE} -o output.csv"
         #command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {instance_number} --num_instances {num_instances} --num_threads 5'
         command = command.replace(' ', r'\ ')
         conn.run(r"tmux send -t cron.0 cd\ python-scraping ENTER")
