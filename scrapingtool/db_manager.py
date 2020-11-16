@@ -1648,6 +1648,7 @@ def finalize_reviews(engine, Session):
     import pandas as pd
     import os
     import pickle
+    import time
 
     def read_reviews(filename='Updated_Reviews.csv'):
         review_df = pd.read_csv(os.path.join(filename), sep=",", encoding="utf-8", usecols=["id", "product_id", "duplicate_set"])
@@ -1671,7 +1672,10 @@ def finalize_reviews(engine, Session):
     with open('mapping.pkl', 'wb') as f:
         pickle.dump(mapping, f)
 
-    logger.info(f"Finished preprocessing! Now updating...")
+    logger.info(f"Finished preprocessing! Now going to update...")
+    time.sleep(10)
+    logger.info('Going to update in 20 seconds')
+    time.sleep(20)
 
     curr = 1
 
