@@ -8,6 +8,7 @@ from string import Template
 try:
     import dramatiq
     from taskqueue.broker import Broker
+    from decouple import config 
 except:
     from decouple import config
 
