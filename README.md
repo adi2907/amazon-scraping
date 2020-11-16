@@ -12,213 +12,114 @@ To install the requirements for this project, run the following:
 pip install -r requirements.txt
 ```
 
-### Setting up the Tor Relay Service
+## Development Environment Setup
 
-In order to use proxy services to switch identities periodically, you need to install the Tor service on your machine.
+To setup the development environment on your local machine, proceed with the following steps:
 
-While the scraper will work even without the Tor service, it is highly recommended that you use it, in order to avoid getting an IP ban.
+* Create the environment file (`.env` file on your main project directory). A template environment is provided at `.env.example`. You can configure all your database, AWS credentials based on this template, and place it on your newly created `.env` file.
 
-**Warning**: Don't misuse the rate of sending requests. It's possible that even with Tor, your real IP may get leaked. Proceed safely when scraping any website.
+* After creating the environment, you need to install the below packages on your local machine:
 
-* Now, on your Linux machine, you can install tor via your package manager.
+```
+1. Redis Server
+2. Firefox
+```
 
-For example, in Ubuntu / Debian, you can install it using the below command:
+### Setup the local redis server
+
+Firstly, you'll need to configure your local redis server and enter the credentials (`REDIS_SERVER_HOST=127.0.0.1`, etc) on `.env`. If you haven't setup a Redis Server password, you can remove the `REDIS_SERVER_PASSWORD` key on `.env`.
+
+To test if your redis server is up and running, you can run the below commands from your Python interpreter session. Start this interpreter from the directory of this repository, and try the below sequence of python statements. You'll get an output similar to this:
+
+```python
+>>> from scrapingtool import cache
+>>> cache = cache.Cache()
+>>> cache.connect('master', use_redis=True)
+2020-11-16 12:40:00 | INFO | Connected to Redis Cache!
+>>> cache.set('foo', 'bar', timeout=30) # Will expire after 30 seconds
+>>> cache.get('foo')
+'bar'
+```
+
+### Library Overview and Scraping Commands
+
+The entire library is divided into five parts:
+
+1. Listing Scraping Module:
+
+* For *creating* new items as more and more products get added to `ProductListing`. This module will be run on a daily basi
+* Relevant files: `scrapingtool/browser.py`. The listing scraping is done using selenium.
+* Command to run the category listing:
 
 ```bash
-sudo apt install tor
+python3 scrapingtool/browser.py --category
 ```
 
-* You need to allow access to the Tor control port (9150). To do this, go to the configuration file `/etc/tor/torrc`
+2. Detail Scraping Module:
+
+* For *updating* the `ProductDetails`, qanda and review information of existing products from the Listing table. This module is typically run on a weekly basis
+* Relevant files: `scrapingtool/scraper.py`. The detail scraping is done using requests.
+* Command to run the detail scraping:
 
 ```bash
-sudo vi /etc/tor/torrc
+python3 scrapingtool/scraper.py --categories "headphones" --override --listing --detail --no_listing --num_workers 5
 ```
 
-Now, you must uncomment the below lines
+This will scrape the details of the headphones category, and will spawn 5 worker threads (need to set `MULTITHREADING=True` in `.env` if using `--num_workers` option)
+
+3. Archive Scraping Module:
+
+* For *updating* the listing information of archived products. By definition, any product which does not show up in the listing page for that day will be classified as an archived product
+* Relevant files: `spider/spiders/scraper.py` and `spider/pipelines.py`. The archive scraping is done using Scrapy.
+
+To run scrapy, you must copy `.env` to `spider/.env` as well!
+
+Change your directory to `spider` (where you recently copied your `.env` file) and run the below command to start the archive scraping:
+Command to run the archive scraping:
 
 ```bash
-ControlPort 9051
-## If you enable the controlport, be sure to enable one of these
-## authentication methods, to prevent attackers from accessing it.
-HashedControlPassword ABCDEFGHIJKLMNOP
-CookieAuthentication 1
+scrapy crawl archive_details_spider -a category='headphones' -a instance_id=0 -a start_idx=0 -a end_idx=50 -o output.csv
 ```
 
-For the `HashedControlPassword`, you must get the hash using a password that you choose.
+4. Database Manager:
+
+* This module is responsible for constructing the Database Schema and performing all database related operations for inserting and updating records for all the tables involved in the scraping.
+
+There is no need to run this module separately, but it can still be used to fetch records in case a need arises to examine databases.
+
+To export a database table into an external csv file, you can run the below command:
 
 ```bash
-tor --hash-password "<YOUR-TOR-PASSWORD>"
+python3 scrapingtool/db_manager.py --export_to_csv --table "ProductListing" --csv "listing.csv"
 ```
 
-Note down this password. We will need it later for authorising it via Python.
+This will export the `ProductListing` table into a csv file called `listing.csv`
 
-Get the hash from the output, and put it instead of `ABCDEFGHIJKLMNOP` in the `HashedControlPassword` option.
-
-
-* Now, you can start the tor service using:
+Similarly, if you want to import a database table from an existing csv file, you can run the below command:
 
 ```bash
-sudo service tor start
+python3 scrapingtool/db_manager.py --import_from_csv --table "ProductListing" --csv "updated_listing.csv"
 ```
 
-* To verify that Tor is working correctly, you must get the correct output when running this command:
+This will do the inverse operation of the export, where the database table is populated from an existing csv file.
+
+5. Sentiment Analysis
+
+* The sentiment analysis logic for classifying the sentiment of reviews is present in `scrapingtool/sentiment_analysis.py`
+
+This needs to be done only after the details scraping is completed for a particular timeframe. It takes the records from `Reviews` table and analyzes this data (assumed to be bounded within a single month)
+
+This can be done one a monthly basis, once all reviews for that month are retrieved for a category.
+
+To run the sentiment analysis for a partcular month, run the below command:
 
 ```bash
-curl --socks5 localhost:9050 --socks5-hostname localhost:9050 -s https://check.torproject.org/ | cat | grep -m 1 Congratulations | xargs
+python3 scrapingtool/sentiment_analysis.py --category "headphones" --month 10 --year 2020
 ```
 
-Now, go to your project directory (where the scraper is) and create a `.env` file. A sample template is given in the `.env.example` file.
+The sentiment analysis will be done for headphones category for the month of October 2020.
+The result of the analysis will be dumped into 2 files called `sentiment_analysis_headphones.csv` and `sentiment_counts_headphones.csv`.
 
-```bash
-touch .env
-```
-
-Put your Tor password in the below format:
-
-```bash
-TOR_PASSWORD = YOUR-TOR-PASSWORD
-```
-
-Finally, add the `ExitNodes` option to the `torrc`.
-
-```bash
-# ExitNodes Options
-ExitNodes {IN}
-```
-
-This will mean that the Tor exit nodes will be an address in India. 
-
-You have now setup the necessary requirements for running the scraper.
-
-To use tor along with the scraper, use the `--tor` option:
-
-```bash
-python scraper.py --categories "oneplus" --pages 1 --listing --tor
-```
-
-If you don't specify _tor_, then the scraper will fall back to using public proxies.
-
-```bash
-python scraper.py --categories "oneplus" --pages 1 --listing
-```
-
-This will keep rotating the IPs using public proxy addresses.
-
-************
-
-## Running the Scraper
-
-After you've installed your dependencies, you can run the program in the following manner:
-
-```bash
-python scraper.py --categories "mobile, headphones" --listing --pages 1 --detail --number 2
-```
-
-Here, the `--categories` flag represents all the categories that you need to scrape. The program will scrape the take both the categories `["mobile", "headphone"]` and get the listing details for both these categories.
-
-*NOTE*: By default, _all_ the reviews and QandAs for a product will be scraped. For more details, refer below.
-
-If you only want to scrape the product listing, you can do it like this:
-
-```bash
-python scraper.py --categories "mobile, headphones" --listing --pages 2
-```
-
-This will scrape the first 2 pages for the product listing of mobiles and headphones.
-
-The `--detail` flag is an optional flag if you want to fetch the product details.
-
-To scrape only the product details, you can run it like this:
-
-```bash
-python scraper.py --categories "mobile, headphones" --details --number 2
-```
-
-This will fetch the first 2 product details for each category.
-
-To scrape both the listing and details, you can run it like this:
-
-```bash
-python scraper.py --categories "mobile, headphones" --listing --pages 2 --detail --number 2
-```
-
-This will fetch the first 2 pages for product listing, and also scrape the first 2 products for each listing category.
-
-## Scraping the QandA and Review Pages
-
-The following options will restrict the scraper to scrape only until a certain number of pages, for the QandA, Reviews section.
-
-```bash
-python scraper.py --categories "headphones" --listing --pages 1 --detail --number 2 --review_pages 1 --qanda_pages 2
-```
-
-Here, the scraper will scrape 2 headphone products, and only fetch 1 review page. It will fetch the first 2 QandA pages.
-
-## Scraping using IDs
-
-You can also scrape using product IDs using the `--ids` option
-
-```bash
-python scraper.py --detail --ids "8172234988" --review_pages 3 --qanda_pages 3
-```
-
-## Scraping via a config file
-
-To use a config file for setting up the scraper, using the `--config` option
-
-To run it, use:
-
-```bash
-python scraper.py --config "listing.conf"
-```
-
-A sample config file is shown at `listing.conf`
-
-```bash
-# Listing
-smartphones 50
-refrigerator 20
-earphones 100
-ceiling fan 50
-washing machine 20
-
-# Details
-8172234988
-8172234989
-```
-
-You can also specify the `all` option in Details
-
-```
-# Listing
-smartphones 50
-refrigerator 20
-earphones 100
-ceiling fan 50
-washing machine 20
-
-# Details
-all 2020-01-01
-```
-
-There is one more option to NOT scrape the category listing, but only the detail. The `NO_SCRAPE` option is useful here.
-
-```bash
-# Listing
-#smartphones 50
-#refrigerator 20
-#earphones 100
-#ceiling fan 50
-#washing machine 20
-books 4
-headphones 5
-
-NO_SCRAPE
-
-# Details
-all 2020-01-01
-```
-
-Here, I will be scraping all product details for books and headphones, but not scrape the listing pages themselves.
+The csv files can be exported into an external database, as per the need.
 
 ***********
