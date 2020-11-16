@@ -28,7 +28,7 @@ SQLAlchemy>=1.3.18
 sqlitedict>=1.6.0
 #stanza
 scrapy
-scrapoxy
+#scrapoxy
 stem>=1.8.0
 termcolor
 textblob>=0.15.3
