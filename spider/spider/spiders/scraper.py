@@ -21,9 +21,6 @@ class ArchiveScraper(Spider):
 
         super(ArchiveScraper, self).__init__(*args, **kwargs)
 
-        _info = OrderedDict()
-        info = OrderedDict()
-
         if self.category == 'all':
             _domain_map = domain_map
         else:
@@ -40,6 +37,8 @@ class ArchiveScraper(Spider):
                 self.activePipeline.engine, self.activePipeline.SessionFactory = db_manager.connect_to_db(db_name, credentials)
             
             for category in domain_map[domain]:
+                _info = OrderedDict()
+                info = OrderedDict()
                 with db_manager.session_scope(self.activePipeline.SessionFactory) as session:
                     queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == category, (db_manager.ProductListing.date_completed == None) | (db_manager.ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
                     self.logger.info(f"Found {queryset.count()} inactive products totally")
