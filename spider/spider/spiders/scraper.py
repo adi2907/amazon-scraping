@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from decouple import config
 from scrapingtool import db_manager, parse_data
-from scrapingtool.utils import create_logger, category_to_domain, domain_map
+from scrapingtool.utils import create_logger, category_to_domain, domain_map, domain_to_db
 from scrapy import Request, Spider
 from sqlalchemy import asc, desc
 from sqlitedict import SqliteDict
@@ -28,7 +28,7 @@ class ArchiveScraper(Spider):
         
         for domain in domain_map:
             credentials = db_manager.get_credentials()
-            db_name = domain_map.get(domain, config('DB_NAME'))
+            db_name = domain_to_db.get(domain, config('DB_NAME'))
             
             if self.activePipeline.engine is not None:
                 db_manager.close_all_db_connections(self.activePipeline.engine, self.activePipeline.SessionFactory)
