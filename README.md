@@ -271,6 +271,12 @@ python3 awstool/api.py --terminate_instances --instance_ids "id1, id2"
 python3 awstool/api.py --terminate_instances --filename "created_instance_ids.txt"
 ```
 
+8. Reset state (This will remove the files `active_instances.txt` and `created_instance_ids.txt`, so that you can start afresh. You should run this after terminating instances)
+
+```bash
+python3 awstool/api.py --reset_state
+```
+
 ### Automatic SSH access to the EC2 instances
 
 To automate the ssh control of the ec2 instances for running specific commands, we use the *fabric* library, which is a SSH client in Python, that can be used to run commands across multiple instances.
