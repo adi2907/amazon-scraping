@@ -168,9 +168,11 @@ crontab -e
 
 The below will list down the various cronjobs required by different instances. There is an assumption that dedicated instances are running for the following tasks:
 
-Instance #1 -> Product Listing Scraping
-Instance #2 -> Product Detail Scraping
-Instance #3 -> Archive Product Scraping
+* Instance #1 -> Product Listing Scraping
+
+* Instance #2 -> Product Detail Scraping
+
+* Instance #3 -> Archive Product Scraping
 
 Crontab commands for Listing Instance:
 
@@ -225,7 +227,7 @@ List of commands for AWS:
 python3 awstool/api.py --pretty_print_instances
 ```
 
-2. List all currently running instances, in a minimal instances
+2. List all currently running instances, in a minimal fashion
 
 ```bash
 python3 awstool/api.py --fetch_active_instances
