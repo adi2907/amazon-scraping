@@ -1899,7 +1899,7 @@ def find_inactive_products(engine, SessionFactory, category='all'):
 
     with session_scope(SessionFactory) as session:
         if category == 'all':
-            queryset = session.query(ProductListing).filter(ProductListing.is_active == False, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
+            queryset = session.query(ProductListing).filter(ProductListing.is_active == False, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.now() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
         else:
             queryset = session.query(ProductListing).filter(ProductListing.is_active == False, ProductListing.category == category, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
         num_inactive = queryset.count()
