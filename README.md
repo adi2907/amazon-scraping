@@ -287,6 +287,12 @@ python3 awstool/api.py --reset_state
 
 To automate the ssh control of the ec2 instances for running specific commands, we use the *fabric* library, which is a SSH client in Python, that can be used to run commands across multiple instances.
 
+If you haven't done so already, you can install this library using `pip`
+
+```bash
+pip3 install fabric
+```
+
 
 #### Prerequisites
 1. To connect to SSH, we need the AWS public keys for accessing all those instances, which belong to the same security group. You need to place that ssh key in `aws_private_key.pem`.
