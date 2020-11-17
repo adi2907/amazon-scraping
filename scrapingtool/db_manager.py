@@ -1648,12 +1648,18 @@ def restore_reviews(engine, Session):
     import pandas as pd
     import os
 
-    review_df = pd.read_csv(os.path.join('Reviews_full.csv'), sep=",", encoding="utf-8", usecols=["id", "product_id"])
+    review_df = pd.read_csv(os.path.join('Reviews_full.csv'), sep=",", encoding="utf-8", usecols=["id", "product_id", "is_duplicate"])
 
     idx = 1
+
+    prev_id = None
+    ids = []
     
-    for _id, pid in zip(review_df['id'], review_df['product_id']):
-        engine.execute(f'UPDATE Reviews SET product_id = "{pid}" WHERE id = {_id}')
+    for _id, pid, is_dup in zip(review_df['id'], review_df['product_id'], review_df['is_duplicate']):
+        if prev_id != pid:
+            if is_dup == 0:
+                engine.execute(f'UPDATE Reviews SET product_id = "{pid}" WHERE id = {_id}')
+            prev_id = pid
         idx += 1
         if idx % 10000 == 0:
             logger.info(f"Idx = {idx}")
