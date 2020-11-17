@@ -1893,12 +1893,15 @@ def update_detail_completed(engine, SessionFactory):
     logger.info(f"Updated detail_completed field!")
 
 
-def find_inactive_products(engine, SessionFactory):
+def find_inactive_products(engine, SessionFactory, category='all'):
     from sqlalchemy import asc, desc
     from datetime import datetime, timedelta
 
     with session_scope(SessionFactory) as session:
-        queryset = session.query(ProductListing).filter(ProductListing.is_active == False, ProductListing.category == category, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
+        if category == 'all':
+            queryset = session.query(ProductListing).filter(ProductListing.is_active == False, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
+        else:
+            queryset = session.query(ProductListing).filter(ProductListing.is_active == False, ProductListing.category == category, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
         num_inactive = queryset.count()
         logger.info(f"Found {num_inactive} inactive products totally")
         with open('num_inactive.txt', 'w') as f:
