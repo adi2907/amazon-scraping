@@ -1644,6 +1644,21 @@ def finalize_reviews_old(engine, Session):
     logger.info(f"Updated Reviews")
 
 
+def restore_reviews(engine, Session):
+    import pandas as pd
+    import os
+
+    review_df = pd.read_csv(os.path.join('Reviews_full.csv'), sep=",", encoding="utf-8", usecols=["id", "product_id"])
+
+    idx = 1
+    
+    for _id, pid in zip(review_df['id'], review_df['product_id']):
+        engine.execute(f'UPDATE Reviews SET product_id = "{pid}" WHERE id = {_id}')
+        idx += 1
+        if idx % 10000 == 0:
+            logger.info(f"Idx = {idx}")
+
+
 def finalize_reviews(engine, Session):
     import pandas as pd
     import os
@@ -1888,6 +1903,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_listing_from_details', help='Update Listing from Details (for possibly archived products)', default=False, action='store_true')
     parser.add_argument('--dump_from_cache', help='Dump from Cache', default=False, action='store_true')
     parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
+    parser.add_argument('--restore_reviews', help='Restore reviews', default=False, action='store_true')
     parser.add_argument('--finalize_reviews', help='Finalize Reviews', default=False, action='store_true')
 
     parser.add_argument('--import_product_data', help='Import Data (Duplicate Sets)', default=False, action='store_true')
@@ -1921,6 +1937,7 @@ if __name__ == '__main__':
     _close_all_db_connections = args.close_all_db_connections
     _update_duplicate_sets = args.update_duplicate_sets
     _import_product_data = args.import_product_data
+    _restore_reviews = args.restore_reviews
     _finalize_reviews = args.finalize_reviews
 
     _csv = args.csv
@@ -2027,6 +2044,8 @@ if __name__ == '__main__':
         update_product_listing_from_cache(session, "headphones")
     if _finalize_reviews == True:
         finalize_reviews(engine, Session)
+    if _restore_reviews == True:
+        restore_reviews(engine, Session)
     if _update_active_products == True:
         import cache
         cache = cache.Cache()
