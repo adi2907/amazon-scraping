@@ -128,6 +128,7 @@ The result of the analysis will be dumped into 2 files called `sentiment_analysi
 
 The csv files can be exported into an external database, as per the need.
 
+*************
 
 ### Duplicate Sets
 
@@ -155,6 +156,7 @@ bash run_complete_reindexing.sh
 
 This will completedly re-index all of the products across all the categories, and update the duplicate sets across relevant tables.
 
+*************
 
 ### Cronjob Commands
 
@@ -212,6 +214,8 @@ Crontab commands for Archive Controller Instance:
 # Terminate again
 30 1 * * 4 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
 ```
+
+*****************
 
 ### Automatic access over AWS
 
@@ -276,6 +280,8 @@ python3 awstool/api.py --terminate_instances --filename "created_instance_ids.tx
 ```bash
 python3 awstool/api.py --reset_state
 ```
+
+***********************
 
 ### Automatic SSH access to the EC2 instances
 
