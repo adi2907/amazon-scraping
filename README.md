@@ -155,4 +155,164 @@ bash run_complete_reindexing.sh
 
 This will completedly re-index all of the products across all the categories, and update the duplicate sets across relevant tables.
 
+
+### Cronjob Commands
+
+Periodic commands can be run as a cronjob in different instances, based on the need.
+
+The list of crontab commands can be viewed using the command:
+
+```bash
+crontab -e
+```
+
+The below will list down the various cronjobs required by different instances. There is an assumption that dedicated instances are running for the following tasks:
+
+Instance #1 -> Product Listing Scraping
+Instance #2 -> Product Detail Scraping
+Instance #3 -> Archive Product Scraping
+
+Crontab commands for Listing Instance:
+
+```bash
+# Kills any previous tmux sessions, so that we can start afresh
+30 6 * * * tmux kill-session -t bro
+30 7 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "python ./scrapingtool/browser.py category" Enter
+```
+
+This will ensure that the listing scraping is done everyday at 7:30 local time on the listing instance.
+
+Example crontab commands for Detail Instance(s):
+
+```bash
+# Kills any previous tmux sessions, so that we can start afresh
+30 7 * * 1 tmux kill-session -t bro
+
+0 8 * * 1 cd /home/ubuntu/updated/python-scraping && tmux new-session -d -s bro \; send-keys "python scrapingtool/scraper.py --tor --categories \"headphones\" --override --listing --detail --no_listing --num_workers 5 --worker_pages \"41, 42, 43, 44, 45\"" Enter
+```
+
+For this instance, this crontab command will do the detail scraping for headphones every week. You can extend this to multiple categories / instances as well.
+
+Crontab commands for Archive Controller Instance:
+
+```bash
+# Kills any previous tmux sessions, so that we can start afresh
+30 11 * * * tmux kill-session -t bro
+
+00 12 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "bash start_archive_instances.sh" Enter
+
+# Terminate once a week and recreate new instances
+0 0 * * 4 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "bash create_instances.sh" Enter
+
+# Update Proxy Lists
+30 0 * * 4 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab setup-proxy && fab setup-detail" Enter
+
+# Terminate again
+30 1 * * 4 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
+```
+
+### Automatic access over AWS
+
+The archive product scraping needs multiple EC2 instances to run the scraping. To help with this, there is an automated mechanism to create, start and stop these instances using commands from the master EC2 server (Archive Controller instance).
+
+The library `awstool` provides helper commands to directly access and use the AWS Api using Python.
+
+List of commands for AWS:
+
+1. View all AWS instances in a pretty printed format:
+
+```bash
+python3 awstool/api.py --pretty_print_instances
+```
+
+2. List all currently running instances, in a minimal instances
+
+```bash
+python3 awstool/api.py --fetch_active_instances
+```
+
+3. Create `N` new instances (based on Ubuntu 20.04) and will add the new instance ids to `created_instance_ids.txt`
+
+```bash
+python3 awstool/api.py --create_instance --num_instances N
+```
+
+4. Populate the files and `active_instances.txt` with the Instance IP address. This *needs* to be run after creating the instances.
+
+*NOTE*: However, you may need to wait for 1-2 mins for the instances to start up before running this command, since the IPs will be assigned only after it starts running:
+
+```bash
+python3 awstool/api.py --get_created_instance_details
+```
+
+5. Start instances
+
+```bash
+python3 awstool/api.py --start_instances --instance_ids "id1, id2"
+
+python3 awstool/api.py --start_instances --filename "created_instance_ids.txt"
+```
+
+6. Stop instances
+
+```bash
+python3 awstool/api.py --stop_instances --instance_ids "id1, id2"
+
+python3 awstool/api.py --stop_instances --filename "created_instance_ids.txt"
+```
+
+7. Terminate instances
+
+```bash
+python3 awstool/api.py --terminate_instances --instance_ids "id1, id2"
+
+python3 awstool/api.py --terminate_instances --filename "created_instance_ids.txt"
+```
+
+### Automatic SSH access to the EC2 instances
+
+To automate the ssh control of the ec2 instances for running specific commands, we use the *fabric* library, which is a SSH client in Python, that can be used to run commands across multiple instances.
+
+
+#### Prerequisites
+1. To connect to SSH, we need the AWS public keys for accessing all those instances, which belong to the same security group. You need to place that ssh key in `aws_private_key.pem`.
+2. To allow the instances to access this Github repository, the Github public key also needs to be shared and placed in `aws_public_key.pem`.
+
+This library uses a custom file called `fabfile.py`, which will contain all the tasks needed to run commands across the instances.
+
+The general format for a fabric task is like this:
+
+```python
+# fabfile.py
+@task
+def my_custom_task(ctx):
+    pass
+```
+
+We can run this fabric task using the below command:
+
+```bash
+fab my-custom-task
+```
+
+Notice that the underscore is replaced with a - in the task name.
+
+
+Now, there are 5 main tasks for the instances:
+
+1. The `setup` task (needs to be run to setup the system)
+2. The `start-archive` task (starts archive detail scraping across all active instances)
+3. The `terminate` task (Shuts down all the archive instances)
+
+4. The `setup-proxy` task (Sets up the proxy service `tinyproxy` for relevant instances)
+5. The `setup-detail` task (Used to copy the proxy IPs to the detail server)
+
+
+The archive tasks will be generally run in this fashion:
+
+```bash
+fab setup
+fab start-archive
+```
+
 ***********
