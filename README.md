@@ -168,11 +168,11 @@ crontab -e
 
 The below will list down the various cronjobs required by different instances. There is an assumption that dedicated instances are running for the following tasks:
 
-* Instance #1 -> Product Listing Scraping
+* Instance 1: Product Listing Scraping
 
-* Instance #2 -> Product Detail Scraping
+* Instance 2: Product Detail Scraping
 
-* Instance #3 -> Archive Product Scraping
+* Instance 3: Archive Product Scraping
 
 Crontab commands for Listing Instance:
 
