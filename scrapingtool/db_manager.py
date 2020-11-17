@@ -1657,9 +1657,14 @@ def restore_reviews(engine, Session):
     
     for _id, pid, is_dup in zip(review_df['id'], review_df['product_id'], review_df['is_duplicate']):
         if prev_id != pid:
-            if is_dup == 0:
-                engine.execute(f'UPDATE Reviews SET product_id = "{pid}" WHERE id = {_id}')
+            if prev_id is None:
+                ids = [_id]
+            rids = ','.join(['"' + str(rid) + '"' for rid in ids])
+            engine.execute(f'UPDATE Reviews SET product_id = "{pid}" WHERE id in ({rids})')
+            ids = []
             prev_id = pid
+        else:
+            ids.append(_id)
         idx += 1
         if idx % 10000 == 0:
             logger.info(f"Idx = {idx}")
