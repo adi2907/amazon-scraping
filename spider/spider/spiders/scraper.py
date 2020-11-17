@@ -40,7 +40,7 @@ class ArchiveScraper(Spider):
                 _info = OrderedDict()
                 info = OrderedDict()
                 with db_manager.session_scope(self.activePipeline.SessionFactory) as session:
-                    queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == category, (db_manager.ProductListing.date_completed == None) | (db_manager.ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
+                    queryset = session.query(db_manager.ProductListing).filter(db_manager.ProductListing.is_active == False, db_manager.ProductListing.category == category, (db_manager.ProductListing.date_completed == None) | (db_manager.ProductListing.date_completed <= datetime.now() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
                     self.logger.info(f"Found {queryset.count()} inactive products totally")
                     for instance in queryset:
                         _info[instance.product_id] = instance.product_url
