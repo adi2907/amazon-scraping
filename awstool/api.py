@@ -206,6 +206,8 @@ if __name__ == '__main__':
     _num_instances = args.num_instances
     _filename = args.filename
 
+    ITEMS_PER_INSTANCE = 100
+
     if _fetch_instances == True:
         _, ec2 = start_session()
         fetch_instances(ec2)
@@ -214,6 +216,20 @@ if __name__ == '__main__':
         pretty_print_instances(ec2)
     if _create_instance == True:
         _, ec2 = start_session()
+        if not os.path.exists('num_inactive.txt'):
+            if _filename is not None:
+                raise ValueError(f"No such file: num_inactive.txt")
+        else:
+            if _filename is not None:
+                with open(_filename, 'r') as f:
+                    num_inactive = int(f.read().strip())
+                print(f"Inactive products = {num_inactive}")
+                if num_inactive <= 0:
+                    raise ValueError(f"Num instances must be >= 0")
+                if num_inactive % ITEMS_PER_INSTANCE == 0:
+                    _num_instances = num_inactive // ITEMS_PER_INSTANCE
+                else:
+                    _num_instances = (num_inactive // ITEMS_PER_INSTANCE) + 1
         response = create_instance(ec2, config('SECURITY_GROUP_ID'), key_pair=config('KEY_PAIR_NAME'), volume_size=16, image_id=config('INSTANCE_AMI'), num_instances=_num_instances)
         print(f"{response}")
     if _get_created_instance_details == True:
