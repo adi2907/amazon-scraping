@@ -1893,6 +1893,18 @@ def update_detail_completed(engine, SessionFactory):
     logger.info(f"Updated detail_completed field!")
 
 
+def find_inactive_products(engine, SessionFactory):
+    from sqlalchemy import asc, desc
+    from datetime import datetime, timedelta
+
+    with session_scope(SessionFactory) as session:
+        queryset = session.query(ProductListing).filter(ProductListing.is_active == False, ProductListing.category == category, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
+        num_inactive = queryset.count()
+        logger.info(f"Found {num_inactive} inactive products totally")
+        with open('num_inactive.txt', 'w') as f:
+            f.write(str(num_inactive))
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
@@ -1919,6 +1931,7 @@ if __name__ == '__main__':
     parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
     parser.add_argument('--restore_reviews', help='Restore reviews', default=False, action='store_true')
     parser.add_argument('--finalize_reviews', help='Finalize Reviews', default=False, action='store_true')
+    parser.add_argument('--find_inactive_products', help='Find the number of inactive products', default=False, action='store_true')
 
     parser.add_argument('--import_product_data', help='Import Data (Duplicate Sets)', default=False, action='store_true')
 
@@ -1953,6 +1966,7 @@ if __name__ == '__main__':
     _import_product_data = args.import_product_data
     _restore_reviews = args.restore_reviews
     _finalize_reviews = args.finalize_reviews
+    _find_inactive_products = args.find_inactive_products
 
     _csv = args.csv
     _table = args.table
@@ -2050,6 +2064,8 @@ if __name__ == '__main__':
         update_alert_flags(session)
     if _update_product_data == True:
         update_product_data(engine, dump=False)
+    if _find_inactive_products == True:
+        find_inactive_products(engine, Session)
     if _import_product_data == True:
         if _csv is None:
             raise ValueError(f"Must provide a csv file")
