@@ -24,11 +24,14 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 from sqlitedict import SqliteDict
 
-import cache, db_manager, parse_data, proxy
-from utils import (create_logger, customer_reviews_template,
-                                domain_map, listing_categories,
-                                listing_templates, qanda_template,
-                                subcategory_map, url_template)
+import cache
+import db_manager
+import parse_data
+import proxy
+from utils import (category_to_domain, create_logger,
+                   customer_reviews_template, domain_map, domain_to_db,
+                   listing_categories, listing_templates, qanda_template,
+                   subcategory_map, url_template)
 
 logger = create_logger('scraper')
 
@@ -278,6 +281,11 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
         if my_proxy is None:
             session = requests.Session()
     #listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
+
+    credentials = db_manager.get_credentials()
+    domain = category_to_domain[category]
+    db_name = domain_to_db[domain]
+    engine, SessionFactory = db_manager.connect_to_db(db_name, connection_params)
     
     for idx, product_id in enumerate(listing_pids):
         curr_page = 1
@@ -302,7 +310,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
 
             if product_id is not None:
                 _date = threshold_date
-                with db_manager.session_scope(Session) as db_session:
+                with db_manager.session_scope(SessionFactory) as db_session:
                     obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                 
                     recent_date = None
@@ -1301,11 +1309,19 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     # session = requests.Session()
     server_url = 'https://www.amazon.in'
 
+    domain = category_to_domain[category]
+
+    server_url = 'https://' + domain
+
     product_id = parse_data.get_product_id(product_url)
+
+    connection_params = db_manager.get_credentials()
+
+    _engine, SessionFactory = db_manager.connect_to_db(domain_to_db[domain], connection_params)
 
     logger.info(f"Going to Details page for PID {product_id}")
 
-    with db_manager.session_scope(Session) as db_session:
+    with db_manager.session_scope(SessionFactory) as db_session:
         obj = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.product_id == f'{product_id}').first()
 
         if obj is None:
@@ -1418,7 +1434,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if USE_DB == True:
         # Insert to the DB
         try:
-            with db_manager.session_scope(Session) as db_session:
+            with db_manager.session_scope(SessionFactory) as db_session:
                 status = db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
                 if status == False:
                     try:
@@ -1444,7 +1460,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         if jump_page > 0:
             curr_reviews = REVIEWS_PER_PAGE * jump_page
         else:
-            with db_manager.session_scope(Session) as db_session:
+            with db_manager.session_scope(SessionFactory) as db_session:
                 num_reviews_none = 0
                 num_reviews_not_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num != None).count()
                 
@@ -1550,7 +1566,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         except NameError:
                             store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
                     else:
-                        with db_manager.session_scope(Session) as db_session:
+                        with db_manager.session_scope(SessionFactory) as db_session:
                             status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id, duplicate_set=duplicate_set)
                             if status == False:
                                 try:
@@ -1631,7 +1647,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         logger.warning(f"For ID {product_id}, reviews_url is not in details")
         if details is not None:
             logger.warning("Trying to search from DB....")
-            with db_manager.session_scope(Session) as db_session:
+            with db_manager.session_scope(SessionFactory) as db_session:
                 obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                 reviews_url = obj.reviews_url
                 flag = True
@@ -1740,7 +1756,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             if curr_reviews >= round(int(0.9 * total_ratings)) and jump_page == 0:
                                 # Mark as completed
                                 logger.info(f"For Product {product_id}, marking as completed")
-                                with db_manager.session_scope(Session) as db_session:
+                                with db_manager.session_scope(SessionFactory) as db_session:
                                     obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
                                     if obj is not None:
                                         is_completed = True
@@ -1779,7 +1795,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                 except NameError:
                                     store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
                             else:
-                                with db_manager.session_scope(Session) as db_session:
+                                with db_manager.session_scope(SessionFactory) as db_session:
                                     status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
                                     if not status:
                                         try:
@@ -1796,7 +1812,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                                 pass
                         else:
                             try:
-                                with db_manager.session_scope(Session) as db_session:
+                                with db_manager.session_scope(SessionFactory) as db_session:
                                     status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
                                     if not status:
                                         try:
@@ -1892,7 +1908,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     if dont_update == True:
         pass
     else:
-        with db_manager.session_scope(Session) as db_session:
+        with db_manager.session_scope(SessionFactory) as db_session:
             obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
             if obj is not None:
                 logger.info(f"Product with ID {product_id} is completed = {is_completed}")
@@ -1938,7 +1954,12 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             pages = [100000 for _ in listing_templates]
 
     server_url = 'https://www.amazon.in'
-    
+
+    credentials = db_manager.get_credentials()
+    domain = category_to_domain[categories[0]]
+    db_name = domain_to_db[domain]
+    _engine, SessionFactory = db_manager.connect_to_db(db_name, credentials)
+
     if my_proxy is not None:
         try:
             response = my_proxy.get(server_url)
@@ -2027,21 +2048,22 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
             #total_listing_pids = cache.smembers(f"LISTING_{category}_PIDS")
             #total_listing_pids = [pid.decode() for pid in total_listing_pids]
             
-            queryset = db_session.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category).order_by(desc(text('total_ratings'))).order_by(desc(text('detail_completed')))
-            duplicate_sets = set()
-            total_listing_pids = []
-            idx = 0
-            if top_n is not None and top_n > 0:
-                for instance in queryset:
-                    if idx == top_n:
-                        break
-                    if instance.duplicate_set in duplicate_sets:
-                        continue
-                    idx += 1
-                    duplicate_sets.add(instance.duplicate_set)
-                    total_listing_pids.append(instance.product_id)
-            else:
-                total_listing_pids = [getattr(instance, 'product_id') for instance in queryset if hasattr(instance, 'product_id')]
+            with db_manager.session_scope(SessionFactory) as dbsession:
+                queryset = dbsession.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category).order_by(desc(text('total_ratings'))).order_by(desc(text('detail_completed')))
+                duplicate_sets = set()
+                total_listing_pids = []
+                idx = 0
+                if top_n is not None and top_n > 0:
+                    for instance in queryset:
+                        if idx == top_n:
+                            break
+                        if instance.duplicate_set in duplicate_sets:
+                            continue
+                        idx += 1
+                        duplicate_sets.add(instance.duplicate_set)
+                        total_listing_pids.append(instance.product_id)
+                else:
+                    total_listing_pids = [getattr(instance, 'product_id') for instance in queryset if hasattr(instance, 'product_id')]
             listing_partition = [total_listing_pids[(i*len(total_listing_pids))//num_workers:((i+1)*len(total_listing_pids)) // num_workers] for i in range(num_workers)]
         else:
             total_listing_pids = []
@@ -2083,22 +2105,23 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         logger.info(f"Updating duplicate indices...")
         # Update set indexes
         try:
-            db_manager.update_duplicate_set(db_session, table='ProductListing', insert=True)
-            logger.info("Updated indexes!")
+            with db_manager.session_scope(SessionFactory) as dbsession:
+                db_manager.update_duplicate_set(dbsession, table='ProductListing', insert=True)
+                logger.info("Updated indexes!")
         except Exception as ex:
             logger.critical(f"Error when updating listing indexes: {ex}")
         
         # Update active product IDs
         try:
             logger.info("Updating active PIDS...")
-            db_manager.update_active_products(engine, pids, table='ProductListing', insert=True)
+            db_manager.update_active_products(_engine, pids, table='ProductListing', insert=True)
             logger.info("Updated Active PIDS!")
         except Exception as ex:
             logger.critical(f"Erro when updating active PIDS: {ex}")
     else:
         try:
             logger.info(f"Updating date_completed for PIDS....")
-            db_manager.update_listing_completed(engine, table='ProductListing')
+            db_manager.update_listing_completed(_engine, table='ProductListing')
         except Exception as ex:
             logger.critical(f"Error when updating date_completed for listing: {ex}")
 
