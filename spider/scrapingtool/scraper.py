@@ -1919,7 +1919,7 @@ def assign_template_subcategories(categories=None, pages=None, dump=False, detai
             fetch_category(category, url, 10000, change=False, server_url='https://amazon.in', no_listing=False, detail=False, jump_page=0, subcategories=[subcategory], no_refer=True)
 
 
-def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None, detail_override=False, top_n=None):
+def scrape_template_listing(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None, detail_override=False, top_n=None, instance_id=None):
     global my_proxy, session
     global headers, cookies
     global last_product_detail
@@ -1989,24 +1989,38 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         if num_workers is None or not isinstance(num_workers, int):
             num_workers = max(1, min(32, len(listing_categories)))
 
-        if len(listing_categories) == 1:
+        if len(categories) == 1:
             # Only one category. Split it into pages
             if num_workers == 1:
                 num_workers = 5
             logger.info(f"Only one category. Splitting work into {num_workers} threads")
             
-            categories = [listing_categories[0] for _ in range(1, num_workers+1)]
-            listing_categories = categories
+            _categories = [categories[0] for _ in range(1, num_workers+1)]
+            listing_categories = _categories
 
             pages = [1 for _ in range(1, num_workers+1)]
             if worker_pages is not None: 
                 assert len(worker_pages) == num_workers
                 pages = worker_pages
-                templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in pages]
+                templates = []
+                for domain in domain_map:
+                    for category, url in domain_map[domain].items():
+                        if category == listing_templates[0]:
+                            for page_num in pages:
+                                templates.append(url.substitute(PAGE_NUM=page_num))
                 listing_templates = templates
+                #templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in pages]
+                #listing_templates = templates
             else:
-                templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in range(1, num_workers+1)]
+                templates = []
+                for domain in domain_map:
+                    for category, url in domain_map[domain].items():
+                        if category == listing_templates[0]:
+                            for page_num in range(1, num_workers + 1):
+                                templates.append(url.substitute(PAGE_NUM=page_num))
                 listing_templates = templates
+                #templates = [listing_templates[0].substitute(PAGE_NUM=page_num) for page_num in range(1, num_workers+1)]
+                #listing_templates = templates
 
 
             no_sub = True
@@ -2101,6 +2115,12 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         except Exception as ex:
             logger.critical(f"Error when updating date_completed for listing: {ex}")
 
+    try:
+        cache.connect('master', use_redis=True)
+        cache.set(f"SCRAPING_COMPLETED_{instance_id}", 1, timeout=6 * 24 * 24)
+    except Exception as ex:
+        print(f"Error when setting cache: {ex}")
+
     return final_results
 
 
@@ -2129,6 +2149,7 @@ if __name__ == '__main__':
     parser.add_argument('--top_n', help='Fetch Top N product details', type=int, default=None)
     parser.add_argument('--jump_page', help='Jump page', type=int, default=0)
     parser.add_argument('--assign_subcategories', help='Assign Subcategories', default=False, action='store_true')
+    parser.add_argument('--instance_id', help='Instance id', type=int, default=None)
 
     args = parser.parse_args()
 
@@ -2154,6 +2175,7 @@ if __name__ == '__main__':
     top_n = args.top_n
     jump_page = args.jump_page
     assign_subcategories = args.assign_subcategories
+    instance_id = args.instance_id
 
     if num_workers <= 0:
         num_workers = None
@@ -2283,9 +2305,9 @@ if __name__ == '__main__':
                 else:
                     # Override
                     if isinstance(pages, list):
-                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n)
+                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n, instance_id=instance_id)
                     else:
-                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n)
+                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n, instance_id=instance_id)
             else:
                 for category in categories:
                     if product_ids is None:
