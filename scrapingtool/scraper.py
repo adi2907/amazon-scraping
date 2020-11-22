@@ -285,7 +285,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
     credentials = db_manager.get_credentials()
     domain = category_to_domain[category]
     db_name = domain_to_db[domain]
-    engine, SessionFactory = db_manager.connect_to_db(db_name, connection_params)
+    engine, SessionFactory = db_manager.connect_to_db(db_name, credentials)
     
     for idx, product_id in enumerate(listing_pids):
         curr_page = 1
