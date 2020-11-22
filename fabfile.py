@@ -395,6 +395,11 @@ def start_detail(ctx):
     
     num_instances = len(conn_params)
 
+    upgrade_response = Responder(
+        pattern=r'What would you like to do about menu\.lst\?',
+        response='2\n',
+    )
+
     conns = SerialGroup(
         *(conn_params),
         connect_kwargs=
