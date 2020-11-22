@@ -2284,9 +2284,9 @@ if __name__ == '__main__':
                 else:
                     # Override
                     if isinstance(pages, list):
-                        results = scrape_template_listing(categories=None, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n)
+                        results = scrape_template_listing(categories=categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n)
                     else:
-                        results = scrape_template_listing(categories=None, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n)
+                        results = scrape_template_listing(categories=categories, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n)
             else:
                 for category in categories:
                     if product_ids is None:
