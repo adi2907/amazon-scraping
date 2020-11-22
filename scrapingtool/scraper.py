@@ -1990,14 +1990,14 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
         if num_workers is None or not isinstance(num_workers, int):
             num_workers = max(1, min(32, len(listing_categories)))
 
-        if len(listing_categories) == 1:
+        if len(categories) == 1:
             # Only one category. Split it into pages
             if num_workers == 1:
                 num_workers = 5
             logger.info(f"Only one category. Splitting work into {num_workers} threads")
             
-            categories = [listing_categories[0] for _ in range(1, num_workers+1)]
-            listing_categories = categories
+            _categories = [categories[0] for _ in range(1, num_workers+1)]
+            listing_categories = _categories
 
             pages = [1 for _ in range(1, num_workers+1)]
             if worker_pages is not None: 
