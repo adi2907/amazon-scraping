@@ -262,6 +262,7 @@ def setup_detail(ctx):
             ip_address = line.strip().split('.')[0]
             if ip_address.startswith('ec2-'):
                 ip_address = ip_address[4:].replace('-', '.')
+                conn_params.append(INSTANCE_USERNAME + '@' + ip_address)
             proxies.append(ip_address + ':8888')
     
     proxy_list = ''
@@ -356,3 +357,6 @@ def setup_proxy(ctx):
         
         result = conn.sudo(f'sudo service tinyproxy restart')
         print(result)
+
+@task
+def start_detail(ctx):
