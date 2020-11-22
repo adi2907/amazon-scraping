@@ -308,7 +308,7 @@ def setup_proxy(ctx):
                 conn_params.append(INSTANCE_USERNAME + '@' + text)
             ip_address = line.strip().split('.')[0]
             if ip_address.startswith('ec2-'):
-                ip_address = ip_address[4:].replace('-', '.')\
+                ip_address = ip_address[4:].replace('-', '.')
             instance_ips.append(ip_address)
     
     num_instances = len(conn_params)
@@ -327,6 +327,11 @@ def setup_proxy(ctx):
         )
     ctx.CONNS = conns
     instance_number = 0
+
+    upgrade_response = Responder(
+        pattern=r'What would you like to do about menu\.lst\?',
+        response='2\n',
+    )
 
     ITEMS_PER_INSTANCE = 100 # 100 archived products per instance
 
