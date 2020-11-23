@@ -22,8 +22,8 @@ def fetch_instances(ec2, filters=[{'Name': 'instance-state-name', 'Values': ['ru
     active_instances = []
 
     for instance in instances:
-        active_instances.append(instance.ip_address)
-        print(instance.id, instance.instance_type, instance.state['Name'], instance.public_dns_name, instance.ip_address)
+        active_instances.append(instance.public_ip_address)
+        print(instance.id, instance.instance_type, instance.state['Name'], instance.public_dns_name, instance.public_ip_address)
 
     if default == False:    
         with open(os.path.join(os.getcwd(), 'active_instances.txt'), 'w') as f:
