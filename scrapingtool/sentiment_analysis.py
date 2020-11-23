@@ -116,10 +116,26 @@ def construct_indexed_df(reviews_df, indexed_sentiments=None): # From CLEANED_UP
     if indexed_sentiments is None:
         with open(os.path.join(DATASET_PATH, 'indexed_sentiments.pkl'), 'rb') as f:
             indexed_sentiments = pickle.load(f)
+    sentiments = []
+    for idx, indexed_sentiment in enumerate(indexed_sentiments):
+        if indexed_sentiment not in ({}, None,):
+            positive_sentiments = []
+            negative_sentiments = []
+            for feature, sentiment in indexed_sentiment.items():
+                if feature > 0:
+                    positive_sentiments.append(sentiment)
+                elif feature < 0:
+                    negative_sentiments.append(sentiment)
+            sentiments.append({'id': reviews_df['id'][idx], 'product_id': reviews_df['product_id'][idx], 'positive_sentiments': positive_sentiments, 'negative_sentiments': negative_sentiments})
+
+    db_df = pd.DataFrame(sentiments)
+    db_df.dropna(thresh=1)
+    
     sentiments = [{'id': reviews_df['id'][idx], 'product_id': reviews_df['product_id'][idx], **(indexed_sentiment)} for idx, indexed_sentiment in enumerate(indexed_sentiments) if indexed_sentiment not in ({}, None)]
     indexed_df = pd.DataFrame(sentiments)
     indexed_df.dropna(thresh=1)
-    return indexed_df
+
+    return db_df, indexed_df
 
 
 def get_unique_ids(df):
@@ -253,7 +269,8 @@ if __name__ == '__main__':
     # Post-process
     review_df = pd.read_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
     indexed_sentiments = aggregate_sentiments_after_script()
-    indexed_df = construct_indexed_df(review_df, indexed_sentiments)
+    db_df, indexed_df = construct_indexed_df(review_df, indexed_sentiments)
+    db_df.to_csv(os.path.join(DATASET_PATH, f'sentiment_db_{category}.csv'))
     indexed_df.to_csv(os.path.join(DATASET_PATH, f'sentiment_analysis_{category}.csv'))
     counts = count_ranges(indexed_df, review_df)
 

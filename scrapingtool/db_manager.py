@@ -147,9 +147,13 @@ tables = {
     'SentimentAnalysis': {
         'id': 'INTEGER PRIMARY KEY',
         'product_id': 'TEXT(16)',
-        'review_id': 'INTEGER',
-        'sentiments': 'LONGTEXT',
-        'duplicate_set': 'INTEGER',
+        'positive_sentiments': 'LONGTEXT',
+        'negative_sentiments': 'LONGTEXT',
+    },
+    'SentimentCounts': {
+        'product_id': 'INTEGER_PRIMARY_KEY',
+        'positive': 'INTEGER',
+        'negative': 'INTEGER',
     }
 }
 
