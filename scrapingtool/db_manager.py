@@ -154,7 +154,7 @@ tables = {
         'product_id': 'TEXT(16) PRIMARY KEY',
         'positive': 'INTEGER',
         'negative': 'INTEGER',
-    }
+    },
 }
 
 field_map = {
@@ -364,6 +364,11 @@ class SentimentAnalysis():
     pass
 
 
+@apply_schema
+class SentimentCounts():
+    pass
+
+
 table_map = {
     'ProductListing': ProductListing,
     'ProductDetails': ProductDetails,
@@ -372,6 +377,7 @@ table_map = {
     'Reviews': Reviews,
     'DailyProductListing': DailyProductListing,
     'SentimentAnalysis': SentimentAnalysis,
+    'SentimentCounts': SentimentCounts,
 }
 
 
