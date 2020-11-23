@@ -151,7 +151,7 @@ tables = {
         'negative_sentiments': 'LONGTEXT',
     },
     'SentimentCounts': {
-        'product_id': 'INTEGER_PRIMARY_KEY',
+        'product_id': 'INTEGER PRIMARY_KEY',
         'positive': 'INTEGER',
         'negative': 'INTEGER',
     }
