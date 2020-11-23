@@ -166,40 +166,42 @@ def sentiment_analysis(category):
     analyse(df, nlp, keywords, category)
 
 
-def fetch_category_info(engine, category, month, year):
-    if month < 10:
-        month = '0' + str(month)
-    else:
-        month = str(month)
-    
-    first_day = '01'
-    if month == '02':
-        if year % 4 == 0:
-            last_day = '29'
+def fetch_category_info(engine, category, start_date, end_date):
+    try:
+        tokens = start_date.split('-')
+        start_year, start_month, start_day = tokens[0], int(tokens[1]), tokens[2]
+        if start_month < 10:
+            start_month = '0' + str(start_month)
         else:
-            last_day = '28'
-    elif month in ['01', '03', '05', '07', '08', '10', '12']:
-        last_day = '31'
-    else:
-        last_day = '30'
+            start_month = str(start_month)
+
+        tokens = end_date.split('-')
+        end_year, end_month, end_day = tokens[0], int(tokens[1]), tokens[2]
+        if end_month < 10:
+            end_month = '0' + str(end_month)
+        else:
+            end_month = str(end_month)
+    except Exception as ex:
+        print('start_date, end_date must be of form: YYYY-MM-DD')
+        raise ex
     
-    results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = '{category}' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{year}-{month}-{first_day}' AND '{year}-{month}-{last_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
+    results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = '{category}' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
     results.to_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), index=False, sep=",")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--category', help='Category for dumping Reviews', type=str, default=None)
-    parser.add_argument('-m', '--month', help='List the month', type=int, default=None)
-    parser.add_argument('-y', '--year', help='List the year', type=int, default=None)
+    parser.add_argument('-s', '--start_date', help='List the start date', type=str, default=None)
+    parser.add_argument('-e', '--end_date', help='List the end_date', type=str, default=None)
 
     parser.add_argument('--test', help='Testing', default=False, action='store_true')
 
     args = parser.parse_args()
 
     category = args.category
-    month = args.month
-    year = args.year
+    start_date = args.start_date
+    end_date = args.end_date
     test = args.test
 
     if test == True:
@@ -219,7 +221,7 @@ if __name__ == '__main__':
         exit(0)
 
     if category is not None:
-        if month is None or year is None:
+        if start_date is None or end_date is None:
             pass
             # raise ValueError(f"Need to specify --month and --year")
         else:
@@ -235,7 +237,7 @@ if __name__ == '__main__':
                 DB_TYPE = 'sqlite'
                 engine = db_manager.Database(dbtype=DB_TYPE).db_engine
             # Fetch
-            fetch_category_info(engine, category, month, year)
+            fetch_category_info(engine, category, start_date, end_date)
     else:
         raise ValueError(f"Need to specify --category argument")
 
