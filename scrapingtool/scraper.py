@@ -2139,6 +2139,7 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--categories', help='List of all categories (comma separated)', type=lambda s: [item.strip() for item in s.split(',')])
+    parser.add_argument('-f', '--categories_file', help='List of all categories from a file', type=str, default=None)
     parser.add_argument('--listing', help='Scraping the category listing', default=False, action='store_true')
     parser.add_argument('--detail', help='Scraping individual product details', default=False, action='store_true')
     parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
@@ -2164,6 +2165,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     categories = args.categories
+    categories_file = args.categories_file
     listing = args.listing
     detail = args.detail
     num_items = args.number
@@ -2195,10 +2197,19 @@ if __name__ == '__main__':
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
 
+    if categories is None:
+        categories = []
+        if categories_file is not None:
+            with open(categories_file, 'r') as f:
+                for line in f:
+                    categories.append(line.strip())
+
     try:
         if config is not None:
             # Iterate thru args
             for arg in vars(args):
+                if arg == 'categories_file' and getattr(args, arg) == None:
+                    continue
                 if arg == 'pages' and getattr(args, arg) == 1:
                     continue
                 if arg == 'num_products' and getattr(args, arg) == None:
