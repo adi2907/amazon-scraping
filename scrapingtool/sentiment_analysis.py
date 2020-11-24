@@ -38,7 +38,7 @@ def load_model(download=False):
 def aspect_based_sa(nlp, keywords, review, category):
     aspect_dict = {}
     param_list = []
-    head_list = [_list[1:] for _list in keywords if _list[0]==category]
+    head_list = [_list[1:] for _list in keywords if _list[0] == category]
     for _list in head_list:
         param_list.append([x for x in _list if x])
     doc = nlp(review)
@@ -65,18 +65,18 @@ def analyse(df, nlp, keywords, category):
     idx = 0
 
     for i in range(0, df.count()['body']):
-        if df['category'][i] != category:
+        if category != 'all' and df['category'][i] != category:
             sentiments.append({'id': i})
             continue
 
         review = df['body'][idx]
         _id = df['id'][idx]
-        product_id = df['product_id'][idx]
+        #product_id = df['product_id'][idx]
 
         # nlp, keywords, review, category
 
         if isinstance(df['body'][idx], str):
-            sentiments.append({'id': i, **aspect_based_sa(nlp, keywords, review, category)})
+            sentiments.append({'id': i, **aspect_based_sa(nlp, keywords, review, df['category'][i])})
         else:
             sentiments.append({'id': i})
 
@@ -202,7 +202,7 @@ def fetch_category_info(engine, category, start_date, end_date):
         raise ex
     
     if category == 'all':
-        results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, 'all' AS category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
+        results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
     else:
         results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = '{category}' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
     results.to_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), index=False, sep=",")
