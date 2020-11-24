@@ -2198,8 +2198,8 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, exit_gracefully)
 
     if categories is None:
-        categories = []
         if categories_file is not None:
+            categories = []
             with open(categories_file, 'r') as f:
                 for line in f:
                     categories.append(line.strip())
