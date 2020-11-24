@@ -149,6 +149,7 @@ tables = {
         'product_id': 'TEXT(16)',
         'positive_sentiments': 'LONGTEXT',
         'negative_sentiments': 'LONGTEXT',
+        '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'SentimentCounts': {
         'product_id': 'TEXT(16) PRIMARY KEY',
