@@ -951,7 +951,7 @@ def assign_subcategories(session, category, table='ProductDetails'):
 
     
     def process_subcategory_html(subcategory, filename):
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
             html = f.read()
 
         soup = BeautifulSoup(html, 'lxml')
