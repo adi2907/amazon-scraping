@@ -3,7 +3,7 @@ subcategory_dict = {
         'Type': {
             'wired': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564046031&dc&fst=as%3Aoff&qid=1599294897&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',
             'wireless': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564047031%7C15564048031&dc&fst=as%3Aoff&qid=1599295118&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',
-            'tws': lambda title: True if any(token in title.lower() for token in ['tws', 'true wireless', 'true-wireless', 'truly wireless', 'truly-wireless']) else False,
+            'tws': {'field': 'product_title', 'predicate': lambda product_title: True if any(token in product_title.lower() for token in ['tws', 'true wireless', 'true-wireless', 'truly wireless', 'truly-wireless']) else False},
         },
         'Price': {
             "<500": 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A-50000&dc&fst=as%3Aoff&qid=1599295515&ref=sr_ex_p_n_feature_six_brow_0',
@@ -30,9 +30,9 @@ subcategory_dict = {
             'luxury (>4000)': 'https://www.amazon.in/s?k=ceiling+fan&i=kitchen&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-2000000&dc&crid=1TGIH58I2LW9I&qid=1604125356&rnid=3444809031&sprefix=ceili%2Caps%2C380&ref=sr_nr_p_36_2',
         },
         'Features': {
-            'bldc': lambda title: True if 'bldc' in title.lower() else False,
-            'smart': lambda features: True if any(token in features.lower() for token in ['remote', 'bldc', 'smart', 'iot']) else False,
-            'lights': lambda title: True if any(token in title.lower() for token in ['light', 'lights', 'decorative']) else False,
+            'bldc': {'field': 'product_title', 'predicate': lambda product_title: True if 'bldc' in product_title.lower() else False},
+            'smart': {'field': 'features', 'predicate': lambda features: True if any(token in features.lower() for token in ['remote', 'bldc', 'smart', 'iot']) else False},
+            'lights': {'field': 'product_title', 'predicate': lambda product_title: True if any(token in product_title.lower() for token in ['light', 'lights', 'decorative']) else False},
         }
     },
     'refrigerator': {
@@ -69,11 +69,11 @@ subcategory_dict = {
             '>=8kg': 'https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_seven_browse-bin%3A1480511031&dc&qid=1599329662&rnid=1480507031&ref=sr_nr_p_n_feature_seven_browse-bin_4',
         },
         'Price': {
-            '<10000': lambda curr_price: True if curr_price < 10000 else False,
-            '10000-15000': lambda curr_price: True if ((curr_price >= 10000) and (curr_price < 15000)) else False,
-            '15000-20000': lambda curr_price: True if ((curr_price >= 15000) and (curr_price < 20000)) else False,
-            '20000-30000': lambda curr_price: True if ((curr_price >= 20000) and (curr_price < 30000)) else False,
-            '>30000': lambda curr_price: True if curr_price >= 30000 else False,
+            '<10000': {'field': 'curr_price', 'predicate': lambda curr_price: True if curr_price < 10000 else False},
+            '10000-15000': {'field': 'curr_price', 'predicate': lambda curr_price: True if ((curr_price >= 10000) and (curr_price < 15000)) else False},
+            '15000-20000': {'field': 'curr_price', 'predicate': lambda curr_price: True if ((curr_price >= 15000) and (curr_price < 20000)) else False},
+            '20000-30000': {'field': 'curr_price', 'predicate': lambda curr_price: True if ((curr_price >= 20000) and (curr_price < 30000)) else False},
+            '>30000': {'field': 'curr_price', 'predicate': lambda curr_price: True if curr_price >= 30000 else False},
         }
     }
 }

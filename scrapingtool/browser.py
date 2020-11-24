@@ -233,9 +233,6 @@ def run_subcategory(browser='Firefox'):
                     if isinstance(value, str):
                         # Url
                         url = value
-                    elif is_lambda(value):
-                        # Lambda
-                        pass
                     else:
                         # None
                         continue

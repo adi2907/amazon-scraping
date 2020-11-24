@@ -921,20 +921,18 @@ def find_incomplete(session, table='ProductDetails'):
     return pids
 
 
-def assign_subcategories(session, category, subcategory, table='ProductDetails'):
+def assign_subcategories(session, category, table='ProductDetails'):
     from bs4 import BeautifulSoup
 
     import parse_data
+
+    from subcategories import subcategory_dict
 
     DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
 
     if not os.path.exists(DUMP_DIR):
         return
 
-    files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory}_*")
-    
-    curr = 1
-    
     def insert_subcategory(session, instance, subcategory):
         if instance.subcategories in ([], None):
             instance.subcategories = json.dumps([subcategory])
@@ -952,7 +950,8 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
             session.rollback()
             logger.critical(f"Exception during commiting: {ex}")
 
-    for filename in files:
+    
+    def process_subcategory_html(subcategory, filename):
         with open(filename, 'r') as f:
             html = f.read()
 
@@ -963,52 +962,44 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
             product_id = product_info[title]['product_id']
             if product_id is None:
                 continue
-            print(curr, product_id, title)
-            curr += 1
+            print(product_id, title)
             obj = query_table(session, 'ProductDetails', 'one', filter_cond=({'product_id': product_id}))
             if obj is not None:
                 insert_subcategory(session, obj, subcategory)
         name = filename.split('/')[-1]
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
-    
-    if category == "headphones":
-        # Miscellanous Subcategories for headphones
+
+
+    for category in subcategory_dict:
         queryset = session.query(ProductListing).filter(ProductListing.category == category)
         pids = dict()
         for obj in queryset:
             pids[obj.product_id] = obj.price
         
-        if subcategory == "tws":
-            for pid in pids:
-                instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
-                if instance is not None:
-                    title = instance.product_title.lower()
-                    if ("tws" in title) or ("true wireless" in title) or ("truly wireless" in title) or ("true-wireless" in title):
-                        insert_subcategory(session, instance, subcategory)
-                        logger.info(f"Set {title} as TWS subcategory")
-        
-        if subcategory == "price":
-            for pid, price in pids.items():
-                instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
-                if instance is not None:
-                    if price is None:
-                        continue
-                    if price < 500:
-                        price_subcategory = "<500"
-                    elif price >= 500 and price < 1000:
-                        price_subcategory = "500-1000"
-                    elif price >= 1000 and price < 2000:
-                        price_subcategory = "1000-2000"
-                    elif price >= 2000 and price < 3000:
-                        price_subcategory = "2000-3000"
-                    elif price >= 3000 and price <= 5000:
-                        price_subcategory = "3000-5000"
-                    elif price > 5000:
-                        price_subcategory = ">5000"
-                    else:
-                        continue
-
-                    insert_subcategory(session, instance, price_subcategory)
+        for _subcategory in subcategory_dict[category]:
+            for subcategory_name in subcategory_dict[category][_subcategory]:
+                value = subcategory_dict[category][_subcategory][subcategory_name]
+                if isinstance(value, str):
+                    # Parse the html for the subcategory
+                    files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory_name}_*")
+                    for filename in files:
+                        process_subcategory_html(subcategory_name, filename)
+                
+                elif isinstance(value, dict) and 'predicate' in value and 'field' in value:
+                    # Use the predicate
+                    field = value['field']
+                    predicate = value['predicate']
+                    for pid in pids:
+                        instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
+                        if instance is None:
+                            continue
+                        instance_field = getattr(instance, field)
+                        result = predicate(instance_field)
+                        if result == True:
+                            insert_subcategory(session, instance, subcategory_name)
+                else:
+                    # None
+                    continue
 
 
 def update_date(session):
