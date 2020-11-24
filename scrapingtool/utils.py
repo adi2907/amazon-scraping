@@ -84,6 +84,11 @@ def setup_broker():
     return broker
 
 
+def is_lambda(v):
+  LAMBDA = lambda:0
+  return isinstance(v, type(LAMBDA)) and v.__name__ == LAMBDA.__name__
+
+
 def to_http(url, use_tor=False):
     if use_tor == True:
         return url
