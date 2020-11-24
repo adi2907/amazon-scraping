@@ -188,12 +188,14 @@ if __name__ == '__main__':
     parser.add_argument('--terminate_instances', help='Terminates EC2 instances', default=False, action='store_true')
     parser.add_argument('--reset_state', help='Reset state', default=False, action='store_true')
 
+    parser.add_argument('--region', help='Common region for the session. Can be us-west-1 / us-west-2 for USA, and ap-south-1 for India', default="ap-south-1", type=str)
     parser.add_argument('--num_instances', help='Number of instances to create', default=1, type=int)
     parser.add_argument('--filename', help='Name of file', default=None, type=str)
     parser.add_argument('--instance_ids', help='List of EC2 instance ids', default=None, type=lambda s: [item.strip() for item in s.split(',')])
 
     args = parser.parse_args()
 
+    _region = args.region
     _fetch_instances = args.fetch_instances
     _pretty_print_instances = args.pretty_print_instances
     _create_instance = args.create_instance
@@ -209,13 +211,13 @@ if __name__ == '__main__':
     ITEMS_PER_INSTANCE = 100
 
     if _fetch_instances == True:
-        _, ec2 = start_session()
+        _, ec2 = start_session(region=_region)
         fetch_instances(ec2)
     if _pretty_print_instances == True:
-        _, ec2 = start_session()
+        _, ec2 = start_session(region=_region)
         pretty_print_instances(ec2)
     if _create_instance == True:
-        _, ec2 = start_session()
+        _, ec2 = start_session(region=_region)
         if not os.path.exists('num_inactive.txt'):
             if _filename is not None:
                 raise ValueError(f"No such file: num_inactive.txt")
@@ -233,7 +235,7 @@ if __name__ == '__main__':
         response = create_instance(ec2, config('SECURITY_GROUP_ID'), key_pair=config('KEY_PAIR_NAME'), volume_size=16, image_id=config('INSTANCE_AMI'), num_instances=_num_instances)
         print(f"{response}")
     if _get_created_instance_details == True:
-        _, ec2 = start_session()
+        _, ec2 = start_session(region=_region)
         response = get_created_instance_details(ec2)
         print(response)
     if _start_instances == True:
@@ -250,7 +252,7 @@ if __name__ == '__main__':
         if _instance_ids in [None, []]:
             print(f"Must send a list of Instance IDs to terminate")
             exit(0)
-        client = start_client()
+        client = start_client(region=_region)
         response = start_instances(client, _instance_ids)
         print(response)
     if _terminate_instances == True:
@@ -267,7 +269,7 @@ if __name__ == '__main__':
         if _instance_ids in [None, []]:
             print(f"Must send a list of Instance IDs to terminate")
             exit(0)
-        _, ec2 = start_session()
+        _, ec2 = start_session(region=_region)
         response = terminate_instances(ec2, _instance_ids)
         print(f"{response}")
         print(f"Terminated instances!")
@@ -285,7 +287,7 @@ if __name__ == '__main__':
         if _instance_ids in [None, []]:
             print(f"Must send a list of Instance IDs to stop")
             exit(0)
-        _, ec2 = start_session()
+        _, ec2 = start_session(region=_region)
         response = stop_instances(ec2, _instance_ids)
         print(f"{response}")
         print(f"Stopped instances!")
