@@ -700,8 +700,9 @@ if __name__ == '__main__':
     #print(len(results.keys()))
 
     #soup = init_parser('mobile/sample')
-    soup = init_parser('haircolor')
-    results = get_product_info(soup)
+    soup = init_parser('haircolor_reviews')
+    results = get_customer_reviews(soup, page_num=2, first_request=True)
+    #results = get_product_info(soup)
     print(results)
     exit(0)
     #print(results['reviews_url'])

@@ -12,12 +12,12 @@ from os import environ as env
 
 def copy_security_groups(src_region, tgt_region, grp_names=['Medium Group']):
     # Initialize client connections for regions
-    src_client = boto3.client('ec2', region_name=src_region,
-                              aws_access_key_id=config('AWS_ACCESS_KEY'),
-                              aws_secret_access_key=config('AWS_SECRET_KEY'))
-    tgt_client = boto3.client('ec2', region_name=tgt_region,
-                              aws_access_key_id=config('AWS_ACCESS_KEY'),
-                              aws_secret_access_key=config('AWS_SECRET_KEY'))
+    src_client = boto3.client('ec2', region_name=src_region,)
+                              #aws_access_key_id=config('AWS_ACCESS_KEY'),
+                              #aws_secret_access_key=config('AWS_SECRET_KEY'))
+    tgt_client = boto3.client('ec2', region_name=tgt_region,)
+                              #aws_access_key_id=config('AWS_ACCESS_KEY'),
+                              #aws_secret_access_key=config('AWS_SECRET_KEY'))
 
     # Get info for all security groups and copy them one-by-one
     g_info = src_client.describe_security_groups(
