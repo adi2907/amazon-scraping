@@ -552,7 +552,7 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
     except (exc.IntegrityError, FlushError):
         session.rollback()
         result = session.query(table_map[table]).filter(ProductDetails.product_id == row['product_id']).first()
-        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]"))
+        update_fields = (field for field in tables[table] if field in row and row[field] not in (None, {}, [], "", "{}", "[]"))
         for field in update_fields:
             if field in row:
                 setattr(result, field, row[field])
@@ -934,6 +934,23 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
     files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory}_*")
     
     curr = 1
+    
+    def insert_subcategory(session, instance, subcategory):
+        if instance.subcategories in ([], None):
+            instance.subcategories = json.dumps([subcategory])
+        else:
+            subcategories = json.loads(instance.subcategories)
+            if subcategory in subcategories:
+                return
+            subcategories.append(subcategory)
+            instance.subcategories = json.dumps(subcategories)
+        
+        try:
+            session.commit()
+            logger.info(f'Updated subcategories for {subcategory}')
+        except Exception as ex:
+            session.rollback()
+            logger.critical(f"Exception during commiting: {ex}")
 
     for filename in files:
         with open(filename, 'r') as f:
@@ -950,23 +967,12 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
             curr += 1
             obj = query_table(session, 'ProductDetails', 'one', filter_cond=({'product_id': product_id}))
             if obj is not None:
-                if obj.subcategories in ([], None):
-                    obj.subcategories = json.dumps([subcategory])
-                else:
-                    subcategories = json.loads(obj.subcategories)
-                    if subcategory in subcategories:
-                        continue
-                    subcategories.append(subcategory)
-                    obj.subcategories = json.dumps(subcategories)
-                try:
-                    session.commit()
-                except Exception as ex:
-                    session.rollback()
-                    print(ex)
+                insert_subcategory(session, obj, subcategory)
         name = filename.split('/')[-1]
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
     
     if category == "headphones":
+        # Miscellanous Subcategories for headphones
         queryset = session.query(ProductListing).filter(ProductListing.category == category)
         pids = dict()
         for obj in queryset:
@@ -978,22 +984,8 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                 if instance is not None:
                     title = instance.product_title.lower()
                     if ("tws" in title) or ("true wireless" in title) or ("truly wireless" in title) or ("true-wireless" in title):
-                        if instance.subcategories in ([], None):
-                            instance.subcategories = json.dumps([subcategory])
-                        else:
-                            subcategories = json.loads(instance.subcategories)
-                            if subcategory in subcategories:
-                                continue
-                            subcategories.append(subcategory)
-                            instance.subcategories = json.dumps(subcategories)
+                        insert_subcategory(session, instance, subcategory)
                         logger.info(f"Set {title} as TWS subcategory")
-            
-            try:
-                session.commit()
-                logger.info(f'Updated subcategories for {subcategory}')
-            except Exception as ex:
-                session.rollback()
-                logger.critical(f"Exception during commiting: {ex}")
         
         if subcategory == "price":
             for pid, price in pids.items():
@@ -1015,22 +1007,8 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
                         price_subcategory = ">5000"
                     else:
                         continue
-                    
-                    if instance.subcategories in ([], None):
-                        instance.subcategories = json.dumps([price_subcategory])
-                    else:
-                        subcategories = json.loads(instance.subcategories)
-                        if subcategory in subcategories:
-                            continue
-                        subcategories.append(price_subcategory)
-                        instance.subcategories = json.dumps(subcategories)
-            
-            try:
-                session.commit()
-                logger.info(f'Updated subcategories for {subcategory}')
-            except Exception as ex:
-                session.rollback()
-                logger.critical(f"Exception during commiting: {ex}")
+
+                    insert_subcategory(session, instance, price_subcategory)
 
 
 def update_date(session):
