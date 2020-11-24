@@ -243,7 +243,7 @@ def run_subcategory(browser='Firefox'):
                     if url is None:
                         continue
                     
-                    for filename in glob.glob(f"dumps/{category}_{subcategory}_{subcategory_name}_*"):
+                    for filename in glob.glob(f"dumps/{category}_{subcategory_name}_*"):
                         if os.path.exists(filename):
                             os.remove(filename)
                     
@@ -269,7 +269,7 @@ def run_subcategory(browser='Firefox'):
                         except:
                             pass
 
-                        with open(f'dumps/{category}_{subcategory}_{subcategory_name}_{curr}.html', 'wb') as f:
+                        with open(f'dumps/{category}_{subcategory_name}_{curr}.html', 'wb') as f:
                             f.write(html)
 
                         print("Written html. Sleeping...")
