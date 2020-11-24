@@ -932,11 +932,15 @@ def assign_subcategories(session, category, table='ProductDetails'):
     if not os.path.exists(DUMP_DIR):
         return
 
-    def insert_subcategory(session, instance, subcategory):
+    def insert_subcategory(session, instance, subcategory, subcategory_type=None, subcategory_list=[]):
         if instance.subcategories in ([], None):
             instance.subcategories = json.dumps([subcategory])
         else:
             subcategories = json.loads(instance.subcategories)
+            if subcategory_type == 'Price':
+                for ncat in subcategory_list:
+                    if ncat in subcategories and ncat != subcategory:
+                        subcategories.remove(ncat)
             if subcategory in subcategories:
                 return
             subcategories.append(subcategory)
@@ -950,7 +954,7 @@ def assign_subcategories(session, category, table='ProductDetails'):
             logger.critical(f"Exception during commiting: {ex}")
 
     
-    def process_subcategory_html(subcategory, filename):
+    def process_subcategory_html(subcategory, filename, subcategory_type=None, subcategory_list=[]):
         with open(filename, 'rb') as f:
             html = f.read()
 
@@ -964,7 +968,7 @@ def assign_subcategories(session, category, table='ProductDetails'):
             print(product_id, title)
             obj = query_table(session, 'ProductDetails', 'one', filter_cond=({'product_id': product_id}))
             if obj is not None:
-                insert_subcategory(session, obj, subcategory)
+                insert_subcategory(session, obj, subcategory, subcategory_type, subcategory_list)
         head, name = os.path.split(filename)
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
 
@@ -981,8 +985,12 @@ def assign_subcategories(session, category, table='ProductDetails'):
                 if isinstance(value, str):
                     # Parse the html for the subcategory
                     files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory_name}_*")
+                    if _subcategory == 'Price':
+                        subcategory_list = list(subcategory_dict[category][_subcategory].values())
+                    else:
+                        subcategory_list = []
                     for filename in files:
-                        process_subcategory_html(subcategory_name, filename)
+                        process_subcategory_html(subcategory_name, filename, subcategory_type=_subcategory, subcategory_list=subcategory_list)
                 
                 elif isinstance(value, dict) and 'predicate' in value and 'field' in value:
                     # Use the predicate
@@ -995,7 +1003,11 @@ def assign_subcategories(session, category, table='ProductDetails'):
                         instance_field = getattr(instance, field)
                         result = predicate(instance_field)
                         if result == True:
-                            insert_subcategory(session, instance, subcategory_name)
+                            if _subcategory == 'Price':
+                                subcategory_list = list(subcategory_dict[category][_subcategory].values())
+                            else:
+                                subcategory_list = []
+                            insert_subcategory(session, instance, subcategory_name, subcategory_type=_subcategory, subcategory_list=subcategory_list)
                 else:
                     # None
                     continue
