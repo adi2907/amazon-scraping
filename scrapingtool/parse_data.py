@@ -573,7 +573,14 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                 continue
             
             # Rating of the review
-            rating = header.attrs['title']
+            try:
+                rating = header.attrs['title']
+            except Exception as ex:
+                # Maybe newer edition of amazon.com
+                logger.critical(f"Possibly newer edition of amazon. Trying hook")
+                rating = review.find("a", {"data-hook": "cmps-review-star-rating"})
+                rating = rating.span.text.strip()
+            
             data['rating'] = rating
             title = review.find("a", {"data-hook": "review-title"})
             if title is not None:
