@@ -2103,8 +2103,7 @@ if __name__ == '__main__':
         import_from_csv(engine, table_name, csv_file)
     if _assign_subcategories == True:
         for category in subcategory_dict:
-            for subcategory in subcategory_dict[category]:
-                assign_subcategories(session, category, table='ProductDetails')
+            assign_subcategories(session, category, table='ProductDetails')
     if _close_all_db_connections == True:
         close_all_db_connections(engine, Session)
     if _dump_from_cache == True:
