@@ -489,12 +489,21 @@ def get_qanda(soup, page_num=None):
                         date = date.text.strip()
                         # Convert it into a datetime object
                         try:
-                            date = datetime.strptime(date, '· %d %B, %Y')
+                            try:
+                                date = datetime.strptime(date, '· %d %B, %Y')
+                            except:
+                                date = datetime.strptime(date, '· %B %d, %Y')
                         except ValueError:
                             if ',' in date:
-                                date = datetime.strptime(date, '%d %B, %Y')
+                                try:
+                                    date = datetime.strptime(date, '%d %B, %Y')
+                                except:
+                                    date = datetime.strptime(date, '%B %d, %Y')
                             else:
-                                date = datetime.strptime(date, '%d %B %Y')
+                                try:
+                                    date = datetime.strptime(date, '%d %B %Y')
+                                except:
+                                    date = datetime.strptime(date, '%B %d %Y')
                     else:
                         date = None
 
@@ -594,9 +603,17 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                 date = ' '.join([token for token in date_tokens])
                 # Convert it into a datetime object
                 if ',' in date:
-                    date = datetime.strptime(date, '%d %B, %Y')
+                    try:
+                        # India
+                        date = datetime.strptime(date, '%d %B, %Y')
+                    except:
+                        # Usa
+                        date = datetime.strptime(date, '%B %d, %Y')
                 else:
-                    date = datetime.strptime(date, '%d %B %Y')
+                    try:
+                        date = datetime.strptime(date, '%d %B %Y')
+                    except:
+                        date = datetime.strptime(date, '%B %d %Y')
             data['review_date'] = date
             data['country'] = country
 
