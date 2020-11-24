@@ -58,6 +58,13 @@ except UndefinedValueError:
 
 logger.info(f"USE_REDIS = {USE_REDIS}")
 
+try:
+    USE_PROXY = config('USE_PROXY', cast=bool)
+except UndefinedValueError:
+    USE_PROXY = True
+
+logger.info(f"USE_PROXY = {USE_PROXY}")
+
 cache.connect('master', use_redis=USE_REDIS)
 
 try:
@@ -146,7 +153,7 @@ logger.info(f"USE_DB is - {USE_DB}")
 session = requests.Session()
 
 # Use a proxy if possible
-my_proxy = proxy.Proxy(OS=OS, use_tor=USE_TOR)
+my_proxy = proxy.Proxy(OS=OS, use_tor=USE_TOR, use_proxy=USE_PROXY)
 
 try:
     my_proxy.change_identity()
@@ -253,11 +260,11 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
     global speedup
     global use_multithreading
     global cache_file, use_cache
-    global USE_DB
+    global USE_DB, USE_PROXY
     global pids
 
     if use_multithreading == True:
-        my_proxy = proxy.Proxy(OS=OS, stream_isolation=True, server_url=server_url) # Separate Proxy per thread
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=True, server_url=server_url, use_proxy=USE_PROXY) # Separate Proxy per thread
         try:
             my_proxy.change_identity()
         except:
@@ -270,7 +277,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
         
         #db_session = scoped_session(Session)
     else:
-        my_proxy = proxy.Proxy(OS=OS, stream_isolation=False, server_url=server_url) # Separate Proxy per thread
+        my_proxy = proxy.Proxy(OS=OS, stream_isolation=False, server_url=server_url, use_proxy=USE_PROXY) # Separate Proxy per thread
         try:
             my_proxy.change_identity()
         except:
