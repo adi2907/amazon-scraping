@@ -9,6 +9,17 @@ import os
 import boto3
 from os import environ as env
 
+try:
+    groups = config('SECURITY_GROUPS')
+    SECURITY_GROUPS = {}
+    tokens = groups.split(',')
+    for group in tokens:
+        tmp = group.split(':')
+        SECURITY_GROUPS[tmp[0]] = tmp[1]
+    logger.info(f"Security Groups: {SECURITY_GROUPS}")
+except:
+    raise ValueError(f"Need to specify a list of SECURITY_GROUPS = 'ap-south-1:gid1, us-north-2:gid2'")
+
 
 def copy_security_groups(src_region, tgt_region, grp_names=['Medium Group']):
     # Initialize client connections for regions
@@ -256,6 +267,7 @@ if __name__ == '__main__':
             raise ValueError(f"Need to specify --target_region and --group_names to copy from {src_region}")
         copy_security_groups(src_region, target_region, grp_names=group_names)
     if _create_instance == True:
+        security_group_id = SECURITY_GROUPS[_region]
         _, ec2 = start_session(region=_region)
         if not os.path.exists('num_inactive.txt'):
             if _filename is not None:
@@ -271,7 +283,7 @@ if __name__ == '__main__':
                     _num_instances = num_inactive // ITEMS_PER_INSTANCE
                 else:
                     _num_instances = (num_inactive // ITEMS_PER_INSTANCE) + 1
-        response = create_instance(ec2, config('SECURITY_GROUP_ID'), key_pair=config('KEY_PAIR_NAME'), volume_size=16, image_id=config('INSTANCE_AMI'), num_instances=_num_instances)
+        response = create_instance(ec2, security_group_id, key_pair=config('KEY_PAIR_NAME'), volume_size=16, image_id=config('INSTANCE_AMI'), num_instances=_num_instances)
         print(f"{response}")
     if _get_created_instance_details == True:
         _, ec2 = start_session(region=_region)
