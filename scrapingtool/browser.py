@@ -243,7 +243,7 @@ def run_subcategory(browser='Firefox'):
                     if url is None:
                         continue
                     
-                    for filename in glob.glob(f"dumps/{category}_{subcategory_name}_*"):
+                    for filename in glob.glob(f"dumps/{category}_{subcategory}_{subcategory_name}_*"):
                         if os.path.exists(filename):
                             os.remove(filename)
                     
