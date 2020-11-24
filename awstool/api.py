@@ -28,7 +28,8 @@ def fetch_instances(ec2, filters=[{'Name': 'instance-state-name', 'Values': ['ru
     if default == False:    
         with open(os.path.join(os.getcwd(), 'active_instances.txt'), 'w') as f:
             for ip in active_instances:
-                f.write(ip + '\n')
+                if ip is not None:
+                    f.write(ip + '\n')
 
 
 def pretty_print_instances(ec2):
