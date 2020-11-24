@@ -121,13 +121,16 @@ def construct_indexed_df(reviews_df, indexed_sentiments=None): # From CLEANED_UP
     sentiments = []
     for idx, indexed_sentiment in enumerate(indexed_sentiments):
         if indexed_sentiment not in ({}, None,):
-            positive_sentiments = []
-            negative_sentiments = []
-            for feature, sentiment in indexed_sentiment.items():
-                if feature > 0:
-                    positive_sentiments.append(sentiment)
-                elif feature < 0:
-                    negative_sentiments.append(sentiment)
+            positive_sentiments = {}
+            negative_sentiments = {}
+            for feature in indexed_sentiment.keys():
+                if feature == 'id':
+                    continue
+                sentiment = indexed_sentiment.get(feature, 0)
+                if sentiment > 0:
+                    positive_sentiments[feature] = sentiment
+                elif sentiment < 0:
+                    negative_sentiments[feature] = sentiment
             sentiments.append({'id': reviews_df['id'][idx], 'product_id': reviews_df['product_id'][idx], 'positive_sentiments': positive_sentiments, 'negative_sentiments': negative_sentiments})
 
     db_df = pd.DataFrame(sentiments)
