@@ -13,7 +13,9 @@ from decouple import config
 
 import db_manager
 
-DATASET_PATH = os.getcwd()
+DATASET_PATH = os.path.join(os.getcwd(), 'data')
+if not os.path.exists(DATASET_PATH):
+    os.mkdir(DATASET_PATH)
 
 PARAMETERS_FILE = 'parameters.csv'
 REVIEWS_FILE = 'Reviews.csv'
@@ -23,7 +25,7 @@ OUTPUT_FILE = 'sentiments'
 
 
 def preprocess_reviews(category):
-    df = pd.read_csv(REVIEWS_FILE, sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
+    df = pd.read_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
     df['body'] = df['body'].apply(lambda content: re.sub(r'\.\.+', '.', content.replace('\\n', '.').strip())[2:] if isinstance(content, str) else content)
     return df
 
@@ -85,7 +87,7 @@ def analyse(df, nlp, keywords, category):
 
         if idx % 1000 == 0:
             print("Dumping to pickle file...")
-            with open(OUTPUT_FILE + "_" + str(int(idx / 1000)) + ".pkl", 'wb') as f:
+            with open(os.path.join(DATASET_PATH, OUTPUT_FILE + "_" + str(int(idx / 1000)) + ".pkl"), 'wb') as f:
                 pickle.dump(sentiments, f)
             sentiments = []
             print("Sleeping a bit....")
@@ -94,7 +96,7 @@ def analyse(df, nlp, keywords, category):
         idx += 1
 
     print("Dumping to pickle file...")
-    with open(OUTPUT_FILE + "_" + str(int(idx / 1000) + 1) + ".pkl", 'wb') as f:
+    with open(os.path.join(DATASET_PATH, OUTPUT_FILE + "_" + str(int(idx / 1000) + 1) + ".pkl"), 'wb') as f:
         pickle.dump(sentiments, f)
     sentiments = []
 
@@ -171,11 +173,11 @@ def count_ranges(indexed_df, review_df):
 
 def clean_up_reviews(category):
     df = preprocess_reviews(category)
-    df.to_csv(CLEANED_UP_FILE, index=False)
+    df.to_csv(os.path.join(DATASET_PATH, CLEANED_UP_FILE), index=False)
 
 
 def sentiment_analysis(category):
-    df = pd.read_csv(CLEANED_UP_FILE, sep=",", encoding="utf-8")
+    df = pd.read_csv(os.path.join(DATASET_PATH, CLEANED_UP_FILE), sep=",", encoding="utf-8")
     keywords = preprocess(category)
     nlp = load_model()
     # aspect_based_sa(nlp, keywords, 'Very good sound quality', category)
@@ -274,7 +276,7 @@ if __name__ == '__main__':
     indexed_df.to_csv(os.path.join(DATASET_PATH, f'sentiment_analysis_{category}.csv'))
     counts = count_ranges(indexed_df, review_df)
 
-    with open(f'sentiment_counts_{category}.pkl', 'wb') as f:
+    with open(os.path.join(DATASET_PATH, f'sentiment_counts_{category}.pkl'), 'wb') as f:
         pickle.dump(counts, f)
 
     df_count = pd.DataFrame(counts).T
