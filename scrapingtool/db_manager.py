@@ -965,7 +965,7 @@ def assign_subcategories(session, category, table='ProductDetails'):
             obj = query_table(session, 'ProductDetails', 'one', filter_cond=({'product_id': product_id}))
             if obj is not None:
                 insert_subcategory(session, obj, subcategory)
-        name = filename.split('/')[-1]
+        head, name = os.path.split(filename)
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
 
 
