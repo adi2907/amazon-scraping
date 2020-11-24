@@ -1969,6 +1969,8 @@ def scrape_template_listing(categories=None, pages=None, dump=False, detail=Fals
 
     if my_proxy is not None:
         try:
+            server_url = 'https://www.' + domain
+            my_proxy.server_url = server_url
             response = my_proxy.get(server_url)
         except requests.exceptions.ConnectionError:
             logger.warning('No Proxy available via Tor relay. Mode = Normal')

@@ -341,9 +341,13 @@ class Proxy():
         
         if 'headers' not in kwargs or 'User-Agent' not in kwargs['headers']:
             # Provide a random user agent
-            if url.startswith(to_http('https://www.amazon', use_tor=self.use_tor)) or url.startswith(to_http('https://amazon', use_tor=self.use_tor)):
+            if url.startswith(to_http('https://www.amazon.', use_tor=self.use_tor)) or url.startswith(to_http('https://amazon.', use_tor=self.use_tor)):
                 # Amazon specific headers
-                country_code = 'in'
+                for code in ['in', 'com']:
+                    if url.startswith(to_http('https://www.amazon.' + code, use_tor=self.use_tor)) or url.startswith(to_http('https://amazon.' + code, use_tor=self.use_tor)):
+                        country_code = code
+                
+                #country_code = 'in'
                 headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": f"www.amazon.{country_code}", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
                 headers['Sec-Fetch-Dest'] = 'document'
                 headers['Sec-Fetch-Mode'] = 'navigate'
