@@ -303,6 +303,8 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
 
         rescrape = 0
 
+        product_url = ''
+
         try:
             if (product_id not in pids) and (cache.sismember(f"{category}_PIDS", product_id) == False):
                 logger.info(f"PID {product_id} not in set")
