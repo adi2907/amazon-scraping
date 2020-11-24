@@ -585,6 +585,7 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                     if token in ['the', 'a']:
                         continue
                     if token in ['on']:
+                        curr += 1
                         break
                     country_tokens.append(token)
                 for token in tokens[curr:]:
