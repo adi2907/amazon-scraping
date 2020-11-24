@@ -15,7 +15,7 @@ try:
     tokens = groups.split(',')
     for group in tokens:
         tmp = group.split(':')
-        SECURITY_GROUPS[tmp[0]] = tmp[1]
+        SECURITY_GROUPS[tmp[0].strip()] = tmp[1].strip()
     print(f"Security Groups: {SECURITY_GROUPS}")
 except:
     raise ValueError(f"Need to specify a list of SECURITY_GROUPS = 'ap-south-1:gid1, us-north-2:gid2'")
