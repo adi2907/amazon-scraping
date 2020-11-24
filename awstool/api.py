@@ -6,6 +6,32 @@ from termcolor import colored
 import os
 
 
+import boto3
+from os import environ as env
+
+
+def copy_security_groups(src_region, tgt_region, grp_names=['Medium Group']):
+    # Initialize client connections for regions
+    src_client = boto3.client('ec2', region_name=src_region,
+                              aws_access_key_id=config('AWS_ACCESS_KEY'),
+                              aws_secret_access_key=config('AWS_SECRET_KEY'))
+    tgt_client = boto3.client('ec2', region_name=tgt_region,
+                              aws_access_key_id=config('AWS_ACCESS_KEY'),
+                              aws_secret_access_key=config('AWS_SECRET_KEY'))
+
+    # Get info for all security groups and copy them one-by-one
+    g_info = src_client.describe_security_groups(
+        GroupNames=grp_names)['SecurityGroups']
+    for g in g_info:
+        resp = tgt_client.create_security_group(
+            GroupName=g['GroupName'], Description=g['Description'])
+        new_grp_id = resp['GroupId']
+        tgt_client.authorize_security_group_ingress(
+            GroupId=new_grp_id, IpPermissions=g['IpPermissions'])
+        tgt_client.authorize_security_group_egress(
+            GroupId=new_grp_id, IpPermissions=g['IpPermissionsEgress'])
+
+
 def start_session(region="ap-south-1"):
     session = boto3.Session(region_name=region)
     ec2 = session.resource('ec2')
@@ -188,6 +214,10 @@ if __name__ == '__main__':
     parser.add_argument('--stop_instances', help='Stops EC2 instances', default=False, action='store_true')
     parser.add_argument('--terminate_instances', help='Terminates EC2 instances', default=False, action='store_true')
     parser.add_argument('--reset_state', help='Reset state', default=False, action='store_true')
+    parser.add_argument('--copy_security_groups', help='Copy Security Groups', default=False, action='store_true')
+    parser.add_argument('--src_region', help='Source Region', default='ap-south-1', type=str)
+    parser.add_argument('--target_region', help='Target Region', default=None, type=str)
+    parser.add_argument('--group_names', help='Security Group Names', default='Medium Group', type=lambda s: [item.strip() for item in s.split(',')])
 
     parser.add_argument('--region', help='Common region for the session. Can be us-west-1 / us-west-2 for USA, and ap-south-1 for India', default="ap-south-1", type=str)
     parser.add_argument('--num_instances', help='Number of instances to create', default=1, type=int)
@@ -208,6 +238,10 @@ if __name__ == '__main__':
     _reset_state = args.reset_state
     _num_instances = args.num_instances
     _filename = args.filename
+    _copy_security_groups = args.copy_security_groups
+    src_region = args.src_region
+    target_region = args.target_region
+    group_names = args.group_names
 
     ITEMS_PER_INSTANCE = 100
 
@@ -217,6 +251,10 @@ if __name__ == '__main__':
     if _pretty_print_instances == True:
         _, ec2 = start_session(region=_region)
         pretty_print_instances(ec2)
+    if _copy_security_groups == True:
+        if target_region is None:
+            raise ValueError(f"Need to specify --target_region and --group_names to copy from {src_region}")
+        copy_security_groups(src_region, target_region, grp_names=group_names)
     if _create_instance == True:
         _, ec2 = start_session(region=_region)
         if not os.path.exists('num_inactive.txt'):
