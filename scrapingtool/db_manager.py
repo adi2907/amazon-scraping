@@ -22,6 +22,7 @@ from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
 
 import tokenize_titles
+from subcategories import subcategory_dict
 from utils import create_logger, subcategory_map
 
 # This is required for integration with MySQL and Python
@@ -926,8 +927,6 @@ def assign_subcategories(session, category, table='ProductDetails'):
 
     import parse_data
 
-    from subcategories import subcategory_dict
-
     DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
 
     if not os.path.exists(DUMP_DIR):
@@ -1571,6 +1570,7 @@ def update_brands(session, table='ProductListing', override=True):
 
 def finalize_reviews_old(engine, Session):
     import os
+
     import pandas as pd
     from sqlalchemy import desc
 
@@ -1625,8 +1625,9 @@ def finalize_reviews_old(engine, Session):
 
 
 def restore_reviews(engine, Session):
-    import pandas as pd
     import os
+
+    import pandas as pd
 
     review_df = pd.read_csv(os.path.join('Reviews_full.csv'), sep=",", encoding="utf-8", usecols=["id", "product_id", "is_duplicate"])
 
@@ -1654,10 +1655,11 @@ def restore_reviews(engine, Session):
 
 
 def finalize_reviews(engine, Session):
-    import pandas as pd
     import os
     import pickle
     import time
+
+    import pandas as pd
 
     def read_reviews(filename='Updated_Reviews.csv'):
         review_df = pd.read_csv(os.path.join(filename), sep=",", encoding="utf-8", usecols=["id", "product_id", "duplicate_set"])
@@ -1874,8 +1876,9 @@ def update_detail_completed(engine, SessionFactory):
 
 
 def find_inactive_products(engine, SessionFactory, category='all'):
-    from sqlalchemy import asc, desc
     from datetime import datetime, timedelta
+
+    from sqlalchemy import asc, desc
 
     with session_scope(SessionFactory) as session:
         if category == 'all':
@@ -2087,9 +2090,9 @@ if __name__ == '__main__':
         csv_file = _csv
         import_from_csv(engine, table_name, csv_file)
     if _assign_subcategories == True:
-        for category in subcategory_map:
-            for subcategory in subcategory_map[category]:
-                assign_subcategories(session, category, subcategory, table='ProductDetails')
+        for category in subcategory_dict:
+            for subcategory in subcategory_dict[category]:
+                assign_subcategories(session, category, table='ProductDetails')
     if _close_all_db_connections == True:
         close_all_db_connections(engine, Session)
     if _dump_from_cache == True:
