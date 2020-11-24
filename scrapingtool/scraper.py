@@ -1404,6 +1404,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 my_proxy.goto_product_listing(category)
 
     details['product_id'] = product_id # Add the product ID
+    details['duplicate_set'] = duplicate_set
     
     # Check if the product is sponsored
     sponsored = parse_data.is_sponsored(product_url)
