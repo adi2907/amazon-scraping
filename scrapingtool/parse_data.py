@@ -576,8 +576,21 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
             date = review.find("span", {"data-hook": "review-date"})
             if date is not None:
                 date = date.text.strip()
-                country = date.split()[2]
-                date = ' '.join(date.split()[4:])
+                tokens = date.split()
+                country_tokens = []
+                date_tokens = []
+                curr = 1
+                for token in tokens[2:]:
+                    curr += 1
+                    if token in ['the', 'a']:
+                        continue
+                    if token in ['on']:
+                        break
+                    country_tokens.append(token)
+                for token in tokens[curr:]:
+                    date_tokens.append(token)
+                country = ' '.join([token for token in country_tokens])   
+                date = ' '.join([token for token in date_tokens])
                 # Convert it into a datetime object
                 if ',' in date:
                     date = datetime.strptime(date, '%d %B, %Y')
