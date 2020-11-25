@@ -152,10 +152,9 @@ tables = {
         'negative_sentiments': 'LONGTEXT',
         '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
-    'SentimentCounts': {
+    'SentimentBreakdown': {
         'product_id': 'TEXT(16) PRIMARY KEY',
-        'positive': 'INTEGER',
-        'negative': 'INTEGER',
+        'sentiments': 'LONGTEXT',
     },
 }
 
@@ -367,7 +366,7 @@ class SentimentAnalysis():
 
 
 @apply_schema
-class SentimentCounts():
+class SentimentBreakdown():
     pass
 
 
@@ -379,7 +378,7 @@ table_map = {
     'Reviews': Reviews,
     'DailyProductListing': DailyProductListing,
     'SentimentAnalysis': SentimentAnalysis,
-    'SentimentCounts': SentimentCounts,
+    'SentimentBreakdown': SentimentBreakdown,
 }
 
 
@@ -628,6 +627,43 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews', duplic
         logger.warning(f"For Product {product_id}, there is an error with the data.")
         logger.newline()
         return False
+
+
+def insert_sentiment_breakdown(db_name, counts=None, table='SentimentBreakdown', filename=None):
+    if counts is None:
+        if filename is None:
+            raise ValueError(f"Need to provide filename for sentiment_counts_category.pkl")
+        with open(filename, 'rb') as f:
+            counts = pickle.load(f)
+    
+    credentials = get_credentials()
+    _, Session = connect_to_db(db_name, credentials)
+    
+    with session_scope(Session) as session:
+        for product_id in counts:
+            sentiment_summary = counts[product_id]
+            obj = table_map[table]()
+            obj.product_id = product_id
+            obj.sentiments = json.dumps(sentiment_summary)
+            session.add(obj)
+    
+    logger.info(f"Inserted Sentiment Breakdown summary for all products!")
+
+
+def insert_sentiment_reviews(db_name, db_df=None, table='SentimentAnalysis', filename=None):
+    import pandas as pd
+
+    if db_df is None:
+        if filename is None:
+            raise ValueError(f"Need to provide filename for sentiment_db_category.csv")
+        db_df  = pd.read_csv(filename, sep=",", encoding="utf-8", header=0, usecols=["id", "product_id", "positive_sentiments", "negative_sentiments"])
+    
+    credentials = get_credentials()
+    engine, _ = connect_to_db(db_name, credentials)
+
+    db_df.to_sql(table, engine, method='multi', index=False, if_exists='append')
+    
+    logger.info(f"Inserted Sentiment analysis reviews for all products!")
 
 
 def query_table(session, table, query='all', filter_cond=None):
@@ -1938,6 +1974,10 @@ if __name__ == '__main__':
     parser.add_argument('--export_to_csv', help='Export to CSV', default=False, action='store_true')
     parser.add_argument('--query', help='DB Query for exporting', type=str, default=None)
 
+    parser.add_argument('--insert_sentiment_breakdown', help='Inserts the sentiment summary to the DB', default=False, action='store_true')
+    parser.add_argument('--insert_sentiment_reviews', help='Inserts the sentiment reviews to the DB', default=False, action='store_true')
+    parser.add_argument('--filename', help='Filename', default=None, type=str)
+
     args = parser.parse_args()
 
     _index_duplicate_sets = args.index_duplicate_sets
@@ -1970,6 +2010,11 @@ if __name__ == '__main__':
     _table = args.table
     _export_to_csv = args.export_to_csv
     _query = args.query
+
+    _insert_sentiment_breakdown = args.insert_sentiment_breakdown
+    _insert_sentiment_reviews = args.insert_sentiment_reviews
+
+    filename = args.filename
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -2109,6 +2154,10 @@ if __name__ == '__main__':
     if _dump_from_cache == True:
         for c in ["headphones", "smartphones", "ceiling fan", "washing machine", "refrigerator"]:
             dump_from_cache(session, c, cache_file='cache.sqlite3')
+    if _insert_sentiment_breakdown == True:
+        insert_sentiment_breakdown(config('DB_NAME'), filename=filename)
+    if _insert_sentiment_reviews == True:
+        insert_sentiment_reviews(config('DB_NAME'), filename=filename)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     

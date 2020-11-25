@@ -228,18 +228,11 @@ if __name__ == '__main__':
     end_date = args.end_date
     test = args.test
 
+    Session = None
+
     if test == True:
-        try:
-            DB_USER = config('DB_USER')
-            DB_PASSWORD = config('DB_PASSWORD')
-            DB_PORT = config('DB_PORT')
-            DB_NAME = config('DB_NAME')
-            DB_SERVER = config('DB_SERVER')
-            DB_TYPE = config('DB_TYPE')
-            engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
-        except:
-            DB_TYPE = 'sqlite'
-            engine = db_manager.Database(dbtype=DB_TYPE).db_engine
+        credentials = db_manager.get_credentials()
+        engine, _ = db_manager.connect_to_db(config('DB_NAME'), credentials)
         results = pd.read_sql_query(f"SELECT * FROM ProductListing", engine)
         results.to_csv(os.path.join(DATASET_PATH, 'test.csv'), index=False, sep=",")
         exit(0)
@@ -249,17 +242,8 @@ if __name__ == '__main__':
             pass
             # raise ValueError(f"Need to specify --month and --year")
         else:
-            try:
-                DB_USER = config('DB_USER')
-                DB_PASSWORD = config('DB_PASSWORD')
-                DB_PORT = config('DB_PORT')
-                DB_NAME = config('DB_NAME')
-                DB_SERVER = config('DB_SERVER')
-                DB_TYPE = config('DB_TYPE')
-                engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
-            except:
-                DB_TYPE = 'sqlite'
-                engine = db_manager.Database(dbtype=DB_TYPE).db_engine
+            credentials = db_manager.get_credentials()
+            engine, Session = db_manager.connect_to_db(config('DB_NAME'), credentials)
             # Fetch
             fetch_category_info(engine, category, start_date, end_date)
     else:
@@ -284,3 +268,7 @@ if __name__ == '__main__':
 
     df_count = pd.DataFrame(counts).T
     df_count.to_csv(os.path.join(DATASET_PATH, f'sentiment_counts_{category}.csv'))
+
+    # Finally insert into the DB
+    db_manager.insert_sentiment_breakdown(config('DB_NAME'), counts)
+    db_manager.insert_sentiment_reviews(config('DB_NAME'), db_df)
