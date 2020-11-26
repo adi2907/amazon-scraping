@@ -189,6 +189,11 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 EMAIL_PORT = config('EMAIL_PORT')
 
+
+import pymysql
+pymysql.version_info = (1, 4, 0, "final", 0)
+pymysql.install_as_MySQLdb()
+
 # Local Settings
 try:
     from local_settings import *
