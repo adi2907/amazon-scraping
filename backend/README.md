@@ -20,6 +20,14 @@ python3 manage.py runserver
 
 2. Production Mode
 
+Collect Static Files
+
+```bash
+python3 manage.py collectstatic
+```
+
+Deploy
+
 ```bash
 sudo ./deploy.sh
 ```
