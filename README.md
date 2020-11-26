@@ -43,7 +43,7 @@ To test if your redis server is up and running, you can run the below commands f
 
 ### The scraper library
 
-More information can be found [here](almetech/python-scraping/blob/master/scrapingtool/README.md)
+More information can be found [here](scrapingtool/README.md)
 
 
 ### Cronjob Commands
@@ -109,7 +109,7 @@ Crontab commands for Archive Controller Instance:
 
 This module is for automatic EC2 instance access to provide smooth instance management in an automated fashion.
 
-AWS specfic API details [here](almetech/python-scraping/blob/master/awstool/README.md)
+AWS specfic API details [here](awstool/README.md)
 
 However, you need to setup some other dependencies in order to automate the task management. Refer to the below section for more.
 
@@ -173,4 +173,4 @@ fab start-archive
 
 ## Backend
 
-Backend specific information is located [here](almetech/python-scraping/blob/master/backend/README.md)
+Backend specific information is located [here](backend/README.md)
