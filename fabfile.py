@@ -193,8 +193,11 @@ def terminate(ctx):
     instance_number = 0
     for _, conn in enumerate(ctx.CONNS):
         # Send it twice
-        conn.run(r"tmux send -t cron.0 C-c")
-        conn.run(r"tmux send -t cron.0 C-c")
+        try:
+            conn.run(r"tmux send -t cron.0 C-c")
+            conn.run(r"tmux send -t cron.0 C-c")
+        except Exception as ex:
+            print(ex)
 
         result = conn.sudo(r"shutdown")
         print(result, result.exited)
@@ -263,6 +266,8 @@ def setup_detail(ctx):
             if ip_address.startswith('ec2-'):
                 ip_address = ip_address[4:].replace('-', '.')
                 conn_params.append(INSTANCE_USERNAME + '@' + ip_address)
+            else:
+                ip_address = line.strip()
             proxies.append(ip_address + ':8888')
     
     proxy_list = ''
@@ -283,7 +288,10 @@ def setup_detail(ctx):
         )
     ctx.CONNS = conns
     for _, conn in enumerate(ctx.CONNS):
-        conn.run(f'echo "{proxy_list}" > ~/updated/python-scraping/proxy_list.txt')
+        try:
+            conn.run(f'echo "{proxy_list}" > ~/updated/python-scraping/proxy_list.txt')
+        except:
+            conn.run(f'echo "{proxy_list}" > ~/python-scraping/proxy_list.txt')
 
 
 @task
@@ -309,6 +317,8 @@ def setup_proxy(ctx):
             ip_address = line.strip().split('.')[0]
             if ip_address.startswith('ec2-'):
                 ip_address = ip_address[4:].replace('-', '.')
+            else:
+                ip_address = line.strip()
             instance_ips.append(ip_address)
     
     num_instances = len(conn_params)
@@ -410,8 +420,9 @@ def start_detail(ctx):
     ctx.CONNS = conns
     instance_number = 0
 
-    categories = ['headphones', 'smartphones', 'ceiling fan', 'refrigerator', 'washing machine']
-
+    categories = ['hair color']
+    #categories = ['headphones', 'smartphones', 'ceiling fan', 'refrigerator', 'washing machine']
+    
     INSTANCES_PER_CATEGORY = 2
 
     for idx, conn in enumerate(ctx.CONNS):
@@ -438,11 +449,23 @@ def start_detail(ctx):
         conn.run(f'echo "{environment}" > ~/python-scraping/.env')
         conn.run(f'echo "{environment}" > ~/python-scraping/spider/.env')
 
-        category = categories[(idx) // INSTANCES_PER_CATEGORY]
+
+        category = categories[instance_number % len(categories)]
+        
+        conn.run(f'echo "{category}" > ~/python-scraping/categories.txt')
 
         # Now start
+        try:
+            conn.run('tmux kill-session -t cron')
+        except:
+            pass
+        try:
+            conn.run('tmux kill-session -t controller')
+        except:
+            pass
         conn.run("tmux new -d -s cron")
-        command = f'python3 scrapingtool/scraper.py --categories "{category}" --override --listing --detail --no_listing --num_workers 5 --worker_pages "61, 62, 63, 64, 65" --instance_id {instance_number}'
+        command = f'python3 scrapingtool/scraper.py --categories_file categories.txt --override --listing --detail --no_listing --num_workers 5'
+        #command = f'python3 scrapingtool/scraper.py --categories "{category}" --override --listing --detail --no_listing --num_workers 5 --worker_pages "61, 62, 63, 64, 65" --instance_id {instance_number}'
         command = command.replace(' ', r'\ ')
         conn.run(r"tmux send -t cron.0 cd\ python-scraping ENTER")
         conn.run(f"tmux send -t cron.0 {command} ENTER")
