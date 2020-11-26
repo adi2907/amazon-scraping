@@ -10,6 +10,8 @@ sleep 300 # Wait for sometime for the instances to activate so that we can get t
 
 python3 awstool/api.py --get_created_instance_details
 
+cp created_instance_ids.txt detail_instance_ids.txt
+
 fab setup
 fab setup-proxy
 fab setup-detail
