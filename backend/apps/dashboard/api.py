@@ -25,7 +25,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.api import AdminAuthenticationPermission
-from apps.taskscheduler.management import REVIEW_DATAFRAME
 
 from .models import (Dailyproductlisting, ProductAggregate, Productdetails,
                      Productlisting, Qanda, ReviewAggregate, Reviews,
