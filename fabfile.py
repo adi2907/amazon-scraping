@@ -3,6 +3,7 @@ import os
 from decouple import config
 from fabric import SerialGroup, task
 from invoke import Responder
+from scrapingtool.utils import listing_categories
 
 
 @task
@@ -420,8 +421,7 @@ def start_detail(ctx):
     ctx.CONNS = conns
     instance_number = 0
 
-    categories = ['hair color']
-    #categories = ['headphones', 'smartphones', 'ceiling fan', 'refrigerator', 'washing machine']
+    categories = listing_categories
     
     INSTANCES_PER_CATEGORY = 2
 
@@ -464,7 +464,7 @@ def start_detail(ctx):
         except:
             pass
         conn.run("tmux new -d -s cron")
-        command = f'python3 scrapingtool/scraper.py --categories_file categories.txt --override --listing --detail --no_listing --num_workers 5'
+        command = f'python3 scrapingtool/scraper.py --categories_file categories.txt --override --listing --detail --no_listing --num_workers 5 --instance_id {instance_number}'
         #command = f'python3 scrapingtool/scraper.py --categories "{category}" --override --listing --detail --no_listing --num_workers 5 --worker_pages "61, 62, 63, 64, 65" --instance_id {instance_number}'
         command = command.replace(' ', r'\ ')
         conn.run(r"tmux send -t cron.0 cd\ python-scraping ENTER")
