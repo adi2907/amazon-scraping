@@ -97,20 +97,17 @@ Crontab commands for Archive Controller Instance:
 00 12 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab start-archive" Enter
 
 # Terminate once a week and recreate new instances
-30 8 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
-0 9 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp temp.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "bash create_instances.sh" Enter
+30 0 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
+0 1 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp temp.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "bash create_detail_instances.sh" Enter
 
 # Secure the detail instance IDs. We need this later
-30 9 * * 1 cd /home/ubuntu/python-scraping && cp created_instance_ids.txt detail_instance_ids.txt
-
-# Update Proxy Lists
-00 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab setup-proxy && fab setup-detail" Enter
+00 2 * * 1 cd /home/ubuntu/python-scraping && cp created_instance_ids.txt detail_instance_ids.txt
 
 # Terminate again
 15 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
 
 # Reset state
-20 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && python3 awstool/api.py --reset_state
+20 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && python3 awstool/api.py --reset_state && cp temp.txt created_instance_ids.txt
 
 # Start Detail
 30 8 * * 6 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "python3 awstool/api.py --get_created_instance_details && fab setup && fab setup-proxy && fab setup-detail && fab start-detail"
