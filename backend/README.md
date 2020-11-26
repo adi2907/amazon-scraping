@@ -63,7 +63,7 @@ python3 manage.py collectstatic
 Deploy
 
 ```bash
-sudo ./deploy.sh
+sudo bash deploy.sh
 ```
 
 *****************************
