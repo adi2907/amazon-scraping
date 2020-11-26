@@ -88,19 +88,36 @@ For this instance, this crontab command will do the detail scraping for headphon
 Crontab commands for Archive Controller Instance:
 
 ```bash
-# Kills any previous tmux sessions, so that we can start afresh
-30 11 * * * tmux kill-session -t bro
+50 10 * * * tmux kill-session -t setup
 
-00 12 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "bash start_archive_instances.sh" Enter
+00 11 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s setup \; send-keys "bash create_instances.sh" Enter
+
+50 11 * * * tmux kill-session -t bro
+
+00 12 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab start-archive" Enter
 
 # Terminate once a week and recreate new instances
-0 0 * * 4 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "bash create_instances.sh" Enter
+30 8 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
+0 9 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp temp.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "bash create_instances.sh" Enter
+
+# Secure the detail instance IDs. We need this later
+30 9 * * 1 cd /home/ubuntu/python-scraping && cp created_instance_ids.txt detail_instance_ids.txt
 
 # Update Proxy Lists
-30 0 * * 4 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab setup-proxy && fab setup-detail" Enter
+00 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab setup-proxy && fab setup-detail" Enter
 
 # Terminate again
-30 1 * * 4 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
+15 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
+
+# Reset state
+20 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && python3 awstool/api.py --reset_state
+
+# Start Detail
+30 8 * * 6 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab setup && fab setup-proxy && fab setup-d
+etail && fab start-detail"
+
+# Go back to the old state
+30 9 * * 6 cd /home/ubuntu/python-scraping cp temp.txt created_instance_ids.txt
 ```
 
 *****************
