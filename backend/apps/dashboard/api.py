@@ -376,9 +376,12 @@ class GetFeaturesAPI(APIView):
             if row != [] and row[0] == category:
                 flag = True
             if flag:
-                for keyword in row[1:]:
+                feature = row[1]
+                aspects = {feature: []}
+                for keyword in row[2:]:
                     if keyword not in ['', None]:
-                        features.append(keyword)
+                        aspects[feature].append(keyword)
+                features.append(aspects)
         
         return Response(features, status=status.HTTP_200_OK)
 
