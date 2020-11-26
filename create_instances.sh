@@ -10,5 +10,3 @@ python3 awstool/api.py --create_instance --filename "num_inactive.txt" --num_ins
 sleep 300 # Wait for sometime for the instances to activate so that we can get the DNS
 
 python3 awstool/api.py --get_created_instance_details
-
-fab setup
