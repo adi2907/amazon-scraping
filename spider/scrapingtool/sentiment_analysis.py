@@ -13,7 +13,9 @@ from decouple import config
 
 import db_manager
 
-DATASET_PATH = os.getcwd()
+DATASET_PATH = os.path.join(os.getcwd(), 'data')
+if not os.path.exists(DATASET_PATH):
+    os.mkdir(DATASET_PATH)
 
 PARAMETERS_FILE = 'parameters.csv'
 REVIEWS_FILE = 'Reviews.csv'
@@ -23,7 +25,7 @@ OUTPUT_FILE = 'sentiments'
 
 
 def preprocess_reviews(category):
-    df = pd.read_csv(REVIEWS_FILE, sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
+    df = pd.read_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
     df['body'] = df['body'].apply(lambda content: re.sub(r'\.\.+', '.', content.replace('\\n', '.').strip())[2:] if isinstance(content, str) else content)
     return df
 
@@ -38,7 +40,7 @@ def load_model(download=False):
 def aspect_based_sa(nlp, keywords, review, category):
     aspect_dict = {}
     param_list = []
-    head_list = [_list[1:] for _list in keywords if _list[0]==category]
+    head_list = [_list[1:] for _list in keywords if _list[0] == category]
     for _list in head_list:
         param_list.append([x for x in _list if x])
     doc = nlp(review)
@@ -48,7 +50,7 @@ def aspect_based_sa(nlp, keywords, review, category):
                 if element in sentence.text:
                     if sentence.sentiment != 1:
                         aspect = _list[0]
-                        aspect_dict[aspect]=("positive" if sentence.sentiment>1 else "negative")
+                        aspect_dict[aspect]=(1 if sentence.sentiment>1 else -1)
     return aspect_dict
 
 
@@ -65,18 +67,18 @@ def analyse(df, nlp, keywords, category):
     idx = 0
 
     for i in range(0, df.count()['body']):
-        if df['category'][i] != category:
+        if category != 'all' and df['category'][i] != category:
             sentiments.append({'id': i})
             continue
 
         review = df['body'][idx]
         _id = df['id'][idx]
-        product_id = df['product_id'][idx]
+        #product_id = df['product_id'][idx]
 
         # nlp, keywords, review, category
 
         if isinstance(df['body'][idx], str):
-            sentiments.append({'id': i, **aspect_based_sa(nlp, keywords, review, category)})
+            sentiments.append({'id': i, **aspect_based_sa(nlp, keywords, review, df['category'][i])})
         else:
             sentiments.append({'id': i})
 
@@ -85,7 +87,7 @@ def analyse(df, nlp, keywords, category):
 
         if idx % 1000 == 0:
             print("Dumping to pickle file...")
-            with open(OUTPUT_FILE + "_" + str(int(idx / 1000)) + ".pkl", 'wb') as f:
+            with open(os.path.join(DATASET_PATH, OUTPUT_FILE + "_" + str(int(idx / 1000)) + ".pkl"), 'wb') as f:
                 pickle.dump(sentiments, f)
             sentiments = []
             print("Sleeping a bit....")
@@ -94,7 +96,7 @@ def analyse(df, nlp, keywords, category):
         idx += 1
 
     print("Dumping to pickle file...")
-    with open(OUTPUT_FILE + "_" + str(int(idx / 1000) + 1) + ".pkl", 'wb') as f:
+    with open(os.path.join(DATASET_PATH, OUTPUT_FILE + "_" + str(int(idx / 1000) + 1) + ".pkl"), 'wb') as f:
         pickle.dump(sentiments, f)
     sentiments = []
 
@@ -116,10 +118,29 @@ def construct_indexed_df(reviews_df, indexed_sentiments=None): # From CLEANED_UP
     if indexed_sentiments is None:
         with open(os.path.join(DATASET_PATH, 'indexed_sentiments.pkl'), 'rb') as f:
             indexed_sentiments = pickle.load(f)
+    sentiments = []
+    for idx, indexed_sentiment in enumerate(indexed_sentiments):
+        if indexed_sentiment not in ({}, None,):
+            positive_sentiments = {}
+            negative_sentiments = {}
+            for feature in indexed_sentiment.keys():
+                if feature == 'id':
+                    continue
+                sentiment = indexed_sentiment.get(feature, 0)
+                if sentiment > 0:
+                    positive_sentiments[feature] = sentiment
+                elif sentiment < 0:
+                    negative_sentiments[feature] = sentiment
+            sentiments.append({'id': reviews_df['id'][idx], 'product_id': reviews_df['product_id'][idx], 'positive_sentiments': positive_sentiments, 'negative_sentiments': negative_sentiments})
+
+    db_df = pd.DataFrame(sentiments)
+    db_df.dropna(thresh=1)
+    
     sentiments = [{'id': reviews_df['id'][idx], 'product_id': reviews_df['product_id'][idx], **(indexed_sentiment)} for idx, indexed_sentiment in enumerate(indexed_sentiments) if indexed_sentiment not in ({}, None)]
     indexed_df = pd.DataFrame(sentiments)
     indexed_df.dropna(thresh=1)
-    return indexed_df
+
+    return db_df, indexed_df
 
 
 def get_unique_ids(df):
@@ -155,87 +176,77 @@ def count_ranges(indexed_df, review_df):
 
 def clean_up_reviews(category):
     df = preprocess_reviews(category)
-    df.to_csv(CLEANED_UP_FILE, index=False)
+    df.to_csv(os.path.join(DATASET_PATH, CLEANED_UP_FILE), index=False)
 
 
 def sentiment_analysis(category):
-    df = pd.read_csv(CLEANED_UP_FILE, sep=",", encoding="utf-8")
+    df = pd.read_csv(os.path.join(DATASET_PATH, CLEANED_UP_FILE), sep=",", encoding="utf-8")
     keywords = preprocess(category)
     nlp = load_model()
     # aspect_based_sa(nlp, keywords, 'Very good sound quality', category)
     analyse(df, nlp, keywords, category)
 
 
-def fetch_category_info(engine, category, month, year):
-    if month < 10:
-        month = '0' + str(month)
-    else:
-        month = str(month)
-    
-    first_day = '01'
-    if month == '02':
-        if year % 4 == 0:
-            last_day = '29'
+def fetch_category_info(engine, category, start_date, end_date):
+    try:
+        tokens = start_date.split('-')
+        start_year, start_month, start_day = tokens[0], int(tokens[1]), tokens[2]
+        if start_month < 10:
+            start_month = '0' + str(start_month)
         else:
-            last_day = '28'
-    elif month in ['01', '03', '05', '07', '08', '10', '12']:
-        last_day = '31'
-    else:
-        last_day = '30'
+            start_month = str(start_month)
+
+        tokens = end_date.split('-')
+        end_year, end_month, end_day = tokens[0], int(tokens[1]), tokens[2]
+        if end_month < 10:
+            end_month = '0' + str(end_month)
+        else:
+            end_month = str(end_month)
+    except Exception as ex:
+        print('start_date, end_date must be of form: YYYY-MM-DD')
+        raise ex
     
-    results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = '{category}' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{year}-{month}-{first_day}' AND '{year}-{month}-{last_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
+    if category == 'all':
+        results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
+    else:
+        results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = '{category}' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
     results.to_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), index=False, sep=",")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--category', help='Category for dumping Reviews', type=str, default=None)
-    parser.add_argument('-m', '--month', help='List the month', type=int, default=None)
-    parser.add_argument('-y', '--year', help='List the year', type=int, default=None)
+    parser.add_argument('-s', '--start_date', help='List the start date', type=str, default=None)
+    parser.add_argument('-e', '--end_date', help='List the end_date', type=str, default=None)
 
     parser.add_argument('--test', help='Testing', default=False, action='store_true')
 
     args = parser.parse_args()
 
     category = args.category
-    month = args.month
-    year = args.year
+    start_date = args.start_date
+    end_date = args.end_date
     test = args.test
 
+    Session = None
+
     if test == True:
-        try:
-            DB_USER = config('DB_USER')
-            DB_PASSWORD = config('DB_PASSWORD')
-            DB_PORT = config('DB_PORT')
-            DB_NAME = config('DB_NAME')
-            DB_SERVER = config('DB_SERVER')
-            DB_TYPE = config('DB_TYPE')
-            engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
-        except:
-            DB_TYPE = 'sqlite'
-            engine = db_manager.Database(dbtype=DB_TYPE).db_engine
+        credentials = db_manager.get_credentials()
+        engine, Session = db_manager.connect_to_db(config('DB_NAME'), credentials)
         results = pd.read_sql_query(f"SELECT * FROM ProductListing", engine)
         results.to_csv(os.path.join(DATASET_PATH, 'test.csv'), index=False, sep=",")
+        db_manager.close_all_db_connections(engine, Session)
         exit(0)
 
     if category is not None:
-        if month is None or year is None:
+        if start_date is None or end_date is None:
             pass
             # raise ValueError(f"Need to specify --month and --year")
         else:
-            try:
-                DB_USER = config('DB_USER')
-                DB_PASSWORD = config('DB_PASSWORD')
-                DB_PORT = config('DB_PORT')
-                DB_NAME = config('DB_NAME')
-                DB_SERVER = config('DB_SERVER')
-                DB_TYPE = config('DB_TYPE')
-                engine = db_manager.Database(dbtype=DB_TYPE, username=DB_USER, password=DB_PASSWORD, port=DB_PORT, dbname=DB_NAME, server=DB_SERVER).db_engine
-            except:
-                DB_TYPE = 'sqlite'
-                engine = db_manager.Database(dbtype=DB_TYPE).db_engine
+            credentials = db_manager.get_credentials()
+            engine, Session = db_manager.connect_to_db(config('DB_NAME'), credentials)
             # Fetch
-            fetch_category_info(engine, category, month, year)
+            fetch_category_info(engine, category, start_date, end_date)
     else:
         raise ValueError(f"Need to specify --category argument")
 
@@ -248,12 +259,19 @@ if __name__ == '__main__':
     # Post-process
     review_df = pd.read_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
     indexed_sentiments = aggregate_sentiments_after_script()
-    indexed_df = construct_indexed_df(review_df, indexed_sentiments)
+    db_df, indexed_df = construct_indexed_df(review_df, indexed_sentiments)
+    db_df.to_csv(os.path.join(DATASET_PATH, f'sentiment_db_{category}.csv'))
     indexed_df.to_csv(os.path.join(DATASET_PATH, f'sentiment_analysis_{category}.csv'))
     counts = count_ranges(indexed_df, review_df)
 
-    with open(f'sentiment_counts_{category}.pkl', 'wb') as f:
+    with open(os.path.join(DATASET_PATH, f'sentiment_counts_{category}.pkl'), 'wb') as f:
         pickle.dump(counts, f)
 
     df_count = pd.DataFrame(counts).T
     df_count.to_csv(os.path.join(DATASET_PATH, f'sentiment_counts_{category}.csv'))
+
+    # Finally insert into the DB
+    db_manager.insert_sentiment_breakdown(config('DB_NAME'), counts)
+    db_manager.insert_sentiment_reviews(config('DB_NAME'), db_df)
+
+    db_manager.close_all_db_connections(engine, Session)

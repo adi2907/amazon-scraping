@@ -8,7 +8,7 @@ from string import Template
 try:
     import dramatiq
     from taskqueue.broker import Broker
-    from decouple import config 
+    from decouple import config
 except:
     from decouple import config
 
@@ -82,6 +82,11 @@ def setup_broker():
 
     broker = Broker(broker_type=broker_type, connection_params=connection_params)
     return broker
+
+
+def is_lambda(v):
+  LAMBDA = lambda:0
+  return isinstance(v, type(LAMBDA)) and v.__name__ == LAMBDA.__name__
 
 
 def to_http(url, use_tor=False):

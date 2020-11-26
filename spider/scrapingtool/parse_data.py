@@ -489,12 +489,21 @@ def get_qanda(soup, page_num=None):
                         date = date.text.strip()
                         # Convert it into a datetime object
                         try:
-                            date = datetime.strptime(date, '· %d %B, %Y')
+                            try:
+                                date = datetime.strptime(date, '· %d %B, %Y')
+                            except:
+                                date = datetime.strptime(date, '· %B %d, %Y')
                         except ValueError:
                             if ',' in date:
-                                date = datetime.strptime(date, '%d %B, %Y')
+                                try:
+                                    date = datetime.strptime(date, '%d %B, %Y')
+                                except:
+                                    date = datetime.strptime(date, '%B %d, %Y')
                             else:
-                                date = datetime.strptime(date, '%d %B %Y')
+                                try:
+                                    date = datetime.strptime(date, '%d %B %Y')
+                                except:
+                                    date = datetime.strptime(date, '%B %d %Y')
                     else:
                         date = None
 
@@ -564,7 +573,14 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                 continue
             
             # Rating of the review
-            rating = header.attrs['title']
+            try:
+                rating = header.attrs['title']
+            except Exception as ex:
+                # Maybe newer edition of amazon.com
+                logger.critical(f"Possibly newer edition of amazon. Trying hook")
+                rating = review.find("a", {"data-hook": "cmps-review-star-rating"})
+                rating = rating.span.text.strip()
+            
             data['rating'] = rating
             title = review.find("a", {"data-hook": "review-title"})
             if title is not None:
@@ -576,13 +592,35 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
             date = review.find("span", {"data-hook": "review-date"})
             if date is not None:
                 date = date.text.strip()
-                country = date.split()[2]
-                date = ' '.join(date.split()[4:])
+                tokens = date.split()
+                country_tokens = []
+                date_tokens = []
+                curr = 1
+                for token in tokens[2:]:
+                    curr += 1
+                    if token in ['the', 'a']:
+                        continue
+                    if token in ['on']:
+                        curr += 1
+                        break
+                    country_tokens.append(token)
+                for token in tokens[curr:]:
+                    date_tokens.append(token)
+                country = ' '.join([token for token in country_tokens])   
+                date = ' '.join([token for token in date_tokens])
                 # Convert it into a datetime object
                 if ',' in date:
-                    date = datetime.strptime(date, '%d %B, %Y')
+                    try:
+                        # India
+                        date = datetime.strptime(date, '%d %B, %Y')
+                    except:
+                        # Usa
+                        date = datetime.strptime(date, '%B %d, %Y')
                 else:
-                    date = datetime.strptime(date, '%d %B %Y')
+                    try:
+                        date = datetime.strptime(date, '%d %B %Y')
+                    except:
+                        date = datetime.strptime(date, '%B %d %Y')
             data['review_date'] = date
             data['country'] = country
 
@@ -662,8 +700,9 @@ if __name__ == '__main__':
     #print(len(results.keys()))
 
     #soup = init_parser('mobile/sample')
-    soup = init_parser('haircolor')
-    results = get_product_info(soup)
+    soup = init_parser('haircolor_reviews')
+    results = get_customer_reviews(soup, page_num=2, first_request=True)
+    #results = get_product_info(soup)
     print(results)
     exit(0)
     #print(results['reviews_url'])

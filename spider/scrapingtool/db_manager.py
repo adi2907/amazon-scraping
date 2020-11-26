@@ -22,6 +22,7 @@ from sqlalchemy.orm.exc import FlushError, NoResultFound
 from sqlitedict import SqliteDict
 
 import tokenize_titles
+from subcategories import subcategory_dict
 from utils import create_logger, subcategory_map
 
 # This is required for integration with MySQL and Python
@@ -147,10 +148,14 @@ tables = {
     'SentimentAnalysis': {
         'id': 'INTEGER PRIMARY KEY',
         'product_id': 'TEXT(16)',
-        'review_id': 'INTEGER',
+        'positive_sentiments': 'LONGTEXT',
+        'negative_sentiments': 'LONGTEXT',
+        '_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
+    },
+    'SentimentBreakdown': {
+        'product_id': 'TEXT(16) PRIMARY KEY',
         'sentiments': 'LONGTEXT',
-        'duplicate_set': 'INTEGER',
-    }
+    },
 }
 
 field_map = {
@@ -360,6 +365,11 @@ class SentimentAnalysis():
     pass
 
 
+@apply_schema
+class SentimentBreakdown():
+    pass
+
+
 table_map = {
     'ProductListing': ProductListing,
     'ProductDetails': ProductDetails,
@@ -368,6 +378,7 @@ table_map = {
     'Reviews': Reviews,
     'DailyProductListing': DailyProductListing,
     'SentimentAnalysis': SentimentAnalysis,
+    'SentimentBreakdown': SentimentBreakdown,
 }
 
 
@@ -541,7 +552,7 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
     except (exc.IntegrityError, FlushError):
         session.rollback()
         result = session.query(table_map[table]).filter(ProductDetails.product_id == row['product_id']).first()
-        update_fields = (field for field in tables[table] if hasattr(result, field) and getattr(result, field) in (None, {}, [], "", "{}", "[]"))
+        update_fields = (field for field in tables[table] if field in row and row[field] not in (None, {}, [], "", "{}", "[]"))
         for field in update_fields:
             if field in row:
                 setattr(result, field, row[field])
@@ -616,6 +627,43 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews', duplic
         logger.warning(f"For Product {product_id}, there is an error with the data.")
         logger.newline()
         return False
+
+
+def insert_sentiment_breakdown(db_name, counts=None, table='SentimentBreakdown', filename=None):
+    if counts is None:
+        if filename is None:
+            raise ValueError(f"Need to provide filename for sentiment_counts_category.pkl")
+        with open(filename, 'rb') as f:
+            counts = pickle.load(f)
+    
+    credentials = get_credentials()
+    _, Session = connect_to_db(db_name, credentials)
+    
+    with session_scope(Session) as session:
+        for product_id in counts:
+            sentiment_summary = counts[product_id]
+            obj = table_map[table]()
+            obj.product_id = product_id
+            obj.sentiments = json.dumps(sentiment_summary)
+            session.add(obj)
+    
+    logger.info(f"Inserted Sentiment Breakdown summary for all products!")
+
+
+def insert_sentiment_reviews(db_name, db_df=None, table='SentimentAnalysis', filename=None):
+    import pandas as pd
+
+    if db_df is None:
+        if filename is None:
+            raise ValueError(f"Need to provide filename for sentiment_db_category.csv")
+        db_df  = pd.read_csv(filename, sep=",", encoding="utf-8", header=0, usecols=["id", "product_id", "positive_sentiments", "negative_sentiments"])
+    
+    credentials = get_credentials()
+    engine, _ = connect_to_db(db_name, credentials)
+
+    db_df.to_sql(table, engine, method='multi', index=False, if_exists='append')
+    
+    logger.info(f"Inserted Sentiment analysis reviews for all products!")
 
 
 def query_table(session, table, query='all', filter_cond=None):
@@ -910,7 +958,7 @@ def find_incomplete(session, table='ProductDetails'):
     return pids
 
 
-def assign_subcategories(session, category, subcategory, table='ProductDetails'):
+def assign_subcategories(session, category, table='ProductDetails'):
     from bs4 import BeautifulSoup
 
     import parse_data
@@ -920,12 +968,30 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
     if not os.path.exists(DUMP_DIR):
         return
 
-    files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory}_*")
-    
-    curr = 1
+    def insert_subcategory(session, instance, subcategory, subcategory_type=None, subcategory_list=[]):
+        if instance.subcategories in ([], None):
+            instance.subcategories = json.dumps([subcategory])
+        else:
+            subcategories = json.loads(instance.subcategories)
+            if subcategory_type == 'Price':
+                for ncat in subcategory_list:
+                    if ncat in subcategories and ncat != subcategory:
+                        subcategories.remove(ncat)
+            if subcategory in subcategories:
+                return
+            subcategories.append(subcategory)
+            instance.subcategories = json.dumps(subcategories)
+        
+        try:
+            session.commit()
+            logger.info(f'Updated subcategories for {subcategory}')
+        except Exception as ex:
+            session.rollback()
+            logger.critical(f"Exception during commiting: {ex}")
 
-    for filename in files:
-        with open(filename, 'r') as f:
+    
+    def process_subcategory_html(subcategory, filename, subcategory_type=None, subcategory_list=[]):
+        with open(filename, 'rb') as f:
             html = f.read()
 
         soup = BeautifulSoup(html, 'lxml')
@@ -935,91 +1001,52 @@ def assign_subcategories(session, category, subcategory, table='ProductDetails')
             product_id = product_info[title]['product_id']
             if product_id is None:
                 continue
-            print(curr, product_id, title)
-            curr += 1
+            print(product_id, title)
             obj = query_table(session, 'ProductDetails', 'one', filter_cond=({'product_id': product_id}))
             if obj is not None:
-                if obj.subcategories in ([], None):
-                    obj.subcategories = json.dumps([subcategory])
-                else:
-                    subcategories = json.loads(obj.subcategories)
-                    if subcategory in subcategories:
-                        continue
-                    subcategories.append(subcategory)
-                    obj.subcategories = json.dumps(subcategories)
-                try:
-                    session.commit()
-                except Exception as ex:
-                    session.rollback()
-                    print(ex)
-        name = filename.split('/')[-1]
+                insert_subcategory(session, obj, subcategory, subcategory_type, subcategory_list)
+        head, name = os.path.split(filename)
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
-    
-    if category == "headphones":
+
+
+    for category in subcategory_dict:
         queryset = session.query(ProductListing).filter(ProductListing.category == category)
         pids = dict()
         for obj in queryset:
             pids[obj.product_id] = obj.price
         
-        if subcategory == "tws":
-            for pid in pids:
-                instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
-                if instance is not None:
-                    title = instance.product_title.lower()
-                    if ("tws" in title) or ("true wireless" in title) or ("truly wireless" in title) or ("true-wireless" in title):
-                        if instance.subcategories in ([], None):
-                            instance.subcategories = json.dumps([subcategory])
-                        else:
-                            subcategories = json.loads(instance.subcategories)
-                            if subcategory in subcategories:
-                                continue
-                            subcategories.append(subcategory)
-                            instance.subcategories = json.dumps(subcategories)
-                        logger.info(f"Set {title} as TWS subcategory")
-            
-            try:
-                session.commit()
-                logger.info(f'Updated subcategories for {subcategory}')
-            except Exception as ex:
-                session.rollback()
-                logger.critical(f"Exception during commiting: {ex}")
-        
-        if subcategory == "price":
-            for pid, price in pids.items():
-                instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
-                if instance is not None:
-                    if price is None:
-                        continue
-                    if price < 500:
-                        price_subcategory = "<500"
-                    elif price >= 500 and price < 1000:
-                        price_subcategory = "500-1000"
-                    elif price >= 1000 and price < 2000:
-                        price_subcategory = "1000-2000"
-                    elif price >= 2000 and price < 3000:
-                        price_subcategory = "2000-3000"
-                    elif price >= 3000 and price <= 5000:
-                        price_subcategory = "3000-5000"
-                    elif price > 5000:
-                        price_subcategory = ">5000"
+        for _subcategory in subcategory_dict[category]:
+            for subcategory_name in subcategory_dict[category][_subcategory]:
+                value = subcategory_dict[category][_subcategory][subcategory_name]
+                if isinstance(value, str):
+                    # Parse the html for the subcategory
+                    files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory_name}_*")
+                    if _subcategory == 'Price':
+                        subcategory_list = list(subcategory_dict[category][_subcategory].values())
                     else:
-                        continue
-                    
-                    if instance.subcategories in ([], None):
-                        instance.subcategories = json.dumps([price_subcategory])
-                    else:
-                        subcategories = json.loads(instance.subcategories)
-                        if subcategory in subcategories:
+                        subcategory_list = []
+                    for filename in files:
+                        process_subcategory_html(subcategory_name, filename, subcategory_type=_subcategory, subcategory_list=subcategory_list)
+                
+                elif isinstance(value, dict) and 'predicate' in value and 'field' in value:
+                    # Use the predicate
+                    field = value['field']
+                    predicate = value['predicate']
+                    for pid in pids:
+                        instance = session.query(ProductDetails).filter(ProductDetails.product_id == pid).first()
+                        if instance is None:
                             continue
-                        subcategories.append(price_subcategory)
-                        instance.subcategories = json.dumps(subcategories)
-            
-            try:
-                session.commit()
-                logger.info(f'Updated subcategories for {subcategory}')
-            except Exception as ex:
-                session.rollback()
-                logger.critical(f"Exception during commiting: {ex}")
+                        instance_field = getattr(instance, field)
+                        result = predicate(instance_field)
+                        if result == True:
+                            if _subcategory == 'Price':
+                                subcategory_list = list(subcategory_dict[category][_subcategory].values())
+                            else:
+                                subcategory_list = []
+                            insert_subcategory(session, instance, subcategory_name, subcategory_type=_subcategory, subcategory_list=subcategory_list)
+                else:
+                    # None
+                    continue
 
 
 def update_date(session):
@@ -1591,6 +1618,7 @@ def update_brands(session, table='ProductListing', override=True):
 
 def finalize_reviews_old(engine, Session):
     import os
+
     import pandas as pd
     from sqlalchemy import desc
 
@@ -1644,11 +1672,42 @@ def finalize_reviews_old(engine, Session):
     logger.info(f"Updated Reviews")
 
 
-def finalize_reviews(engine, Session):
+def restore_reviews(engine, Session):
+    import os
+
     import pandas as pd
+
+    review_df = pd.read_csv(os.path.join('Reviews_full.csv'), sep=",", encoding="utf-8", usecols=["id", "product_id", "is_duplicate"])
+
+    idx = 1
+
+    prev_id = None
+    ids = []
+    
+    for _id, pid, is_dup in zip(review_df['id'], review_df['product_id'], review_df['is_duplicate']):
+        if prev_id is None or prev_id != pid:
+            if prev_id is not None:
+                rids = ','.join(['"' + str(rid) + '"' for rid in ids])
+                engine.execute(f'UPDATE Reviews SET product_id = "{prev_id}" WHERE id in ({rids})')
+                ids = []
+            ids.append(_id)
+            prev_id = pid
+        else:
+            ids.append(_id)
+        idx += 1
+        if idx % 10000 == 0:
+            logger.info(f"Idx = {idx}")
+
+    rids = ','.join(['"' + str(rid) + '"' for rid in ids])
+    engine.execute(f'UPDATE Reviews SET product_id = "{prev_id}" WHERE id in ({rids})')
+
+
+def finalize_reviews(engine, Session):
     import os
     import pickle
     import time
+
+    import pandas as pd
 
     def read_reviews(filename='Updated_Reviews.csv'):
         review_df = pd.read_csv(os.path.join(filename), sep=",", encoding="utf-8", usecols=["id", "product_id", "duplicate_set"])
@@ -1864,6 +1923,22 @@ def update_detail_completed(engine, SessionFactory):
     logger.info(f"Updated detail_completed field!")
 
 
+def find_inactive_products(engine, SessionFactory, category='all'):
+    from datetime import datetime, timedelta
+
+    from sqlalchemy import asc, desc
+
+    with session_scope(SessionFactory) as session:
+        if category == 'all':
+            queryset = session.query(ProductListing).filter(ProductListing.is_active == False, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.now() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
+        else:
+            queryset = session.query(ProductListing).filter(ProductListing.is_active == False, ProductListing.category == category, (ProductListing.date_completed == None) | (ProductListing.date_completed <= datetime.today().date() - timedelta(days=1))).order_by(asc('category')).order_by(desc('total_ratings'))
+        num_inactive = queryset.count()
+        logger.info(f"Found {num_inactive} inactive products totally")
+        with open('num_inactive.txt', 'w') as f:
+            f.write(str(num_inactive))
+
+
 if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
@@ -1888,7 +1963,9 @@ if __name__ == '__main__':
     parser.add_argument('--update_listing_from_details', help='Update Listing from Details (for possibly archived products)', default=False, action='store_true')
     parser.add_argument('--dump_from_cache', help='Dump from Cache', default=False, action='store_true')
     parser.add_argument('--close_all_db_connections', help='Forcibly close all DB connections', default=False, action='store_true')
+    parser.add_argument('--restore_reviews', help='Restore reviews', default=False, action='store_true')
     parser.add_argument('--finalize_reviews', help='Finalize Reviews', default=False, action='store_true')
+    parser.add_argument('--find_inactive_products', help='Find the number of inactive products', default=False, action='store_true')
 
     parser.add_argument('--import_product_data', help='Import Data (Duplicate Sets)', default=False, action='store_true')
 
@@ -1896,6 +1973,10 @@ if __name__ == '__main__':
     parser.add_argument('--table', help='The database table', type=str, default=None)
     parser.add_argument('--export_to_csv', help='Export to CSV', default=False, action='store_true')
     parser.add_argument('--query', help='DB Query for exporting', type=str, default=None)
+
+    parser.add_argument('--insert_sentiment_breakdown', help='Inserts the sentiment summary to the DB', default=False, action='store_true')
+    parser.add_argument('--insert_sentiment_reviews', help='Inserts the sentiment reviews to the DB', default=False, action='store_true')
+    parser.add_argument('--filename', help='Filename', default=None, type=str)
 
     args = parser.parse_args()
 
@@ -1921,12 +2002,19 @@ if __name__ == '__main__':
     _close_all_db_connections = args.close_all_db_connections
     _update_duplicate_sets = args.update_duplicate_sets
     _import_product_data = args.import_product_data
+    _restore_reviews = args.restore_reviews
     _finalize_reviews = args.finalize_reviews
+    _find_inactive_products = args.find_inactive_products
 
     _csv = args.csv
     _table = args.table
     _export_to_csv = args.export_to_csv
     _query = args.query
+
+    _insert_sentiment_breakdown = args.insert_sentiment_breakdown
+    _insert_sentiment_reviews = args.insert_sentiment_reviews
+
+    filename = args.filename
 
     from sqlalchemy import desc
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
@@ -2019,6 +2107,8 @@ if __name__ == '__main__':
         update_alert_flags(session)
     if _update_product_data == True:
         update_product_data(engine, dump=False)
+    if _find_inactive_products == True:
+        find_inactive_products(engine, Session)
     if _import_product_data == True:
         if _csv is None:
             raise ValueError(f"Must provide a csv file")
@@ -2027,6 +2117,8 @@ if __name__ == '__main__':
         update_product_listing_from_cache(session, "headphones")
     if _finalize_reviews == True:
         finalize_reviews(engine, Session)
+    if _restore_reviews == True:
+        restore_reviews(engine, Session)
     if _update_active_products == True:
         import cache
         cache = cache.Cache()
@@ -2055,14 +2147,17 @@ if __name__ == '__main__':
         csv_file = _csv
         import_from_csv(engine, table_name, csv_file)
     if _assign_subcategories == True:
-        for category in subcategory_map:
-            for subcategory in subcategory_map[category]:
-                assign_subcategories(session, category, subcategory, table='ProductDetails')
+        for category in subcategory_dict:
+            assign_subcategories(session, category, table='ProductDetails')
     if _close_all_db_connections == True:
         close_all_db_connections(engine, Session)
     if _dump_from_cache == True:
         for c in ["headphones", "smartphones", "ceiling fan", "washing machine", "refrigerator"]:
             dump_from_cache(session, c, cache_file='cache.sqlite3')
+    if _insert_sentiment_breakdown == True:
+        insert_sentiment_breakdown(config('DB_NAME'), filename=filename)
+    if _insert_sentiment_reviews == True:
+        insert_sentiment_reviews(config('DB_NAME'), filename=filename)
     exit(0)
     #add_column(engine, 'SponsoredProductDetails', column)
     

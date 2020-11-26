@@ -109,7 +109,23 @@ python3 scrapingtool/db_manager.py --import_from_csv --table "ProductListing" --
 
 This will do the inverse operation of the export, where the database table is populated from an existing csv file.
 
-5. Sentiment Analysis
+
+5. Subcategory Listing
+
+* The subcategory listing file is located at `scrapingtool/subcategories.py`. This provides all the subcategories for all categories, along with the rules involved. Note that this file will consider fields ONLY from the `ProductDetails` table.
+
+* The subcategories can be updated once a week / month, depending on the need. To start tue subcategory listing, you can run the below command:
+
+```bash
+bash run_subcategories.sh
+```
+
+This will take a couple of hours across all the categories.
+
+After updating subcategories, you can start with the sentiment analysis module.
+
+
+6. Sentiment Analysis
 
 * The sentiment analysis logic for classifying the sentiment of reviews is present in `scrapingtool/sentiment_analysis.py`
 
@@ -127,6 +143,20 @@ The sentiment analysis will be done for headphones category for the month of Oct
 The result of the analysis will be dumped into 2 files called `sentiment_analysis_headphones.csv` and `sentiment_counts_headphones.csv`.
 
 The csv files can be exported into an external database, as per the need.
+
+The complete sequence of commands for sentiment analysis is given below: (Here, the program will create a subdirectory called `data` for inserting all data specific to sentiment analysis)
+
+This will analyze reviews for the period from August 1 to November 1 for all available categories, and insert the sentiment reviews + breakdown onto the database. The corresponding tables are at *SentimentAnalysis* and *SentimentBreakdown*
+
+```bash
+python3 scrapingtool/sentiment_analysis.py --category "all" --start_date "2020-08-01" --end_date "2020-11-01"
+python3 scrapingtool/db_manager.py --insert_sentiment_breakdown --filename "data/sentiment_counts_all.pkl"
+python3 scrapingtool/db_manager.py --insert_sentiment_reviews --filename "data/sentiment_db_all.csv"
+```
+
+For reference, a template script has been provided at `run_sentiments.sh`. Modify and run it according to the need (based on the dates / category).
+The files will be of the format (where `CATEGORY` is the category provided - it can also be 'all'): `data/sentiment_counts_CATEGORY.pkl` and `data/sentiment_db_CATEGORY.csv`. One is a pickle file and another is a csv file.
+
 
 *************
 
