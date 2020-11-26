@@ -1,0 +1,7 @@
+__pycache__
+migrations
+db.sqlite3
+.env
+scraper
+local_settings.py
+.vscode

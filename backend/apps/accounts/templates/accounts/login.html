@@ -1,0 +1,86 @@
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Bs4 Login Form</title>
+</head>
+
+<body>
+    <div class="jumbotron jumbotron-fluid">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-sm-8 col-md-6 col-lg-4 offset-sm-2 offset-md-3 offset-lg-4">
+
+
+                    <h1 class="mb-3 text-center">Login to your account</h1>
+                    <form class="mb-3 " action="">
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" class="form-control" placeholder="example@gmail.com" name="" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" name="" id="password" class="form-control" required>
+                        </div>
+                        <button id="form-login" class="btn btn-primary btn-block" onclick="loginFunction(event)">Login</button>
+                    </form>
+                    <div class="text-center">
+                        <p>or</p>
+                        <a href="register" class="mb-3 btn btn-success">Create Account</a>
+                        <p class="small"><a href="#">Have you forgotten your account details? </a></p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  <div class="text-center">
+    <p class="text-primary">By: Suhas Holla K C</p>
+    </div
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous">
+    </script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous">
+    </script>
+        <script>
+          function loginFunction(e) {
+          	e.preventDefault();
+		    var server_url = window.location.host;
+		    var loc = window.location.href;
+		    var user_email = document.getElementById('email').value;
+		    var password = document.getElementById('password').value;
+		    console.log(user_email);
+		    console.log(password);
+		    console.log(server_url);
+		    loc = (loc.substr(loc.length - 1, 1) == "/") ? loc + "default.aspx" : loc;
+		    $.ajax({
+		        type: "POST",
+		        url: "http://" + server_url + "/" + "api/auth/login",
+		        data: JSON.stringify({"email": user_email, "password": password}),
+		        contentType: "application/json; charset=utf-8",
+		        dataType: "json",
+		        success: function(data) {
+		        	console.log('success!');
+		        	console.log(data.token);
+                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("user", data.user.id);
+                    document.cookie = 'authorization=' + data.token + ';' 
+                    window.location = "http://" + server_url + "/" + "home";
+		            // return data;
+		        },
+		        error: function() {
+		            alert('Error occured');
+		        }
+		    });
+          }
+  </script>
+</body>
+
+</html>

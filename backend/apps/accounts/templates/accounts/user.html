@@ -1,0 +1,148 @@
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<!------ Include the above in your HEAD tag ---------->
+
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<!------ Include the above in your HEAD tag ---------->
+
+<div class="content_box">
+	<div class="left_bar">
+	    <ul class=" nav-tabs--vertical nav" role="navigation">
+		<li class="nav-item">
+			<a href="#lorem" class="nav-link active" data-toggle="tab" role="tab" aria-controls="lorem">Lorem</a>
+		</li>
+		<li class="nav-item">
+			<a href="#ipsum" class="nav-link" data-toggle="tab" role="tab" aria-controls="ipsum">Ipsum</a>
+		</li>
+		<li class="nav-item">
+			<a href="#dolor" class="nav-link " data-toggle="tab" role="tab" aria-controls="dolor">Dolor</a>
+		</li>
+		<li class="nav-item">
+			<a href="#sit-amet" class="nav-link" data-toggle="tab" role="tab" aria-controls="sit-amet">Sit Amet</a>
+		</li>
+	</ul>
+	</div>
+  <h1>Hello {{real_name}}!</h1>
+
+  {% if is_admin %}
+      <div class="right_bar ">
+            <div class="tab-content ">
+      <div class="tab-pane fade show active" id="lorem" role="tabpanel">
+  <table class="table table-bordered">
+      <thead>
+          {% for field in data %}
+            {% if forloop.first %}
+            <tr>
+            {% for key, value in field.items %}
+                <th>{{ key }}</th>
+            {% endfor %}
+            <th>Activity Per User</th>
+            <th>Delete User</th>
+            </tr>
+            {% endif %}
+          {% endfor %}
+      </thead>
+      {% for field in data %}
+      <tbody>
+            <tr>
+            {% for key, value in field.items %}
+            <th>{{ value }}</th>
+            {% endfor %}
+            <th>
+              <button id="activity_user_{{field.id}}" value="{{field.id}}" onclick="viewuseractivityFunction(this.value)">View Activity</button>
+            </th>
+            <th>
+              <button id="button_user_{{field.id}}" value="{{field.id}}" onclick="deleteuserFunction(this.value)">Delete</button>
+            </th>
+            </tr>
+      </tbody>
+    {% endfor %}
+    </table>
+        </div>
+    </div>
+      </div>
+    <button id="form-activity" class="btn btn-secondary btn-block" onclick="activityFunction(event)">View Activity</button>
+  {% else %}
+  <h1>Activity Page</h1>
+  {% endif %}
+  <button id="form-logout" class="btn btn-secondary btn-block" onclick="logoutFunction(event)">Logout</button>
+  <script>
+    function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+    function viewuseractivityFunction(id) {
+        console.log(id);
+        var server_url = window.location.host;
+        var user_id = id;
+        window.location = "http://" + server_url + "/" + "activitylist/" + user_id;      
+    }
+    function deleteuserFunction(id) {
+        console.log(id);
+        var server_url = window.location.host;
+        var user_id = id;
+        $.ajax({
+            type: "DELETE",
+            url: "http://" + server_url + "/" + "api/auth/delete/" + user_id,
+            success: function(data) {
+              console.log('success!');
+              console.log(data.token);
+              localStorage.clear("token");
+              localStorage.clear("user");
+              window.location = "http://" + server_url + "/" + "home";
+            },
+            error: function() {
+                alert('Delete Error');
+            }
+        });
+    }
+    function activityFunction(e) {
+        e.preventDefault();
+        window.location = "http://" + window.location.host + "/" + "activitylist";
+    }
+    function logoutFunction(e) {
+        e.preventDefault();
+        var server_url = window.location.host;
+        $.ajax({
+            type: "GET",
+            url: "http://" + server_url + "/" + "api/auth/logout",
+            success: function(data) {
+              console.log('success!');
+              console.log(data.token);
+              localStorage.clear("token");
+              localStorage.clear("user");
+              window.location = "http://" + server_url + "/" + "login";
+            },
+            error: function() {
+                alert('Logout Error');
+            }
+        });
+    }
+  </script>
+</div>
