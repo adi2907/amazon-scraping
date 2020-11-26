@@ -1,3 +1,4 @@
+# Here, all fields must belong to ProductDetails ('field' parameter)
 subcategory_dict = {
     'headphones': {
         'Type': {

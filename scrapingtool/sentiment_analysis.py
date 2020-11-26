@@ -232,9 +232,10 @@ if __name__ == '__main__':
 
     if test == True:
         credentials = db_manager.get_credentials()
-        engine, _ = db_manager.connect_to_db(config('DB_NAME'), credentials)
+        engine, Session = db_manager.connect_to_db(config('DB_NAME'), credentials)
         results = pd.read_sql_query(f"SELECT * FROM ProductListing", engine)
         results.to_csv(os.path.join(DATASET_PATH, 'test.csv'), index=False, sep=",")
+        db_manager.close_all_db_connections(engine, Session)
         exit(0)
 
     if category is not None:
@@ -272,3 +273,5 @@ if __name__ == '__main__':
     # Finally insert into the DB
     db_manager.insert_sentiment_breakdown(config('DB_NAME'), counts)
     db_manager.insert_sentiment_reviews(config('DB_NAME'), db_df)
+
+    db_manager.close_all_db_connections(engine, Session)
