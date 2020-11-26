@@ -8,22 +8,10 @@ The backend takes in the already scraped data from the main database, and aggreg
 
 The follow steps assume that you are located at the `almetech/python-scraping/backend` directory, where the backend lies.
 
-* First, ensure that you copy the `.env` from the main folder to `amazonscraper/.env`.
+To run the environment setup, simply run the below command:
 
 ```bash
-cp ../.env amazonscraper/.env
-```
-
-* Then, install all django requirements using:
-
-```bash
-pip3 install -r requirements.txt
-```
-
-Collect all static files, using the help of whitenoise:
-
-```bash
-python3 manage.py collectstatic
+bash setup.sh
 ```
 
 The next step would be to test run the development server, to ensure that all dependencies are installed, and the server starts:
