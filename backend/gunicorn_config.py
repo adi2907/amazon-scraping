@@ -1,5 +1,5 @@
 command = '/usr/bin/gunicorn3'
-pythonpath = '/home/ubuntu/dashboard/product-dashboard'
+pythonpath = '/home/ubuntu/python-scraping/backend'
 bind = '127.0.0.1:8000'
 workers = 3
 user = 'root'

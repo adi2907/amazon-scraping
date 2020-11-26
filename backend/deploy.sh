@@ -2,7 +2,7 @@
 
 set -e
 
-LOGFILE=/home/ubuntu/dashboard/product-dashboard/logs/gunicorn.log
+LOGFILE=/home/ubuntu/python-scraping/backend/logs/gunicorn.log
 
 LOGDIR=$(dirname $LOGFILE)
 NUM_WORKERS=3
@@ -11,7 +11,7 @@ USER=root
 
 GROUP=root
 
-cd /home/ubuntu/dashboard/product-dashboard
+cd /home/ubuntu/python-scraping/backend
 
 test -d $LOGDIR || mkdir -p $LOGDIR
 
