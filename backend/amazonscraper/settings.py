@@ -174,6 +174,12 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+#STATICFILES_DIRS = (
+#            os.path.join(BASE_DIR, 'static'),
+#            )
+
+STATICFILES_STORAGE ='whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default Paginator Class (https://stackoverflow.com/questions/31740039/django-rest-framework-pagination-extremely-slow-count)
 DEFAULT_PAGINATION_CLASS = 'apps.dashboard.paginator.FasterPageNumberPagination'
