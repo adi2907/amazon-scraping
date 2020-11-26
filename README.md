@@ -113,11 +113,10 @@ Crontab commands for Archive Controller Instance:
 20 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && python3 awstool/api.py --reset_state
 
 # Start Detail
-30 8 * * 6 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab setup && fab setup-proxy && fab setup-d
-etail && fab start-detail"
+30 8 * * 6 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "python3 awstool/api.py --get_created_instance_details && fab setup && fab setup-proxy && fab setup-detail && fab start-detail"
 
 # Go back to the old state
-30 9 * * 6 cd /home/ubuntu/python-scraping cp temp.txt created_instance_ids.txt
+30 9 * * 6 cd /home/ubuntu/python-scraping && cp temp.txt created_instance_ids.txt && python3 awstool/api.py --get_created_instance_details
 ```
 
 *****************
