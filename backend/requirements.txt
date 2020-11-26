@@ -52,3 +52,4 @@ mysql-connector-python==8.0.21
 names==0.3.0
 PyJWT==1.5.3
 PyMySQL==0.10.0
+whitenoise==5.2.0
