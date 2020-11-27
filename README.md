@@ -25,6 +25,12 @@ To setup the development environment on your local machine, proceed with the fol
 2. Firefox
 ```
 
+* Copy the environment across all modules, after setting up `.env`
+
+```bash
+bash setup_environ.sh
+```
+
 ### Setup the local redis server
 
 Firstly, you'll need to configure your local redis server and enter the credentials (`REDIS_SERVER_HOST=127.0.0.1`, etc) on `.env`. If you haven't setup a Redis Server password, you can remove the `REDIS_SERVER_PASSWORD` key on `.env`.
@@ -47,6 +53,11 @@ To add a new category for scraping, proceed with the following:
 
 1. You need to add the category, along with the domain and listing URL to the listing category names: Located at `categories.json`
 2. Once your category has been added, it will be scraped along with the existing categories.
+3. Ensure that the environment is updated across all modules, using:
+
+```bash
+bash setup_environ.sh
+```
 
 3. Any subcategories you need *MUST* be added to `scrapingtool/subcategories.py`. This file will list down all the subcategories for all categories, and list the rules for classifying the subcategories, or it's corresponding subcategory URL.
 
