@@ -78,6 +78,13 @@ For example, for the category `smartphones`, we can have the subcategory rules a
 
 Here, the `Price` subcategory is taken from the subcategory listing URL, while the `smart` subcategory (in Features) is taken from the `ProductDetails.product_title` field. Note that all fields must belong to the `ProductDetails` table. There is also a `predicate`, which checks if the product title contains the word "smart". Based on this template, you can add complex rules for different subcategories.
 
+After updating the subcategories, setup the environment again:
+This is a must do step.
+
+```bash
+bash setup_environ.sh
+```
+
 ************
 
 ### The scraper library
