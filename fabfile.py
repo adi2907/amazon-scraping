@@ -477,3 +477,91 @@ def start_detail(ctx):
         conn.run(f"tmux send -t controller.0 {command} ENTER")
         
         instance_number += 1
+
+
+@task
+def post_detail(ctx):
+    if not os.path.exists('active_instances.txt'):
+        raise ValueError(f"Please list the active instances on active_instances.txt. Run `python awstool/api.py --fetch_instances` to dump the currently active instances")
+    
+    if not os.path.exists('aws_private_key.pem'):
+        raise ValueError(f"Please get the private key template at aws_private_key.pem")
+
+    if not os.path.exists('allowed_hosts.txt'):
+        raise ValueError(f"Please provide allowed_hosts.txt file")
+
+    conn_params = []
+    INSTANCE_USERNAME = 'ubuntu'
+    
+    with open('active_instances.txt', 'r') as f:
+        for line in f:
+            text = line.strip()
+            if text not in ['', None]:
+                conn_params.append(INSTANCE_USERNAME + '@' + text)
+    
+    num_instances = len(conn_params)
+
+    upgrade_response = Responder(
+        pattern=r'What would you like to do about menu\.lst\?',
+        response='2\n',
+    )
+
+    conns = SerialGroup(
+        *(conn_params),
+        connect_kwargs=
+        {
+            'key_filename': config('SSH_KEY_FILE'),
+        },
+        )
+    ctx.CONNS = conns
+    instance_number = 0
+
+    categories = listing_categories
+    
+    INSTANCES_PER_CATEGORY = 2
+
+    for idx, conn in enumerate(ctx.CONNS):
+        # Add the SSH key from `aws_key.pem` (the template permission file)
+        with open('aws_private_key.pem', 'r') as f:
+            template_key = f.read().strip()
+        conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
+        
+        with open('setup.sh', 'r') as f:
+            for idx, line in enumerate(f):
+                cmd = line.strip()
+                if idx in [0, 1]:
+                    result = conn.run(cmd, watchers=[upgrade_response])
+                else:
+                    if cmd.startswith('git'):
+                        result = conn.run(cmd, watchers=[Responder(pattern=r'Are you sure you want to continue connecting \(yes/no\)\?', response='yes\n')])
+                    else:
+                        result = conn.run(cmd)
+                print(result, result.exited)
+        
+        # Copy .env file
+        with open('.env', 'r') as f:
+            environment = f.read().strip()
+        conn.run(f'echo "{environment}" > ~/python-scraping/.env')
+        conn.run(f'echo "{environment}" > ~/python-scraping/spider/.env')
+
+
+        category = categories[instance_number % len(categories)]
+        
+        conn.run(f'echo "{category}" > ~/python-scraping/categories.txt')
+
+        # Now start
+        try:
+            conn.run('tmux kill-session -t cron')
+        except:
+            pass
+        try:
+            conn.run('tmux kill-session -t controller')
+        except:
+            pass
+        conn.run("tmux new -d -s cron")
+        command = f'bash post_detail_scraping.sh'
+        command = command.replace(' ', r'\ ')
+        conn.run(r"tmux send -t cron.0 cd\ python-scraping ENTER")
+        conn.run(f"tmux send -t cron.0 {command} ENTER")
+        
+        instance_number += 1

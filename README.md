@@ -138,7 +138,7 @@ Crontab commands for Archive Controller Instance:
 00 12 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab start-archive" Enter
 
 # Terminate once a week and recreate new instances. Also store curr -> temp and detail -> curr
-30 0 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
+30 0 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab post-detail && python3 scrapingtool/db_manager.py --update_detail_completed && fab terminate" Enter
 
 # Restore state: temp -> old
 0 1 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp temp.txt created_instance_ids.txt
