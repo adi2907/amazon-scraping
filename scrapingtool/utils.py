@@ -2,6 +2,7 @@ import logging
 import logging.handlers
 import os
 import sys
+import json
 import types
 from string import Template
 
@@ -18,8 +19,7 @@ customer_reviews_template = Template('https://www.amazon.in/review/widgets/avera
 
 qanda_template = Template('https://www.amazon.in/ask/questions/asin/$PID/$PAGE/ref=ask_dp_iaw_ql_hza')
 
-
-# List of all the necessary listing page URLS (after applying filters)
+# Not needed anymore
 listing_templates = [
     Template('https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A976419031%2Cn%3A1389401031%2Cn%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031&dc&qid=1597812891&rnid=976420031&ref=sr_nr_n_$PAGE_NUM'),
     Template('https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_$PAGE_NUM'),
@@ -32,37 +32,33 @@ old_listing_templates = [
     Template('https://www.amazon.in/s?k=headphones&i=electronics&rh=n%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_72%3A1318478031&dc&page=$PAGE_NUM&qid=1597664105&rnid=1318475031&ref=sr_pg_$PAGE_NUM'),
 ]
 
-listing_categories = ['smartphones', 'headphones', 'ceiling fan', 'refrigerator', 'washing machine']
-#listing_categories = ['headphones']
 
-category_to_domain = {
-    'smartphones': 'amazon.in',
-    'headphones': 'amazon.in',
-    'ceiling fan': 'amazon.in',
-    'refrigerator': 'amazon.in',
-    'washing machine': 'amazon.in',
-    'hair color': 'amazon.com'
-}
+if not os.path.exists(os.path.join(os.getcwd(), 'categories.json')):
+    raise ValueError(f"categories.json file not found")
 
-domain_map = {
-    'amazon.in': {
-        'smartphones': Template('https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A976419031%2Cn%3A1389401031%2Cn%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031&dc&qid=1597812891&rnid=976420031&ref=sr_nr_n_$PAGE_NUM'),
-        'headphones': Template('https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_$PAGE_NUM'),
-        'ceiling fan': Template('https://www.amazon.in/s?k=ceiling+fan&i=kitchen&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031&dc&crid=1TGIH58I2LW9I&qid=1597813011&rnid=1318483031&sprefix=ceili%2Caps%2C380&ref=sr_nr_p_n_availability_2'),
-        'refrigerator': Template('https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031&dc&qid=1597813026&rnid=1318483031&ref=sr_nr_p_n_availability_2'),
-        'washing machine': Template('https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031&dc&qid=1597813042&rnid=1318483031&ref=sr_nr_p_n_availability_2'),
-     },
-    'amazon.com': {
-        'hair color': Template('https://www.amazon.com/s?i=beauty&bbn=16225006011&rh=n%3A11057241%2Cn%3A11057451%2Cn%3A10728531&dc&qid=1603887229&rnid=11057451&ref=sr_nr_n_1'),
-    },
-}
+# All the categories to be scraped (Listing + Details)
+with open(os.path.join(os.getcwd(), 'categories.json'), 'r') as f:
+    json_info = json.load(f)
 
-domain_to_db = {
-    'amazon.in': 'freshdb',
-    'amazon.com': 'amazonusa',
-}
+if 'categories' not in json_info or 'domains' not in json_info:
+    raise ValueError(f"categories field and domains field must be present in categories.json")
 
-# Subcategories
+listing_categories = []
+category_to_domain = {}
+domain_map = {}
+domain_to_db = {}
+
+for domain in json_info['categories']:
+    domain_map[domain] = {}
+    for category in json_info['categories'][domain]:
+        listing_categories.append(category)
+        category_to_domain[category] = domain
+        domain_map[domain][category] = json_info['categories'][domain][category]
+
+for domain in json_info['domains']:
+    domain_to_db[domain] = json_info['domains'][domain]
+
+# Not needed anymore
 subcategory_map = {
     'headphones': {
     'wired': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564046031&dc&fst=as%3Aoff&qid=1599294897&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',

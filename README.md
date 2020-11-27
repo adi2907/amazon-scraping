@@ -45,12 +45,10 @@ To test if your redis server is up and running, you can run the below commands f
 
 To add a new category for scraping, proceed with the following:
 
-1. You need to add the category to the listing category names: Located at `scrapingtool/utils.py` - `listing_categories` field
-2. Get the domain URL of that category (ex. "amazon.in"), and add it to `scrapingtool/utils.py` - `category_to_domain` field
-3. Similarly, add the listing URL to `scrapingtool/utils.py` - `domain_map` field. Enclose the URL with `Template(url)` when adding it, similar to the other categories.
-4. Once your category has been added, it will be scraped along with the existing categories.
+1. You need to add the category, along with the domain and listing URL to the listing category names: Located at `categories.json`
+2. Once your category has been added, it will be scraped along with the existing categories.
 
-5. Any subcategories you need *MUST* be added to `scrapingtool/subcategories.py`. This file will list down all the subcategories for all categories, and list the rules for classifying the subcategories, or it's corresponding subcategory URL.
+3. Any subcategories you need *MUST* be added to `scrapingtool/subcategories.py`. This file will list down all the subcategories for all categories, and list the rules for classifying the subcategories, or it's corresponding subcategory URL.
 
 For example, for the category `smartphones`, we can have the subcategory rules as follows:
 
