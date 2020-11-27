@@ -142,19 +142,22 @@ def start_archive(ctx):
         conn.run(f'echo "{environment}" > ~/python-scraping/spider/.env')
 
         # Now start
-        conn.run("tmux new -d -s cron")
-        command = f"scrapy crawl archive_details_spider -a category='all' -a instance_id={instance_number} -a start_idx={instance_number * ITEMS_PER_INSTANCE} -a end_idx={(instance_number + 1) * ITEMS_PER_INSTANCE} -o output.csv"
-        #command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {instance_number} --num_instances {num_instances} --num_threads 5'
-        command = command.replace(' ', r'\ ')
-        conn.run(r"tmux send -t cron.0 cd\ python-scraping ENTER")
-        conn.run(r"tmux send -t cron.0 cd\ spider ENTER")
-        conn.run(f"tmux send -t cron.0 {command} ENTER")
+        try:
+            conn.run("tmux new -d -s cron")
+            command = f"scrapy crawl archive_details_spider -a category='all' -a instance_id={instance_number} -a start_idx={instance_number * ITEMS_PER_INSTANCE} -a end_idx={(instance_number + 1) * ITEMS_PER_INSTANCE} -o output.csv"
+            #command = f'python3 scrapingtool/archive.py --process_archived_pids --categories "headphones" --instance_id {instance_number} --num_instances {num_instances} --num_threads 5'
+            command = command.replace(' ', r'\ ')
+            conn.run(r"tmux send -t cron.0 cd\ python-scraping ENTER")
+            conn.run(r"tmux send -t cron.0 cd\ spider ENTER")
+            conn.run(f"tmux send -t cron.0 {command} ENTER")
 
-        conn.run("tmux new -d -s controller")
-        command = f'python3 scrapingtool/controller.py --instance_id {instance_number}'
-        command = command.replace(' ', r'\ ')
-        conn.run(r"tmux send -t controller.0 cd\ python-scraping ENTER")
-        conn.run(f"tmux send -t controller.0 {command} ENTER")
+            conn.run("tmux new -d -s controller")
+            command = f'python3 scrapingtool/controller.py --instance_id {instance_number}'
+            command = command.replace(' ', r'\ ')
+            conn.run(r"tmux send -t controller.0 cd\ python-scraping ENTER")
+            conn.run(f"tmux send -t controller.0 {command} ENTER")
+        except Exception as ex:
+            print(ex)
         
         instance_number += 1
 
