@@ -41,6 +41,36 @@ To test if your redis server is up and running, you can run the below commands f
 'bar'
 ```
 
+### Setup a new category
+
+To add a new category for scraping, proceed with the following:
+
+1. You need to add the category to the listing category names: Located at `scrapingtool/utils.py` - `listing_categories` field
+2. Get the domain URL of that category (ex. "amazon.in"), and add it to `scrapingtool/utils.py` - `category_to_domain` field
+3. Similarly, add the listing URL to `scrapingtool/utils.py` - `domain_map` field. Enclose the URL with `Template(url)` when adding it, similar to the other categories.
+4. Once your category has been added, it will be scraped along with the existing categories.
+
+5. Any subcategories you need *MUST* be added to `scrapingtool/subcategories.py`. This file will list down all the subcategories for all categories, and list the rules for classifying the subcategories, or it's corresponding subcategory URL.
+
+For example, for the category `smartphones`, we can have the subcategory rules as follows:
+
+```python
+    'smartphones': {
+        'Price': {
+            'budget (<10000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A1318505031&dc&qid=1604122900&rnid=1318502031&ref=sr_nr_p_36_1',
+        },
+        'Feature': {
+            'smart': {
+                'field': 'product_title', 'predicate': lambda product_title: True if 'smart' in product_title else False,
+            }
+        }
+    },
+```
+
+Here, the `Price` subcategory is taken from the subcategory listing URL, while the `smart` subcategory (in Features) is taken from the `ProductDetails.product_title` field. Note that all fields must belong to the `ProductDetails` table. There is also a `predicate`, which checks if the product title contains the word "smart". Based on this template, you can add complex rules for different subcategories.
+
+************
+
 ### The scraper library
 
 More information can be found [here](scrapingtool/README.md)
@@ -80,7 +110,7 @@ Example crontab commands for Detail Instance(s):
 # Kills any previous tmux sessions, so that we can start afresh
 30 7 * * 1 tmux kill-session -t bro
 
-0 8 * * 1 cd /home/ubuntu/updated/python-scraping && tmux new-session -d -s bro \; send-keys "python scrapingtool/scraper.py --tor --categories \"headphones\" --override --listing --detail --no_listing --num_workers 5 --worker_pages \"41, 42, 43, 44, 45\"" Enter
+0 8 * * 1 cd /home/ubuntu/updated/python-scraping && tmux new-session -d -s bro \; send-keys "python scrapingtool/scraper.py --categories \"headphones\" --override --listing --detail --no_listing --num_workers 5" Enter
 ```
 
 For this instance, this crontab command will do the detail scraping for headphones every week. You can extend this to multiple categories / instances as well.
@@ -90,24 +120,19 @@ Crontab commands for Archive Controller Instance:
 ```bash
 50 10 * * * tmux kill-session -t setup
 
+# Create archive instances every day
 00 11 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s setup \; send-keys "bash create_instances.sh" Enter
 
 50 11 * * * tmux kill-session -t bro
 
+# Start archive instances
 00 12 * * * cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab start-archive" Enter
 
-# Terminate once a week and recreate new instances
+# Terminate once a week and recreate new instances. Also store curr -> temp and detail -> curr
 30 0 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
-0 1 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp temp.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "bash create_detail_instances.sh" Enter
 
-# Secure the detail instance IDs. We need this later
-00 2 * * 1 cd /home/ubuntu/python-scraping && cp created_instance_ids.txt detail_instance_ids.txt
-
-# Terminate again
-15 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && tmux new-session -d -s bro \; send-keys "fab terminate" Enter
-
-# Reset state
-20 10 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && python3 awstool/api.py --reset_state && cp temp.txt created_instance_ids.txt
+# Restore state: temp -> old
+0 1 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp temp.txt created_instance_ids.txt
 
 # Start Detail
 30 8 * * 6 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "python3 awstool/api.py --get_created_instance_details && fab setup && fab setup-proxy && fab setup-detail && fab start-detail"
@@ -187,3 +212,9 @@ fab start-archive
 ## Backend
 
 Backend specific information is located [here](backend/README.md)
+
+## Frontend
+
+Frontend specific information is located [here](frontend/README.md)
+
+***********
