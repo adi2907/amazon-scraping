@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cp .env spider/.env
-cp .env backend/.env
+cp .env backend/amazonscraper/.env
 
 cp categories.json backend/amazonscraper/categories.json
 cp scrapingtool/subcategories.py backend/amazonscraper/subcategories.py
