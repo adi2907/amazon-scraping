@@ -23,7 +23,7 @@ from sqlitedict import SqliteDict
 
 import tokenize_titles
 from subcategories import subcategory_dict
-from utils import create_logger, subcategory_map
+from utils import create_logger, subcategory_map, listing_categories
 
 # This is required for integration with MySQL and Python
 pymysql.install_as_MySQLdb()
@@ -2152,7 +2152,7 @@ if __name__ == '__main__':
     if _close_all_db_connections == True:
         close_all_db_connections(engine, Session)
     if _dump_from_cache == True:
-        for c in ["headphones", "smartphones", "ceiling fan", "washing machine", "refrigerator"]:
+        for c in listing_categories:
             dump_from_cache(session, c, cache_file='cache.sqlite3')
     if _insert_sentiment_breakdown == True:
         insert_sentiment_breakdown(config('DB_NAME'), filename=filename)
