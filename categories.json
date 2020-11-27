@@ -6,10 +6,7 @@
             "ceiling fan": "https://www.amazon.in/s?k=ceiling+fan&i=kitchen&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031&dc&crid=1TGIH58I2LW9I&qid=1597813011&rnid=1318483031&sprefix=ceili%2Caps%2C380&ref=sr_nr_p_n_availability_2",
             "refrigerator": "https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031&dc&qid=1597813026&rnid=1318483031&ref=sr_nr_p_n_availability_2",
             "washing machine": "https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031&dc&qid=1597813042&rnid=1318483031&ref=sr_nr_p_n_availability_2"
-         },
-        "amazon.com": {
-            "hair color": "https://www.amazon.com/s?i=beauty&bbn=16225006011&rh=n%3A11057241%2Cn%3A11057451%2Cn%3A10728531&dc&qid=1603887229&rnid=11057451&ref=sr_nr_n_1"
-        }
+         }
     },
     "domains": {
         "amazon.in": "freshdb",
