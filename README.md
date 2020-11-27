@@ -227,3 +227,19 @@ Backend specific information is located [here](backend/README.md)
 Frontend specific information is located [here](frontend/README.md)
 
 ***********
+
+## Caveats
+
+* The database needs to be scaled up as the number of categories and instances keep growing, for scraping the Product Details. Currently, the RDS instance is limited to only around 30-50 simultanous connections. You may need to increase the limit, in order to scale with the number of instances.
+* The parsing logic will depend on the region and the domain. The same URL can give different content, depending on the region. So in the future, a region based AWS access will need to be done, to extend the current logic across multiple instance regions.
+* Any change in the sentiment logic requires a complete re-insertion of the `SentimentAnalysis` and the `SentimentBreakdown` tables, across all categories, and this is not a cheap operation, since the sentiment analysis needs to be done across all reviews again.
+* It is quite possible that the listing page can get blocked in the future even with Selenium, via the new captcha methods introducts, captcha V2, captcha V3, so you may need to keep a close watch on the listing numbers periodically.
+* The archive scraping will also need to be monitored periodically, since the number of instances needed is proportional to the number of inactive products currently. The logic may need to be changed in the future, if the instance limits are crossed.
+* The AWS master instance control mechanism may need to be more robust in the future. Currently, cronjobs and fabric constitute to the bulk of the control and there is no database for managing the active instance credentials (only a file), but you may want to change this in the future. Fabric, while being a good solution to SSH, is terrible at parallel SSH connections (don't try using parallel SSH with fabric. It is said to have memory leaks), so the creation of multiple instances is costly even in terms of time, since they are not done in a parallel fashion.
+* Python need not be the best solution for implementing the scraping logic. Although this repository is a working solution for many domains, there are other proven tools using Javascript which can regularly evade even Captcha V3 pages on a regular basis. You may want to consider using them in the future, if the demo needs to be extended to multiple domains and other sites where a straightforward Python scraping may not even be possible.
+
+## Conclusion
+
+I've tried to list down all functionalities and tried to explain as much as possible, while not spamming the READMEs too much. I hope this gives a good overview of what the library consists of, and what it can do.
+
+****************
