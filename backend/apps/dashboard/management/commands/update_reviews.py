@@ -25,7 +25,7 @@ class Command(BaseCommand):
         # Filter on only non NULL completed fields
         dup_sets = set()
 
-        queryset = Productdetails.objects.using('scraped').filter(completed__isnull=False, model__isnull=False, brand__isnull=False).values('brand', 'model', 'product_id', 'num_reviews', 'subcategories').order_by('-date_completed')
+        queryset = Productdetails.objects.using('scraped').all().values('brand', 'model', 'product_id', 'num_reviews', 'subcategories').order_by('-date_completed')
 
         models = dict()
         results = []

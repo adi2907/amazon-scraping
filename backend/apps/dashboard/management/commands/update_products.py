@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options): 
         # Filter on only non NULL completed fields
-        queryset = Productdetails.objects.using('scraped').filter(completed__isnull=False).values('brand', 'model', 'product_id', 'num_reviews', 'subcategories', 'product_title', 'featurewise_reviews').order_by('-date_completed')
+        queryset = Productdetails.objects.using('scraped').all().values('brand', 'model', 'product_id', 'num_reviews', 'subcategories', 'product_title', 'featurewise_reviews').order_by('-date_completed')
 
         models = dict()
         results = []
