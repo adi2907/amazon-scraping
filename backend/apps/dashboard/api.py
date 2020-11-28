@@ -1293,11 +1293,11 @@ class ReviewCount(APIView):
                 if not instance:
                     continue
                 
-                info = instance.total_reviews
-                if instance.total_reviews is None:
+                info = instance.review_info
+                if instance.review_info is None:
                     info = None
                 else:
-                    info = json.loads(instance.total_reviews)
+                    info = json.loads(instance.review_info)
                 
                 if period is None:
                     if info is None:
