@@ -201,7 +201,7 @@ class BrandListAPI(APIView):
         if subcategories is not None:
             for subcategory in subcategories:
                 if idx == 0:
-                    agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, model__isnull=False, subcategories__iregex=f'.*"{subcategory}".*')
+                    agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, subcategories__iregex=f'.*"{subcategory}".*')
                 else:
                     queryset = ProductAggregate.objects.filter(brand__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
                     agg = agg.union(queryset)
@@ -249,9 +249,9 @@ class ModelListAPI(APIView):
         if subcategories is not None:
             for subcategory in subcategories:
                 if idx == 0:
-                    agg = ProductAggregate.objects.filter(category=category, brand__iexact=brand, model__isnull=False, subcategories__iregex=f'.*"{subcategory}".*')
+                    agg = ProductAggregate.objects.filter(category=category, brand__iexact=brand, subcategories__iregex=f'.*"{subcategory}".*')
                 else:
-                    queryset = ProductAggregate.objects.filter(brand__iexact=brand, category=category, model__isnull=False, subcategories__iregex=f'.*"{subcategory}".*')
+                    queryset = ProductAggregate.objects.filter(brand__iexact=brand, category=category, subcategories__iregex=f'.*"{subcategory}".*')
                     agg = agg.union(queryset)
                 idx += 1
             agg = agg.values_list('short_title', flat=True).distinct().order_by()
@@ -300,7 +300,7 @@ class BrandandModelListAPI(APIView):
         if subcategories is not None:
             for subcategory in subcategories:
                 if idx == 0:
-                    agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, model__isnull=False, subcategories__iregex=f'.*"{subcategory}".*')
+                    agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, subcategories__iregex=f'.*"{subcategory}".*')
                 else:
                     queryset = ProductAggregate.objects.filter(brand__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
                     agg = agg.union(queryset)
@@ -746,9 +746,9 @@ class BrandMarketShare(APIView):
         if subcategories is not None:
             for subcategory in subcategories:
                 if idx == 0:
-                    agg = ProductAggregate.objects.filter(brand__isnull=False, model__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
+                    agg = ProductAggregate.objects.filter(brand__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
                 else:
-                    queryset = ProductAggregate.objects.filter(brand__isnull=False, model__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
+                    queryset = ProductAggregate.objects.filter(brand__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
                     agg = agg.union(queryset)
                 idx += 1
         else:
@@ -859,9 +859,9 @@ class CummulativeModelMarketShare(APIView):
         if subcategories is not None:
             for subcategory in subcategories:
                 if idx == 0:
-                    agg = ProductAggregate.objects.filter(brand__isnull=False, model__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
+                    agg = ProductAggregate.objects.filter(brand__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
                 else:
-                    queryset = ProductAggregate.objects.filter(brand__isnull=False, model__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
+                    queryset = ProductAggregate.objects.filter(brand__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
                     agg = agg.union(queryset)
                 idx += 1
         else:
@@ -1025,7 +1025,7 @@ class FetchSubcategories(APIView):
         short_titles = set()
 
         for subcategory in subcategories:
-            queryset = ProductAggregate.objects.filter(category=category, model__isnull=False, brand__isnull=False, subcategories__iregex=f'.*"{subcategory}".*').values('product_title', 'brand', 'model', 'product_id', 'review_info', 'subcategories', 'short_title', 'duplicate_set').order_by('-model').distinct()
+            queryset = ProductAggregate.objects.filter(category=category, brand__isnull=False, subcategories__iregex=f'.*"{subcategory}".*').values('product_title', 'brand', 'model', 'product_id', 'review_info', 'subcategories', 'short_title', 'duplicate_set').order_by('-model').distinct()
             subcategory_results = []
             temp = {}
             brands = {}
@@ -1097,9 +1097,9 @@ class SubCategoryMarketShare(APIView):
         first_date = last_date - datetime.timedelta(weeks=4*period)
 
         if subcategory == 'all':
-            queryset = ProductAggregate.objects.filter(category=category, model__isnull=False, brand__isnull=False).values('product_title', 'brand', 'model', 'product_id', 'review_info', 'subcategories', 'short_title', 'duplicate_set').order_by('-model').distinct()
+            queryset = ProductAggregate.objects.filter(category=category, brand__isnull=False).values('product_title', 'brand', 'model', 'product_id', 'review_info', 'subcategories', 'short_title', 'duplicate_set').order_by('-model').distinct()
         else:
-            queryset = ProductAggregate.objects.filter(category=category, model__isnull=False, brand__isnull=False, subcategories__iregex=f'.*"{subcategory}".*').values('product_title', 'brand', 'model', 'product_id', 'review_info', 'subcategories', 'short_title', 'duplicate_set').order_by('-model').distinct()
+            queryset = ProductAggregate.objects.filter(category=category, brand__isnull=False, subcategories__iregex=f'.*"{subcategory}".*').values('product_title', 'brand', 'model', 'product_id', 'review_info', 'subcategories', 'short_title', 'duplicate_set').order_by('-model').distinct()
 
         results = {}
         subcategory_results = []
@@ -1260,7 +1260,7 @@ class ReviewCount(APIView):
         if subcategories is not None:
             for subcategory in subcategories:
                 if idx == 0:
-                    agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, model__isnull=False, subcategories__iregex=f'.*"{subcategory}".*')
+                    agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, subcategories__iregex=f'.*"{subcategory}".*')
                 else:
                     queryset = ProductAggregate.objects.filter(brand__isnull=False, category=category, subcategories__iregex=f'.*"{subcategory}".*')
                     agg = agg.union(queryset)

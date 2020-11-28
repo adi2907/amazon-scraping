@@ -38,7 +38,7 @@ class Command(BaseCommand):
                 time.sleep(3)
             
             if item['brand'] is not None:
-                brand = item['brand'].split(' ')[0].lower()
+                brand = item['product_title'].split(' ')[0].lower()
             else:
                 brand = None
             
