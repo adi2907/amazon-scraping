@@ -63,7 +63,7 @@ class Command(BaseCommand):
             duplicate_product_ids = Productlisting.objects.using('scraped').filter(duplicate_set=duplicate_set).values_list('product_id', flat=True)
 
             try:
-                obj = Sentimentbreakdown.objects.using('scraped').get(product_id__in=duplicate_product_ids)
+                obj = Sentimentbreakdown.objects.using('scraped').get(product_id=product_id)
                 sentiments = json.loads(obj.sentiments)
             except Exception as ex:
                 print(ex)
