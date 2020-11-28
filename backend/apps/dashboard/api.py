@@ -208,7 +208,7 @@ class BrandListAPI(APIView):
                 idx += 1
             agg = agg.values_list('brand', flat=True).order_by('pk').distinct().order_by()
         else:
-            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, model__isnull=False).order_by('pk').values_list('brand', flat=True).distinct().order_by()
+            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False).order_by('pk').values_list('brand', flat=True).distinct().order_by()
 
         return Response(agg, status=status.HTTP_200_OK)
 
@@ -257,8 +257,8 @@ class ModelListAPI(APIView):
             agg = agg.values_list('short_title', flat=True).distinct().order_by()
             #agg = agg.values_list('model', flat=True).distinct().order_by()
         else:
-            agg = ProductAggregate.objects.filter(category=category, brand__iexact=brand, model__isnull=False).values_list('short_title', flat=True).distinct().order_by()
-            #agg = ProductAggregate.objects.filter(category=category, brand__iexact=brand, model__isnull=False).values_list('model', flat=True).distinct().order_by()
+            agg = ProductAggregate.objects.filter(category=category, brand__iexact=brand).values_list('short_title', flat=True).distinct().order_by()
+            #agg = ProductAggregate.objects.filter(category=category, brand__iexact=brand).values_list('model', flat=True).distinct().order_by()
 
         return Response(agg, status=status.HTTP_200_OK)
 
@@ -307,7 +307,7 @@ class BrandandModelListAPI(APIView):
                 idx += 1
             agg = agg.values('brand', 'model', 'num_reviews', 'short_title').order_by('pk').distinct().order_by()
         else:
-            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, model__isnull=False).order_by('pk').values('brand', 'model', 'short_title', 'num_reviews').distinct().order_by('-num_reviews')
+            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False).order_by('pk').values('brand', 'model', 'short_title', 'num_reviews').distinct().order_by('-num_reviews')
 
         results = {}
         for item in agg:
@@ -752,7 +752,7 @@ class BrandMarketShare(APIView):
                     agg = agg.union(queryset)
                 idx += 1
         else:
-            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, model__isnull=False)
+            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False)
         
         queryset = agg.values('product_title', 'brand', 'model', 'product_id', 'review_info', 'short_title', 'duplicate_set').order_by('-review_info').distinct()
 
@@ -865,7 +865,7 @@ class CummulativeModelMarketShare(APIView):
                     agg = agg.union(queryset)
                 idx += 1
         else:
-            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, model__isnull=False)
+            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False)
         
         if _brand is not None:
             agg = agg.filter(brand=_brand)
@@ -1267,7 +1267,7 @@ class ReviewCount(APIView):
                 idx += 1
             agg = agg.values('brand', 'model', 'num_reviews', 'short_title', 'duplicate_set').order_by('pk').distinct().order_by()
         else:
-            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False, model__isnull=False).order_by('pk').values('brand', 'model', 'short_title', 'num_reviews', 'duplicate_set').distinct().order_by('-num_reviews')
+            agg = ProductAggregate.objects.filter(category=category, brand__isnull=False).order_by('pk').values('brand', 'model', 'short_title', 'num_reviews', 'duplicate_set').distinct().order_by('-num_reviews')
 
         duplicate_sets = set()
         short_titles = set()
