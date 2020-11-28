@@ -59,8 +59,11 @@ class Command(BaseCommand):
                 category = None
                 continue
 
+            # TODO: Remove this in the future
+            duplicate_product_ids = Productlisting.objects.using('scraped').filter(duplicate_set=duplicate_set).values_list('product_id', flat=True)
+
             try:
-                obj = Sentimentbreakdown.objects.using('scraped').get(product_id=product_id)
+                obj = Sentimentbreakdown.objects.using('scraped').get(product_id__in=duplicate_product_ids)
                 sentiments = json.loads(obj.sentiments)
             except Exception as ex:
                 print(ex)
@@ -94,7 +97,7 @@ class Command(BaseCommand):
                 first_date = datetime(year=2020, month=period, day=1)
                 last_date = datetime(year=(2020 + (period + 1)//12), month=(next_period), day=1)
                 try:
-                    num_reviews = Reviews.objects.using('scraped').filter(product_id=product_id, review_date__range=[first_date, last_date], is_duplicate=False, duplicate_set=duplicate_set).count()
+                    num_reviews = Reviews.objects.using('scraped').filter(product_id__in=duplicate_product_ids, review_date__range=[first_date, last_date], is_duplicate=False, duplicate_set=duplicate_set).count()
                 except Exception as ex:
                     print(ex)
                     num_reviews = 0

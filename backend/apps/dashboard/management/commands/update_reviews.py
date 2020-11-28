@@ -68,6 +68,11 @@ class Command(BaseCommand):
             else:
                 continue
             
+            # TODO: Remove this kind of query in the future. Is expensive
+            # I'm currently needing to query all instances where duplicate_set matches
+            # and aggregate the reviews
+            duplicate_product_ids = Productlisting.objects.using('scraped').filter(duplicate_set=duplicate_set).values_list('product_id', flat=True)
+
             row = dict()
             row['product_id'] = product_id
             row['brand'] = brand
@@ -85,7 +90,9 @@ class Command(BaseCommand):
             while curr_date <= end_date:
                 prev_date = curr_date - timedelta(days=1)
                 avg_reviews_none = 0
-                item_not_none = Reviews.objects.using('scraped').filter(product_id=product_id, review_date__range=[prev_date, curr_date], is_duplicate=False, duplicate_set=duplicate_set).aggregate(avg_rating=Avg('rating'), num_reviews=Count('id'))
+                
+                # TODO: Change this later to index only based on the base product_id
+                item_not_none = Reviews.objects.using('scraped').filter(product_id__in=duplicate_product_ids, review_date__range=[prev_date, curr_date], is_duplicate=False, duplicate_set=duplicate_set).aggregate(avg_rating=Avg('rating'), num_reviews=Count('id'))
 
                 avg_reviews_not_none = item_not_none['avg_rating']
                 if avg_reviews_not_none is None:

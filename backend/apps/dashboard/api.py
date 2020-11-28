@@ -574,10 +574,7 @@ class RatingsoverTimeAPI(APIView):
                         weekly_reviews = 0
                         weekly_total = 0
                         start_date = last_date - datetime.timedelta(days=week*7)
-                        if week == 8:   
-                            end_date = datetime.datetime(year=2020, month=8, day=1)
-                        else:
-                            end_date = last_date - datetime.timedelta(days=week*7 + 7 - 1)
+                        end_date = last_date - datetime.timedelta(days=week*7 + 7 - 1)
 
                         for day in range(week*7, week*7 + 7):
                             # Last 1 week
