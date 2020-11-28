@@ -5,3 +5,4 @@ db.sqlite3
 scraper
 local_settings.py
 .vscode
+static
