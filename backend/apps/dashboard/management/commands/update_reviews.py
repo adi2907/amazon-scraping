@@ -89,6 +89,13 @@ class Command(BaseCommand):
 
             while curr_date <= end_date:
                 prev_date = curr_date - timedelta(days=1)
+                
+                # Check if the previous date ratings are already present
+                prev_date_string = prev_date.strftime("%d/%m/%Y")
+                if prev_date_string in review_info:
+                    curr_date += timedelta(days=1)
+                    continue
+
                 avg_reviews_none = 0
                 
                 # TODO: Change this later to index only based on the base product_id
@@ -100,7 +107,7 @@ class Command(BaseCommand):
                 else:
                     avg_rating = max(avg_reviews_not_none, avg_reviews_none)
                 num_reviews = item_not_none['num_reviews']
-                review_info[prev_date.strftime("%d/%m/%Y")] = {"rating": avg_rating, "num_reviews": num_reviews}
+                review_info[prev_date_string] = {"rating": avg_rating, "num_reviews": num_reviews}
 
                 curr_date += timedelta(days=1)
 

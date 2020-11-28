@@ -86,6 +86,12 @@ class Command(BaseCommand):
             subcategories = item['subcategories']
             
             for period in range(1, 12+1):
+                # This is relatively inexpensive, so the below two lines can be commented out
+                # However, if you're going to do the aggregation only once a month, then
+                # You may want to un-comment the below two lines of code
+                #if period in review_info or str(period) in review_info:
+                #    continue
+
                 # Get Num reviews
                 last_date = datetime.now() - timedelta(days=7)
                 first_date = last_date - timedelta(weeks=4*period)
