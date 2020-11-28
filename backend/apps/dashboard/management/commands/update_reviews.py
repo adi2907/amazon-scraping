@@ -48,7 +48,7 @@ class Command(BaseCommand):
                 print("Reviews Sleeping...")
                 time.sleep(3)
             
-            brand = item['brand'].lower()
+            brand = item['brand']
             model = item['model']
 
             product_id = item['product_id']
