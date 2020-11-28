@@ -1261,6 +1261,7 @@ def update_duplicate_set(session, table='ProductListing', insert=False, strict=F
 
 
 def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False, index_all=True, very_strict=False):
+    # Important function for assigning duplicate set indices
     import time
 
     from sqlalchemy import asc, desc, func

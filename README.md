@@ -147,6 +147,9 @@ Crontab commands for Archive Controller Instance:
 # Terminate once a week and recreate new instances. Also store curr -> temp and detail -> curr
 30 0 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp created_instance_ids.txt temp.txt && cp detail_instance_ids.txt created_instance_ids.txt && tmux new-session -d -s bro \; send-keys "fab post-detail && python3 scrapingtool/db_manager.py --update_detail_completed && fab terminate" Enter
 
+# Reset redis cache state
+45 10 * * 1 cd /home/ubuuntu/python-scraping && python3 scrapingtool/reset_state.py
+
 # Restore state: temp -> old
 0 1 * * 1 tmux kill-session -t bro && cd /home/ubuntu/python-scraping && cp temp.txt created_instance_ids.txt
 
@@ -212,6 +215,7 @@ Now, there are 5 main tasks for the instances:
 
 4. The `setup-proxy` task (Sets up the proxy service `tinyproxy` for relevant instances)
 5. The `setup-detail` task (Used to copy the proxy IPs to the detail server)
+6. The `start-detail` task (Will start ProductDetails scraping)
 
 
 The archive tasks will be generally run in this fashion:
@@ -219,6 +223,14 @@ The archive tasks will be generally run in this fashion:
 ```bash
 fab setup
 fab start-archive
+```
+
+The detail tasks will be generally run in this fashion:
+
+
+```bash
+fab setup
+fab start-detail
 ```
 
 ***********

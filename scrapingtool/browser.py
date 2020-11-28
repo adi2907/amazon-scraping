@@ -24,20 +24,7 @@ from utils import (create_logger, domain_map, domain_to_db, listing_categories,
 
 logger = create_logger('browser')
 
-ENTRY_URL = "https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_thirteen_browse-bin%3A2753043031&dc&qid=1599327930&rnid=2753038031&ref=sr_nr_p_n_feature_thirteen_browse-bin_2"
-
-category = "refrigerator"
-subcategory = "double door"
-
 today = datetime.today().strftime("%d-%m-%y")
-
-#ENTRY_URL = "https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031%2Cp_n_feature_thirteen_browse-bin%3A2753039031%7C2753045031&dc&qid=1599327851&rnid=2753038031&ref=sr_nr_p_n_feature_thirteen_browse-bin_2"
-
-#category = "refrigerator"
-#subcategory = "multi door"
-
-# wireless -> Last URL https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564047031%7C15564048031&dc&page=36&fst=as%3Aoff&qid=1599907737&rnid=15564019031&ref=sr_pg_35
-
 
 connection_params = db_manager.get_credentials()
 
@@ -218,7 +205,7 @@ def run_subcategory(browser='Firefox'):
         # Set it to Firefox
         driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
 
-    url = ENTRY_URL
+    url = ''
 
     curr = 1
 
@@ -327,6 +314,7 @@ def run_subcategory(browser='Firefox'):
 
 
 def insert_category_to_db(category, domain='all'):
+    # Deprecated function: No longer needed
     DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
     if not os.path.exists(DUMP_DIR):
         raise ValueError("Dump Directory not present")
@@ -369,10 +357,6 @@ def insert_category_to_db(category, domain='all'):
                     page_results = dict()
                     page_results[category] = dict()
                     page_results[category][idx + 1] = final_results[category][idx + 1]
-
-                    #if idx + 1 == 28:
-                    #    print(page_results)
-                    #continue
 
                     with db_manager.session_scope(Session) as session:
                         status = db_manager.insert_product_listing(session, page_results, domain=_domain)

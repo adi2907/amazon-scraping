@@ -35,6 +35,8 @@ from .serializers import (DailyProductListingSerializer,
 
 
 class DashboardListing(APIView):
+
+    # Deprecated
     
 
     def get(self, request):
@@ -44,6 +46,8 @@ class DashboardListing(APIView):
 
 
 class DashboardProductListing(APIView):
+
+    # Deprecated
 
 
     def get(self, request, page_no=None):
@@ -63,6 +67,8 @@ class DashboardProductListing(APIView):
 
 
 class DashboardDailyProductListing(APIView):
+
+    # Deprecated
 
 
     def get(self, request, page_no=None):
@@ -91,6 +97,8 @@ class DashboardDailyProductListing(APIView):
 
 
 class DashboardReviews(APIView):
+
+    # Deprecated
 
 
     def get(self, request, product_id=None, page_no=None):
@@ -400,6 +408,7 @@ class SentimentReviewsAPI(APIView):
     @staticmethod
     def get_review_ids(product_id, feature, sentiment_type='pos'):
         queryset = Sentimentanalysis.objects.using('scraped').filter(product_id=product_id)
+        # ABCD, positive_sentiments: 10, 11, 12, negative_sentiments: 20, 25, 26
         if sentiment_type == 'pos':
             queryset = queryset.filter(positive_sentiments__iregex=f".*'{feature}'.*")
             return queryset.values_list('id', flat=True)
@@ -939,6 +948,7 @@ class FetchSubcategories(APIView):
         return Response(result, status=status.HTTP_200_OK)
 
     
+    # Deprecated
     def post(self, request, category):
         # Get the subcategory Market Share
         # Output: brand, model, num_reviews
