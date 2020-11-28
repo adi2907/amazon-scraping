@@ -883,7 +883,7 @@ class CummulativeModelMarketShare(APIView):
         for item in queryset:
             duplicate_set = item['duplicate_set']
             short_title = item['short_title']
-            if duplicate_set in duplicate_sets or short_title in short_titles:
+            if duplicate_set in duplicate_sets:
                 continue
             else:
                 duplicate_sets.add(duplicate_set)
