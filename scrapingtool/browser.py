@@ -55,13 +55,10 @@ def run_category(browser='Firefox'):
                 logger.critical(f"Error during initiation session: {ex}")
 
             try:
-
-                assert len(listing_categories) == len(listing_templates)
-
                 prev_url = ''
 
-                for category, template in domain_map[domain].items():
-                    url = template.substitute(PAGE_NUM=1)
+                for category, base_url in domain_map[domain].items():
+                    url = base_url
 
                     logger.info(f"Scraping category {category} with URL {url}")
                     
