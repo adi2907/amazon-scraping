@@ -125,6 +125,12 @@ python3 scrapingtool/db_manager.py --insert_sentiment_breakdown --filename "data
 python3 scrapingtool/db_manager.py --insert_sentiment_reviews --filename "data/sentiment_db_all.csv"
 ```
 
+If you want to run the sentiment analysis from the last review ID which was analyzed previously, from the `SentimentAnalysis` table, you can the this command:
+
+```bash
+python3 scrapingtool/sentiment_analysis.py --category "all" --start_date "2020-08-01" --end_date "2020-11-01" --last_review
+```
+
 For reference, a template script has been provided at `run_sentiments.sh`. Modify and run it according to the need (based on the dates / category).
 The files will be of the format (where `CATEGORY` is the category provided - it can also be 'all'): `data/sentiment_counts_CATEGORY.pkl` and `data/sentiment_db_CATEGORY.csv`. One is a pickle file and another is a csv file.
 
