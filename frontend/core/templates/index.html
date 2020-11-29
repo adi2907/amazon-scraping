@@ -1,0 +1,1082 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} Dashboard {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+    <!-- Header -->
+    <div class="header bg-gradient-blue pb-8 pt-5 pt-md-8">
+      <div class="container-fluid">
+        <div class="header-body">
+          <!-- Card stats -->
+          <!-- <div class="row">
+            <div class="col-xl-3 col-lg-6">
+              <div class="card card-stats mb-4 mb-xl-0">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col">
+                      <h5 class="card-title text-uppercase text-muted mb-0">Traffic</h5>
+                      <span class="h2 font-weight-bold mb-0">350,897</span>
+                    </div>
+                    <div class="col-auto">
+                      <div class="icon icon-shape bg-danger text-white rounded-circle shadow">
+                        <i class="fas fa-chart-bar"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="mt-3 mb-0 text-muted text-sm">
+                    <span class="text-success mr-2"><i class="fa fa-arrow-up"></i> 3.48%</span>
+                    <span class="text-nowrap">Since last month</span>
+                  </p>
+                </div>
+              </div>
+            </div> -->
+          
+          <!-- </div> -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid mt--7">
+
+      <div class="row">
+        <div class="col-xl-7 mb-5 mb-xl-0">
+          <div class="card bg-gradient-default shadow">
+            <div class="card-header bg-transparent">
+              <div class="row align-items-center">
+                <div class="col">
+                  <h6 class="text-uppercase text-light ls-1 mb-1">Overview</h6>
+                  <h2 class="text-white mb-0">Brand Market Share</h2>
+                </div>
+                <!-- <div class="col">
+                  <ul class="nav nav-pills justify-content-end">
+                    <li class="nav-item mr-2 mr-md-0" data-toggle="chart" data-target="#chart-sales" data-update='{"data":{"datasets":[{"data":[0, 20, 10, 30, 15, 40, 20, 60, 60]}]}}' data-prefix="$" data-suffix="k">
+                      <a href="#" class="nav-link py-2 px-3 active" data-toggle="tab">
+                        <span class="d-none d-md-block">Month</span>
+                        <span class="d-md-none">M</span>
+                      </a>
+                    </li>
+                    <li class="nav-item" data-toggle="chart" data-target="#chart-sales" data-update='{"data":{"datasets":[{"data":[0, 0, 5, 25, 10, 30, 15, 40, 40]}]}}' data-prefix="$" data-suffix="k">
+                      <a href="#" class="nav-link py-2 px-3" data-toggle="tab">
+                        <span class="d-none d-md-block">Week</span>
+                        <span class="d-md-none">W</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div> -->
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Chart -->
+              <div class="chart">
+                <!-- Chart wrapper -->
+                <canvas id="chart-brand" class="chart-canvas"></canvas>
+              </div>
+            </div>
+           
+          </div>
+
+          
+        </div>
+        
+        <div class="col-xl-5">
+          <div class="card shadow">
+            <div class="card-header bg-transparent">
+              <div class="row align-items-center">
+                <div class="col">
+                  <h6 class="text-uppercase text-muted ls-1 mb-1">Performance</h6>
+                  <h2 class="mb-0">Top Models</h2>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Chart -->
+              <div class="chart">
+                <canvas id="chart-brandskus" class="chart-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p><p>
+
+      <div class="row">
+        <div class="col-xl-7 mb-5 mb-xl-0">
+          <div class="card bg-gradient-default shadow">
+            <div class="card-header bg-transparent">
+              <div class="row align-items-center">
+                <div class="col">
+                  <h6 class="text-uppercase text-light ls-1 mb-1">Overview</h6>
+                  <h2 class="text-white mb-0">Wired Earphones Market Share</h2>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Chart -->
+              <div class="chart">
+                <!-- Chart wrapper -->
+                <canvas id="chart-wiredpie" class="chart-canvas"></canvas>
+              </div>
+            </div>
+           
+          </div>
+
+          
+        </div>
+        
+        <div class="col-xl-5">
+          <div class="card shadow">
+            <div class="card-header bg-transparent">
+              <div class="row align-items-center">
+                <div class="col">
+                  <h6 class="text-uppercase text-muted ls-1 mb-1">Performance</h6>
+                  <h2 class="mb-0">Top Wired Models</h2>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Chart -->
+              <div class="chart">
+                <canvas id="chart-wiredbar" class="chart-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p><p>
+      <div class="row">
+        <div class="col-xl-7 mb-5 mb-xl-0">
+          <div class="card bg-gradient-default shadow">
+            <div class="card-header bg-transparent">
+              <div class="row align-items-center">
+                <div class="col">
+                  <h6 class="text-uppercase text-light ls-1 mb-1">Overview</h6>
+                  <h2 class="text-white mb-0">Wireless Earphones Market Share</h2>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Chart -->
+              <div class="chart">
+                <!-- Chart wrapper -->
+                <canvas id="chart-wirelesspie" class="chart-canvas"></canvas>
+              </div>
+            </div>
+           
+          </div>
+
+          
+        </div>
+        
+        <div class="col-xl-5">
+          <div class="card shadow">
+            <div class="card-header bg-transparent">
+              <div class="row align-items-center">
+                <div class="col">
+                  <h6 class="text-uppercase text-muted ls-1 mb-1">Performance</h6>
+                  <h2 class="mb-0">Top Wireless Models</h2>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Chart -->
+              <div class="chart">
+                <canvas id="chart-wirelessbar" class="chart-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p><p>
+        <div class="row">
+          <div class="col-xl-7 mb-5 mb-xl-0">
+            <div class="card bg-gradient-default shadow">
+              <div class="card-header bg-transparent">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="text-uppercase text-light ls-1 mb-1">Overview</h6>
+                    <h2 class="text-white mb-0">TWS Market Share</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Chart -->
+                <div class="chart">
+                  <!-- Chart wrapper -->
+                  <canvas id="chart-twspie" class="chart-canvas"></canvas>
+                </div>
+              </div>
+             
+            </div>
+  
+            
+          </div>
+          
+          <div class="col-xl-5">
+            <div class="card shadow">
+              <div class="card-header bg-transparent">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="text-uppercase text-muted ls-1 mb-1">Performance</h6>
+                    <h2 class="mb-0">Top TWS Models</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Chart -->
+                <div class="chart">
+                  <canvas id="chart-twsbar" class="chart-canvas"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p><p></p>
+        <div class="row">
+          <div class="col-xl-2 mb-5 mb-xl-0">
+            
+              <div class="card shadow">
+                <div class="card-header bg-transparent">
+                  <div class="row align-items-center">
+                    <div class="col">
+                      <h6 class="text-uppercase text-muted ls-1 mb-1">Price Segment</h6>
+                      <h2 class="mb-0"><500</h2>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <!-- Chart -->
+                  <div class="chart">
+                    <canvas id="chart-pricebar1" class="chart-canvas"></canvas>
+                  </div>
+                </div>
+              </div>   
+          </div>
+
+          <div class="col-xl-2 mb-5 mb-xl-0">
+            
+            <div class="card shadow">
+              <div class="card-header bg-transparent">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="text-uppercase text-muted ls-1 mb-1">Price Segment</h6>
+                    <h2 class="mb-0">500-1000</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Chart -->
+                <div class="chart">
+                  <canvas id="chart-pricebar2" class="chart-canvas"></canvas>
+                </div>
+              </div>
+            </div>   
+          </div>
+
+          <div class="col-xl-2 mb-5 mb-xl-0">
+            
+            <div class="card shadow">
+              <div class="card-header bg-transparent">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="text-uppercase text-muted ls-1 mb-1">Price Segment</h6>
+                    <h2 class="mb-0">1000-2000</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Chart -->
+                <div class="chart">
+                  <canvas id="chart-pricebar3" class="chart-canvas"></canvas>
+                </div>
+              </div>
+            </div>   
+          </div>
+          
+          <div class="col-xl-2 mb-5 mb-xl-0">
+                
+            <div class="card shadow">
+              <div class="card-header bg-transparent">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="text-uppercase text-muted ls-1 mb-1">Price Segment</h6>
+                    <h2 class="mb-0">2000-3000</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Chart -->
+                <div class="chart">
+                  <canvas id="chart-pricebar4" class="chart-canvas"></canvas>
+                </div>
+              </div>
+            </div>   
+          </div>
+
+          <div class="col-xl-2 mb-5 mb-xl-0">
+                
+            <div class="card shadow">
+              <div class="card-header bg-transparent">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="text-uppercase text-muted ls-1 mb-1">Price Segment</h6>
+                    <h2 class="mb-0">3000-5000</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Chart -->
+                <div class="chart">
+                  <canvas id="chart-pricebar5" class="chart-canvas"></canvas>
+                </div>
+              </div>
+            </div>   
+          </div>
+
+          <div class="col-xl-2 mb-5 mb-xl-0">
+                  
+            <div class="card shadow">
+              <div class="card-header bg-transparent">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h6 class="text-uppercase text-muted ls-1 mb-1">Price Segment</h6>
+                    <h2 class="mb-0">5000</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Chart -->
+                <div class="chart">
+                  <canvas id="chart-pricebar6" class="chart-canvas"></canvas>
+                </div>
+              </div>
+            </div>   
+          </div>
+      
+      </div>
+        {% include "includes/footer.html" %}
+      
+      </div>
+    </div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE --> 
+{% block javascripts %}
+
+<script>
+//
+// Overall brand chart
+//
+
+var brandSKUChart = (function() {
+    var endpoint = '/brand-skus'
+    var $chart = $('#chart-brandskus');
+  
+    var models=[]
+    var reviews = []
+    $.ajax({
+      method:"GET",
+      url:endpoint,
+      success: function(data){
+          for (var i=0;i<data.length;i++){
+              var model = data[i].model
+              models.push(model)
+              reviews.push(data[i].num_reviews)
+          }
+          initChart($chart,models,reviews)
+      },
+      error: function(error_data){
+          //console.log(error)
+          console.log(error_data)
+      }
+
+    })
+  
+  //Variables
+  
+  function initChart($chart,models,reviews) {
+    // Create chart
+    var brandSKUChart = new Chart($chart, {
+      type: 'bar',
+      options: {
+        scales: {
+          yAxes: [{
+            gridLines: {
+              lineWidth: 1,
+              color: '#dfe2e6',
+              zeroLineColor: '#dfe2e6'
+            },
+            ticks: {
+              callback: function(value) {
+                if (!(value % 10)) {
+                  //return '$' + value + 'k'
+                  return value
+                }
+              }
+            }
+          },
+        ],
+        
+        },
+        tooltips: {
+          callbacks: {
+            label: function(item, data) {
+              var label = data.datasets[item.datasetIndex].label || '';
+              var yLabel = item.yLabel;
+              var content = '';
+
+              if (data.datasets.length > 1) {
+                content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+              }
+
+              content += '<span class="popover-body-value">' + yLabel + '</span>';
+
+              return content;
+            }
+          }
+        }
+      },
+      data: {
+        labels:models,
+        datasets: [{
+          label: 'Sales',
+          data:reviews
+        }]
+      }
+    });
+
+    // Save to jQuery object
+    $chart.data('chart', brandSKUChart);
+  }
+
+})();
+
+
+var brandshareChart = (function() {
+
+  // Variables
+
+  var $chart = $('#chart-brand');
+  var endpoint = '/brand-share'
+  var brands=[]
+  var reviews = []
+  
+  $.ajax({
+    method:"GET",
+    url:endpoint,
+    success: function(data){
+        for (var i=0;i<data.length;i++){
+            brands.push(data[i].brand)
+            reviews.push(data[i].num_reviews)
+        }
+        initChart($chart,brands,reviews)
+    },
+    error: function(error_data){
+        console.log(error_data)
+    }
+
+  })
+
+  // Methods
+
+  function initChart($chart,brands,reviews) {
+
+    var brandshareChart = new Chart($chart, {
+      type: 'pie',
+       options: [], 
+      data: {
+        labels:brands,
+        datasets: [{
+          label: 'Performance',
+          data:reviews,
+          backgroundColor: [
+            "#2ecc71",
+            "#3498db",
+            "#95a5a6",
+            "#9b59b6",
+            "#f1c40f",
+            "#e74c3c",
+            "#34495e"
+          ],
+        }]
+      },
+      options: {
+        legend: {
+            display: true,
+            labels: {
+                fontColor: 'rgb(255, 99, 132)'
+            }
+        }
+      }
+    });
+
+    // Save to jQuery object
+
+    $chart.data('chart', brandshareChart);
+
+  };
+
+})();
+
+var WiredSKUChart = (function() {
+  var endpoint = '/wired-skus'
+  var $chart = $('#chart-wiredbar');
+  //var $ordersSelect = $('[name="ordersSelect"]');
+
+  var models=[]
+  var reviews = []
+  $.ajax({
+    method:"GET",
+    url:endpoint,
+    success: function(data){
+        for (var i=0;i<data.length;i++){
+            var model = data[i].model
+            models.push(model)
+            reviews.push(data[i].num_reviews)
+        }
+        initChart($chart,models,reviews)
+    },
+    error: function(error_data){
+        //console.log(error)
+        console.log(error_data)
+    }
+
+  })
+
+//Variables
+
+
+
+//
+// Methods
+//
+// Init chart
+function initChart($chart,models,reviews) {
+  // Create chart
+  var wiredSKUChart = new Chart($chart, {
+    type: 'bar',
+    options: {
+      scales: {
+        yAxes: [{
+          gridLines: {
+            lineWidth: 1,
+            color: '#dfe2e6',
+            zeroLineColor: '#dfe2e6'
+          },
+          ticks: {
+            callback: function(value) {
+              if (!(value % 10)) {
+                //return '$' + value + 'k'
+                return value
+              }
+            }
+          }
+        }]
+      },
+      tooltips: {
+        callbacks: {
+          label: function(item, data) {
+            var label = data.datasets[item.datasetIndex].label || '';
+            var yLabel = item.yLabel;
+            var content = '';
+
+            if (data.datasets.length > 1) {
+              content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+            }
+
+            content += '<span class="popover-body-value">' + yLabel + '</span>';
+
+            return content;
+          }
+        }
+      }
+    },
+    data: {
+      labels:models,
+      datasets: [{
+        label: 'Sales',
+        data:reviews
+      }]
+    }
+  });
+
+  // Save to jQuery object
+  $chart.data('chart', wiredSKUChart);
+}
+
+
+// // Init chart
+// if ($chart.length) {
+//   initChart($chart);
+// }
+
+})();
+
+var wiredBrandChart = (function() {
+
+  // Variables
+
+  var $chart = $('#chart-wiredpie');
+  var endpoint = '/wired-share'
+  var brands=[]
+  var reviews = []
+  
+  $.ajax({
+    method:"GET",
+    url:endpoint,
+    success: function(data){
+        for (var i=0;i<data.length;i++){
+            brands.push(data[i].brand)
+            reviews.push(data[i].num_reviews)
+        }
+        initChart($chart,brands,reviews)
+    },
+    error: function(error_data){
+        console.log(error_data)
+    }
+
+  })
+
+  // Methods
+
+  function initChart($chart,brands,reviews) {
+
+    var salesChart = new Chart($chart, {
+      type: 'pie',
+       options: [], 
+      data: {
+        labels:brands,
+        datasets: [{
+          label: 'Performance',
+          data:reviews,
+          backgroundColor: [
+            "#2ecc71",
+            "#3498db",
+            "#95a5a6",
+            "#9b59b6",
+            "#f1c40f",
+            "#e74c3c",
+            "#34495e"
+          ],
+        }]
+      },
+      options: {
+        legend: {
+            display: true,
+            labels: {
+                fontColor: 'rgb(255, 99, 132)'
+            }
+        }
+      }
+    });
+
+    // Save to jQuery object
+
+    $chart.data('chart', wiredBrandChart);
+
+  };
+
+})();
+
+var WirelessSKUChart = (function() {
+  var endpoint = '/wireless-skus'
+  var $chart = $('#chart-wirelessbar');
+  //var $ordersSelect = $('[name="ordersSelect"]');
+
+  var models=[]
+  var reviews = []
+  $.ajax({
+    method:"GET",
+    url:endpoint,
+    success: function(data){
+        for (var i=0;i<data.length;i++){
+            var model = data[i].model
+            models.push(model)
+            reviews.push(data[i].num_reviews)
+        }
+        initChart($chart,models,reviews)
+    },
+    error: function(error_data){
+        //console.log(error)
+        console.log(error_data)
+    }
+
+  })
+
+//Variables
+
+
+
+//
+// Methods
+//
+// Init chart
+function initChart($chart,models,reviews) {
+  // Create chart
+  var wiredSKUChart = new Chart($chart, {
+    type: 'bar',
+    options: {
+      scales: {
+        yAxes: [{
+          gridLines: {
+            lineWidth: 1,
+            color: '#dfe2e6',
+            zeroLineColor: '#dfe2e6'
+          },
+          ticks: {
+            callback: function(value) {
+              if (!(value % 10)) {
+                //return '$' + value + 'k'
+                return value
+              }
+            }
+          }
+        }]
+      },
+      tooltips: {
+        callbacks: {
+          label: function(item, data) {
+            var label = data.datasets[item.datasetIndex].label || '';
+            var yLabel = item.yLabel;
+            var content = '';
+
+            if (data.datasets.length > 1) {
+              content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+            }
+
+            content += '<span class="popover-body-value">' + yLabel + '</span>';
+
+            return content;
+          }
+        }
+      }
+    },
+    data: {
+      labels:models,
+      datasets: [{
+        label: 'Sales',
+        data:reviews
+      }]
+    }
+  });
+
+  // Save to jQuery object
+  $chart.data('chart', WirelessSKUChart);
+}
+
+})();
+
+var WirelessBrandChart = (function() {
+
+  // Variables
+
+  var $chart = $('#chart-wirelesspie');
+  var endpoint = '/wireless-share'
+  var brands=[]
+  var reviews = []
+  
+  $.ajax({
+    method:"GET",
+    url:endpoint,
+    success: function(data){
+        for (var i=0;i<data.length;i++){
+            brands.push(data[i].brand)
+            reviews.push(data[i].num_reviews)
+        }
+        initChart($chart,brands,reviews)
+    },
+    error: function(error_data){
+        console.log(error_data)
+    }
+
+  })
+
+  // Methods
+
+  function initChart($chart,brands,reviews) {
+
+    var salesChart = new Chart($chart, {
+      type: 'pie',
+       options: [], 
+      data: {
+        labels:brands,
+        datasets: [{
+          label: 'Performance',
+          data:reviews,
+          backgroundColor: [
+            "#2ecc71",
+            "#3498db",
+            "#95a5a6",
+            "#9b59b6",
+            "#f1c40f",
+            "#e74c3c",
+            "#34495e"
+          ],
+        }]
+      },
+      options: {
+        legend: {
+            display: true,
+            labels: {
+                fontColor: 'rgb(255, 99, 132)'
+            }
+        }
+      }
+    });
+
+    // Save to jQuery object
+
+    $chart.data('chart', WirelessBrandChart);
+
+  };
+
+})();
+
+var TwsSKUChart = (function() {
+  var endpoint = '/tws-skus'
+  var $chart = $('#chart-twsbar');
+
+  var models=[]
+  var reviews = []
+  $.ajax({
+    method:"GET",
+    url:endpoint,
+    success: function(data){
+        for (var i=0;i<data.length;i++){
+            var model = data[i].model
+            models.push(model)
+            reviews.push(data[i].num_reviews)
+        }
+        initChart($chart,models,reviews)
+    },
+    error: function(error_data){
+        //console.log(error)
+        console.log(error_data)
+    }
+
+  })
+
+
+//
+// Init chart
+function initChart($chart,models,reviews) {
+  // Create chart
+  var wiredSKUChart = new Chart($chart, {
+    type: 'bar',
+    options: {
+      scales: {
+        yAxes: [{
+          gridLines: {
+            lineWidth: 1,
+            color: '#dfe2e6',
+            zeroLineColor: '#dfe2e6'
+          },
+          ticks: {
+            callback: function(value) {
+              if (!(value % 10)) {
+                //return '$' + value + 'k'
+                return value
+              }
+            }
+          }
+        }]
+      },
+      tooltips: {
+        callbacks: {
+          label: function(item, data) {
+            var label = data.datasets[item.datasetIndex].label || '';
+            var yLabel = item.yLabel;
+            var content = '';
+
+            if (data.datasets.length > 1) {
+              content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+            }
+
+            content += '<span class="popover-body-value">' + yLabel + '</span>';
+
+            return content;
+          }
+        }
+      }
+    },
+    data: {   
+      labels:models,
+      datasets: [{
+        label: 'Sales',
+        
+        data:reviews
+      }]
+    }
+  });
+
+  // Save to jQuery object
+  $chart.data('chart', TwsSKUChart);
+}
+
+
+})();
+
+var TwsBrandChart = (function() {
+
+  // Variables
+
+  var $chart = $('#chart-twspie');
+  var endpoint = '/tws-share'
+  var brands=[]
+  var reviews = []
+  
+  $.ajax({
+    method:"GET",
+    url:endpoint,
+    success: function(data){
+        for (var i=0;i<data.length;i++){
+            brands.push(data[i].brand)
+            reviews.push(data[i].num_reviews)
+        }
+        initChart($chart,brands,reviews)
+    },
+    error: function(error_data){
+        console.log(error_data)
+    }
+
+  })
+
+  // Methods
+
+  function initChart($chart,brands,reviews) {
+
+    var TwsBrandChart = new Chart($chart, {
+      type: 'pie',
+       options: [], 
+      data: {
+        labels:brands,
+        datasets: [{
+          label: 'Performance',
+          data:reviews,
+          backgroundColor: [
+            "#2ecc71",
+            "#3498db",
+            "#95a5a6",
+            "#9b59b6",
+            "#f1c40f",
+            "#e74c3c",
+            "#34495e"
+          ],
+        }]
+      },
+      options: {
+        legend: {
+            display: true,
+            labels: {
+                fontColor: 'rgb(255, 99, 132)'
+            }
+        }
+      }
+    });
+
+    $chart.data('chart', TwsBrandChart);
+
+  };
+
+})();
+
+var priceStackChart = (function() {
+  var endpoint = 'http://ec2-3-7-69-109.ap-south-1.compute.amazonaws.com:8000/api/dashboard/brandmarketshare/headphones/8/6'
+  
+  //var $chart = $('#chart-pricebar');
+
+  var price_segments=['<500','500-1000','1000-2000','2000-3000','3000-5000','>5000']
+  var i
+  for (i=0;i<price_segments.length;i++){
+    
+    var chart_id= '#chart-pricebar'+String(i+1)
+    var $chart = $(chart_id)
+    var datasets =[]
+    var query_params = '?subcategory='+price_segments[i]
+    $.ajax({
+    method:"GET",
+    url:endpoint+query_params,
+    async:false,
+    success: function(data){
+        for (var j=0;j<data.length;j++){
+            datasets.push({label:data[j].brand,data:[[data[j].num_reviews]]})
+        }
+        initChart($chart,datasets)
+    },
+    error: function(error_data){
+        console.log(error_data)
+    }
+    })
+  
+
+  }
+
+//
+// Methods
+//
+// Init chart
+async function initChart($chart,datasets) {
+  console.log('hi')
+  // Create chart
+  var chart_name = new Chart($chart, {
+    type: 'bar',
+    options: {
+      scales: {
+        yAxes: [{
+          gridLines: {
+            lineWidth: 1,
+            color: '#dfe2e6',
+            zeroLineColor: '#dfe2e6'
+          },
+          ticks: {
+            callback: function(value) {
+              if (!(value % 10)) {
+                //return '$' + value + 'k'
+                return value
+              }
+            }
+          }
+        }]
+      },
+      tooltips: {
+        callbacks: {
+          label: function(item, data) {
+            var label = data.datasets[item.datasetIndex].label || '';
+            var yLabel = item.yLabel;
+            var content = '';
+
+            if (data.datasets.length > 1) {
+              content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+            }
+
+            content += '<span class="popover-body-value">' + yLabel + '</span>';
+
+            return content;
+          }
+        }
+      }
+    },
+    data: {
+      datasets: datasets
+    }
+  });
+
+  // Save to jQuery object
+  $chart.data('chart', chart_name);
+}
+
+})();
+
+
+
+</script>
+
+
+
+{% endblock javascripts %}
