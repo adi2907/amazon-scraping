@@ -52,25 +52,30 @@ def setup(ctx):
         # Add the SSH key from `aws_key.pem` (the template permission file)
         with open('aws_private_key.pem', 'r') as f:
             template_key = f.read().strip()
-        conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
         
-        with open('setup.sh', 'r') as f:
-            for idx, line in enumerate(f):
-                cmd = line.strip()
-                if idx in [0, 1]:
-                    result = conn.run(cmd, watchers=[upgrade_response])
-                else:
-                    if cmd.startswith('git'):
-                        result = conn.run(cmd, watchers=[Responder(pattern=r'Are you sure you want to continue connecting \(yes/no\)\?', response='yes\n')])
+        try:
+            conn.run(f'echo "{template_key}" > ~/.ssh/id_rsa')
+            
+            with open('setup.sh', 'r') as f:
+                for idx, line in enumerate(f):
+                    cmd = line.strip()
+                    if idx in [0, 1]:
+                        result = conn.run(cmd, watchers=[upgrade_response])
                     else:
-                        result = conn.run(cmd)
-                print(result, result.exited)
-        
-        # Copy .env file
-        with open('.env', 'r') as f:
-            environment = f.read().strip()
-        conn.run(f'echo "{environment}" > ~/python-scraping/.env')
-        conn.run(f'echo "{environment}" > ~/python-scraping/spider/.env')
+                        if cmd.startswith('git'):
+                            result = conn.run(cmd, watchers=[Responder(pattern=r'Are you sure you want to continue connecting \(yes/no\)\?', response='yes\n')])
+                        else:
+                            result = conn.run(cmd)
+                    print(result, result.exited)
+            
+            # Copy .env file
+            with open('.env', 'r') as f:
+                environment = f.read().strip()
+            conn.run(f'echo "{environment}" > ~/python-scraping/.env')
+            conn.run(f'echo "{environment}" > ~/python-scraping/spider/.env')
+        except Exception as ex:
+            print(ex)
+            print("Assuming no session. Continuing to the next one")
         
         instance_number += 1
 
