@@ -12,6 +12,12 @@ To install the requirements for this project, run the following:
 pip install -r requirements.txt
 ```
 
+## Pipeline
+
+The pipeline is as follows:
+
+`Listing -> Details -> Subcategories -> Sentiment Analysis -> Aggregation -> API Results`
+
 ## Development Environment Setup
 
 To setup the development environment on your local machine, proceed with the following steps:
