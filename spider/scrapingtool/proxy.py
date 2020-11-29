@@ -221,7 +221,10 @@ class Proxy():
         else:
             collector = create_collector('my-collector', 'socks5')
             proxy_list = collector.get_proxies({'code': country})
-            proxy_list = ['socks5h://' + str(proxy.host) + ':' + str(proxy.port) for proxy in proxy_list]
+            try:
+                proxy_list = ['socks5h://' + str(proxy.host) + ':' + str(proxy.port) for proxy in proxy_list]
+            except:
+                proxy_list = []
         return proxy_list
     
 
