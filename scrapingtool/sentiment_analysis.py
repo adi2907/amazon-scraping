@@ -187,7 +187,9 @@ def sentiment_analysis(category):
     analyse(df, nlp, keywords, category)
 
 
-def fetch_category_info(engine, category, start_date, end_date):
+def fetch_category_info(engine, Session, category, start_date, end_date, last_review=False):
+    from sqlalchemy import func
+
     try:
         tokens = start_date.split('-')
         start_year, start_month, start_day = tokens[0], int(tokens[1]), tokens[2]
@@ -206,10 +208,15 @@ def fetch_category_info(engine, category, start_date, end_date):
         print('start_date, end_date must be of form: YYYY-MM-DD')
         raise ex
     
-    if category == 'all':
-        results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
+    if last_review == True:
+        with db_manager.session_scope(Session) as session:
+            max_id = session.query(func.max(db_manager.SentimentAnalysis.id)).scalar()
+        results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.id > {max_id}", engine)
     else:
-        results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = '{category}' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
+        if category == 'all':
+            results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
+        else:
+            results = pd.read_sql_query(f"SELECT Reviews.id, Reviews.product_id, Reviews.rating, Reviews.review_date, Reviews.helpful_votes, Reviews.title, Reviews.body, Reviews.is_duplicate, Reviews.duplicate_set, ProductListing.category FROM Reviews INNER JOIN ProductListing WHERE (ProductListing.category = '{category}' AND ProductListing.product_id = Reviews.product_id AND Reviews.is_duplicate = False AND Reviews.review_date BETWEEN '{start_year}-{start_month}-{start_day}' AND '{end_year}-{end_month}-{end_day}') ORDER BY Reviews.duplicate_set asc, Reviews.title ASC, Reviews.review_date ASC, Reviews.title asc", engine)
     results.to_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), index=False, sep=",")
 
 
@@ -218,6 +225,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--category', help='Category for dumping Reviews', type=str, default=None)
     parser.add_argument('-s', '--start_date', help='List the start date', type=str, default=None)
     parser.add_argument('-e', '--end_date', help='List the end_date', type=str, default=None)
+    parser.add_argument('-r', '--last_review', help='Whether to take sentiment analysis fom the last review', default=False, action='store_true')
 
     parser.add_argument('--test', help='Testing', default=False, action='store_true')
 
@@ -227,6 +235,7 @@ if __name__ == '__main__':
     start_date = args.start_date
     end_date = args.end_date
     test = args.test
+    last_review = args.last_review
 
     Session = None
 
@@ -246,7 +255,7 @@ if __name__ == '__main__':
             credentials = db_manager.get_credentials()
             engine, Session = db_manager.connect_to_db(config('DB_NAME'), credentials)
             # Fetch
-            fetch_category_info(engine, category, start_date, end_date)
+            fetch_category_info(engine, Session, category, start_date, end_date, last_review=last_review)
     else:
         raise ValueError(f"Need to specify --category argument")
 
