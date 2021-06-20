@@ -2,7 +2,6 @@ import glob
 import os
 import time
 import traceback
-from copy import deepcopy
 from datetime import datetime
 from string import Template
 
@@ -12,6 +11,7 @@ from decouple import UndefinedValueError, config
 from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.remote.webelement import WebElement
 from sqlitedict import SqliteDict
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
@@ -19,8 +19,8 @@ from webdriver_manager.firefox import GeckoDriverManager
 import db_manager
 import parse_data
 from subcategories import subcategory_dict
-from utils import (create_logger, domain_map, domain_to_db, listing_categories,
-                   listing_templates, is_lambda, category_to_domain)
+from utils import (category_to_domain, create_logger, domain_map, domain_to_db,
+                   is_lambda, listing_categories, listing_templates)
 
 logger = create_logger('browser')
 
@@ -30,7 +30,7 @@ connection_params = db_manager.get_credentials()
 
 def run_category(browser='Firefox'):
     options = Options()
-    options.headless = True
+    options.headless = False
     if browser == 'Chrome':
         # Use chrome
         driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
@@ -66,7 +66,7 @@ def run_category(browser='Firefox'):
 
                     print(f"GET URL {url}")
                     driver.get(url)
-
+                    flag = False
                     while True:
                         if url == prev_url:
                             logger.warning(f"Got the same URL {url}. Skipping the rest...")
@@ -85,11 +85,12 @@ def run_category(browser='Firefox'):
                             continue
                         except:
                             pass
-
+                        
+                        # Extract page contents and write to DB
                         try:
                             soup = BeautifulSoup(html, 'lxml')
                             product_info, _ = parse_data.get_product_info(soup)
-
+                          
                             page_results = dict()
                             page_results[category] = dict()
                             page_results[category][curr] = product_info
@@ -106,63 +107,74 @@ def run_category(browser='Firefox'):
                             if not status:
                                 logger.warning(f"Error while inserting DAILY LISTING Page {curr} of category - {category}")
 
+                            # If the "Link" was disabled in the last iteration, quit the program
+                            if flag == True:
+                                break
+
                         except Exception as ex:
                             traceback.print_exc()
                             logger.info(f"Exception during storing daily listing: {ex}")
 
+                    
                         with open(f'dumps/listing_{category}_{curr}.html', 'wb') as f:
                             f.write(html)
+                
 
                         print("Written html. Sleeping...")
                         time.sleep(2)
 
-                        flag = True
-
+                        # Find link of next page, if "Next" link is not enabled, then quit
                         try:
-                            elements = driver.find_elements_by_class_name("a-last")
-                        except:
+                            element = driver.find_element_by_css_selector(".a-pagination .a-last")
+                            if element.is_enabled() == False:
+                                flag = True
+                        except Exception as ex: #Link not found
+                            print(ex)
                             print("Next page not found. Quitting...")
                             break
 
-                        for element in elements:
+                        # Click on next link
+                        try:
+                            tmp = url
+                            #Child link of this element
                             try:
-                                #url = element.get_attribute("href")
-                                e = driver.find_element_by_css_selector(".a-last > a:nth-child(1)")
-                                tmp = url
-                                url = e.get_attribute("href")
-                                print(url)
-                                if url is not None:
-                                    if not url.startswith(server_url):
-                                        url = server_url + url
-                                    print(f"URL is {url}")
-                                    curr += 1
-                                    alpha = 1000
-                                    while alpha <= 5000:
-                                        try:
-                                            actions = ActionChains(driver)
-                                            driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
-                                            time.sleep(5)
-                                            actions.move_to_element(e)
-                                            time.sleep(2)
-                                            actions.click(element).perform()
-                                            time.sleep(5)
-                                            break
-                                        except Exception as ex:
-                                            print(ex)
-                                            print(f"Alpha is {alpha}. Now incrementing")
-                                            alpha += 500
-                                            time.sleep(1)
+                                e = element.find_element_by_tag_name("a")
+                            except:
+                                flag = True
+                                print("Tag element not found")
+                            
+                            url = e.get_attribute("href")
+                            print(url)
 
-                                    print("Went to the next URL")
-                                    flag = False
-                                    prev_url = tmp
-                                    break
-                            except Exception as ex:
-                                print(ex)
-                                continue
+                            if url is not None:
+                                if not url.startswith(server_url):
+                                    url = server_url + url
+                                print(f"URL is {url}")
+                                curr += 1
+                                alpha = 1000 #Changes scroll height for all pages
+                                while alpha <= 5000:
+                                    try:
+                                        actions = ActionChains(driver)
+                                        driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
+                                        time.sleep(5)
+                                        #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                                        actions.move_to_element(element)
+                                        time.sleep(2)
+                                        actions.click(element).perform()
+                                        time.sleep(5)
+                                        break
+                                    except Exception as ex:
+                                        print(ex)
+                                        print(f"Alpha is {alpha}. Now incrementing")
+                                        alpha += 500
+                                        time.sleep(1)
 
-                        if flag == True:
-                            break
+                                print("Went to the next URL")
+                                prev_url = tmp
+                                
+                        except Exception as ex:
+                            print(ex)
+                            continue
 
                         print("Sleeping...")
                         time.sleep(2)
@@ -249,7 +261,7 @@ def run_subcategory(browser='Firefox'):
                             continue
                         except:
                             pass
-
+                
                         with open(f'dumps/{category}_{subcategory_name}_{curr}.html', 'wb') as f:
                             f.write(html)
 

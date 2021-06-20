@@ -13,7 +13,7 @@ The entire library is divided into five parts:
 * Command to run the category listing:
 
 ```bash
-python3 scrapingtool/browser.py --category
+python3 scrapingtool/browser.py category
 ```
 
 2. Detail Scraping Module:

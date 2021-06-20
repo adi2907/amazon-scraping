@@ -9,6 +9,7 @@ from utils import create_logger
 logger = create_logger('tokenize')
 
 nltk.download('stopwords')
+nltk.download('punkt')
 
 
 def remove_stop_words(text):

@@ -13,7 +13,7 @@ import time
 import traceback
 from collections import OrderedDict
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from string import Template
 
 import requests
@@ -56,7 +56,7 @@ try:
 except UndefinedValueError:
     USE_REDIS = False
 
-logger.info(f"USE_REDIS = {USE_REDIS}")
+(f"USE_REDIS = {USE_REDIS}")
 
 try:
     USE_PROXY = config('USE_PROXY', cast=bool)
@@ -154,6 +154,7 @@ session = requests.Session()
 
 # Use a proxy if possible
 my_proxy = proxy.Proxy(OS=OS, use_tor=USE_TOR, use_proxy=USE_PROXY)
+
 
 try:
     my_proxy.change_identity()
@@ -276,7 +277,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
     global cache_file, use_cache
     global USE_DB, USE_PROXY
     global pids
-
+    
     if use_multithreading == True:
         my_proxy = proxy.Proxy(OS=OS, stream_isolation=True, server_url=server_url, use_proxy=USE_PROXY) # Separate Proxy per thread
         try:
@@ -606,6 +607,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
             page_element = soup.find("ul", class_="a-pagination")
             
+            # Check if captcha or final page
             if page_element is None:
                 if my_proxy is None:
                     response = session.get(base_url, headers=headers, cookies=cookies)
@@ -649,6 +651,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             listing = []
 
             page_results = dict()
+
+            # All results from category in page_results
             page_results[category] = final_results[category]
 
             if detail == False:
@@ -771,7 +775,8 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
                         try:
                             product_id = parse_data.get_product_id(product_url)
-                            if (product_id not in pids) and (cache.sismember(f"{category}_PIDS", product_id) == False):
+                            if product_id not in pids and (cache.sismember(f"{category}_PIDS", product_id) == False):
+                            #if (product_id not in pids):
                                 logger.info(f"PID {product_id} not in set")
                                 pids.add(product_id)
                                 cache.atomic_set_add(f"{category}_PIDS", product_id)
@@ -1018,8 +1023,8 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
 
     product_id = parse_data.get_product_id(product_url)
 
+    # Get DB credentials and connect to DB
     connection_params = db_manager.get_credentials()
-
     _engine, SessionFactory = db_manager.connect_to_db(domain_to_db[domain], connection_params)
 
     logger.info(f"Going to Details page for PID {product_id}")
@@ -1045,10 +1050,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         mydict[f"DETAILS_SET_{category}"] = _set
 
     if review_pages is None:
-        review_pages = 100000
+        review_pages = 500
     
     if qanda_pages is None:
-        qanda_pages = 100000
+        qanda_pages = 50
     
     if my_proxy is None:
         response = session.get(server_url, headers=headers)
@@ -1065,7 +1070,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     REVIEWS_PER_PAGE = 10
 
     while True:
-        # Keep looping until scraping is complete for this URL
+        # Keep looping until scraping is complete for the product details (not reviews and Q&A)
         if my_proxy is None:
             response = session.get(server_url + product_url, headers=headers, cookies=cookies)
         else:
@@ -1105,11 +1110,12 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     sponsored = parse_data.is_sponsored(product_url)
 
     if use_cache:
-        # Store to cache first
+        # Store to local cache first
         with SqliteDict(cache_file, autocommit=True) as mydict:
             mydict[f"DETAILS_{product_id}"] = details
             mydict[f"IS_SPONSORED_{product_id}"] = sponsored
     
+    # Validate some important fields, store into cache before finally inserting into DB later
     try:
         important_fields = ['product_title', 'description', 'product_details', 'reviews_url', 'customer_qa']
         empty_fields = []
@@ -1141,6 +1147,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         try:
             with db_manager.session_scope(SessionFactory) as db_session:
                 status = db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
+                # if Database insertion fails, store in cache to examine later
                 if status == False:
                     try:
                         store_to_cache(f"DETAILS_{product_id}", details, html=html)
@@ -1175,7 +1182,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                 
                 curr_reviews = max(num_reviews_not_none, num_reviews_none)
     
-    # Get the qanda for this product
+    # Get the qanda for this product TODO: investigate customer_lazy flag
     if 'customer_lazy' in details and details['customer_lazy'] == True:
         qanda_url = details['customer_qa']
         curr = 0
@@ -1184,8 +1191,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         cooldown = False
         prev_url = product_url
         
+        # Substitute the page number and product id in template url for Q&A
         qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + '?isAnswered=true'
         
+        #Scrape all Q&A pages
         while qanda_url is not None:
             if qanda_pages <= 0:
                 break
@@ -1461,6 +1470,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                             total_ratings = 100000
                         
                         if incomplete == True:
+                            # If already completed 90% of ratings, mark as completed
                             if curr_reviews >= round(int(0.9 * total_ratings)) and jump_page == 0:
                                 # Mark as completed
                                 logger.info(f"For Product {product_id}, marking as completed")
@@ -1610,10 +1620,13 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                         is_completed = True
                         break
     
+    # Finally add completed flag and date_completed flag to ProductDetails table
+    # Also update the detail_completed flag in Listing table
     if dont_update == True:
         pass
     else:
         with db_manager.session_scope(SessionFactory) as db_session:
+            #Update ProductDetails table
             obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
             if obj is not None:
                 logger.info(f"Product with ID {product_id} is completed = {is_completed}")
@@ -1622,9 +1635,21 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
                     if obj.completed == True:
                         if hasattr(obj, 'date_completed'):
                             obj.date_completed = datetime.now()
+
+                            # Update ProductListing table detail_completed field
+                            listing_obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                            if listing_obj is not None:
+                                if hasattr(listing_obj, 'detail_completed'):
+                                    listing_obj.detail_completed = datetime.now()
+                                else:
+                                    error_logger.critical(f"Unable to update listing table for product id {product_id}")
+                            else:
+                                 error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+
                     db_session.add(obj)
             else:
                 error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+           
 
     time.sleep(3)
 
@@ -1729,10 +1754,12 @@ def scrape_categories(categories=None, pages=None, dump=False, detail=False, thr
         for category, category_template, num_pages in zip(listing_categories, listing_templates, pages):
             fetch_category(category, category_template.substitute(PAGE_NUM=1), num_pages, change, server_url=server_url, no_listing=no_listing, detail=detail)
     else:
+        # Assign No of threads based on number of categories
         no_sub = False
         if num_workers is None or not isinstance(num_workers, int):
             num_workers = max(1, min(32, len(listing_categories)))
 
+        # Split threads as per pages
         if len(categories) == 1:
             # Only one category. Split it into pages
             logger.info(f"Only one category. Splitting work into {num_workers} threads")
@@ -1753,6 +1780,7 @@ def scrape_categories(categories=None, pages=None, dump=False, detail=False, thr
 
             no_sub = True
         
+        # Add threads if Detail is also required to be scraped concurrently
         try:
             if concurrent_jobs == True and detail == True:
                 num_workers *= 2
@@ -1765,12 +1793,14 @@ def scrape_categories(categories=None, pages=None, dump=False, detail=False, thr
             logger.info(f"Detail: Scraping ONLY category {categories[0]}")
             category = categories[0]
                         
-            # We partition the listing ASINs for every thread equally, so that work can be distributed among them
+            # We partition the listing ASINs for every thread equally, so that work can be distributed among them, accounting for duplicate sets
             with db_manager.session_scope(SessionFactory) as dbsession:
                 queryset = dbsession.query(db_manager.ProductListing).filter(db_manager.ProductListing.category == category).order_by(desc(text('total_ratings'))).order_by(desc(text('detail_completed')))
                 duplicate_sets = set()
                 total_listing_pids = []
                 idx = 0
+
+                # Do it for whole set or only for top_n SKUs
                 if top_n is not None and top_n > 0:
                     for instance in queryset:
                         if idx == top_n:
@@ -1782,6 +1812,7 @@ def scrape_categories(categories=None, pages=None, dump=False, detail=False, thr
                         total_listing_pids.append(instance.product_id)
                 else:
                     total_listing_pids = [getattr(instance, 'product_id') for instance in queryset if hasattr(instance, 'product_id')]
+            # Partition PIDs/ASINs to various threads
             listing_partition = [total_listing_pids[(i*len(total_listing_pids))//num_workers:((i+1)*len(total_listing_pids)) // num_workers] for i in range(num_workers)]
         else:
             total_listing_pids = []
@@ -1789,6 +1820,7 @@ def scrape_categories(categories=None, pages=None, dump=False, detail=False, thr
         
         logger.info(f"Scraping Details of {len(total_listing_pids)} products totally")
 
+        # Spawn the threads and call process_product_detail 
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Start the load operations and mark each future with its URL
             if no_sub == False:
@@ -1846,13 +1878,13 @@ if __name__ == '__main__':
     parser.add_argument('--listing', help='Scraping the category listing', default=False, action='store_true')
     parser.add_argument('--detail', help='Scraping individual product details', default=False, action='store_true')
     parser.add_argument('-n', '--number', help='Number of Individual Product Details per category to fetch', type=int, default=0)
-    parser.add_argument('--pages', help='Number of pages to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=1)
+    parser.add_argument('--pages', help='(Optional) Number of pages to scrape the listing details, provide a single value or comma separated values for each category', type=lambda s: [int(item.strip()) for item in s.split(',')], default=1)
     parser.add_argument('--num_products', help='Number of products per category to scrape the listing details', type=lambda s: [int(item.strip()) for item in s.split(',')], default=None)
     parser.add_argument('--review_pages', help='Number of pages to scrape the reviews per product', type=int, default=5000) # 500 pages Reviews (5000 reviews)
     parser.add_argument('--qanda_pages', help='Number of pages to scrape the qandas per product', type=int, default=50) # 50 pages QandA (500 QandAs)
     parser.add_argument('--dump', help='Flag for dumping the Product Listing Results for each category', default=False, action='store_true')
     parser.add_argument('-i', '--ids', help='List of all product_ids to scrape product details', type=lambda s: [item.strip() for item in s.split(',')])
-    parser.add_argument('--date', help='Threshold Limit for scraping Product Reviews', type=lambda s: datetime.strptime(s, '%Y-%m-%d'), default=datetime(year=2020, month=8, day=1))
+    parser.add_argument('--date', help='Threshold Limit for scraping Product Reviews', type=lambda s: datetime.strptime(s, '%Y-%m-%d'), default=datetime.now() - timedelta(days=90)) # start from 3 months prior as default
     parser.add_argument('--config', help='A config file for the options', type=str)
     parser.add_argument('--tor', help='To use Tor vs Public Proxies', default=False, action='store_true')
     parser.add_argument('--override', help='To scape using existing filters at utils.py', default=False, action='store_true')
@@ -1902,6 +1934,7 @@ if __name__ == '__main__':
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
 
+    # If no category specified in command line, open category file
     if categories in [None, []]:
         if categories_file is not None:
             categories = []
@@ -1910,8 +1943,9 @@ if __name__ == '__main__':
                     categories.append(line.strip())
 
     try:
-        if config is not None:
-            # Iterate thru args
+        # Take details from config or .env file, should be None if running from command line
+        if config is not None: 
+            # Iterate through command line args
             for arg in vars(args):
                 if arg == 'categories_file' and getattr(args, arg) == None:
                     continue
@@ -1939,7 +1973,7 @@ if __name__ == '__main__':
             no_scrape = False # For scraping Listing
 
             options = ["Listing", "Details"]
-            with open(f"{config}", "r") as f:
+            with open(f"{config}", "r") as f: #open .env file
                 for line in f:
                     line = line.strip()
                     if line == 'USE_TOR':
@@ -1975,6 +2009,7 @@ if __name__ == '__main__':
                             pid, qanda, review = content[0], int(content[1]), int(content[2])
                             product_ids.append(line)
         
+        # Pages argument needs to be list of #pages to be scraped for each category, default of 1 if not provided. Will be changed to higher default later
         if isinstance(pages, int):
             if categories is None:
                 pass
@@ -2021,6 +2056,7 @@ if __name__ == '__main__':
             exit(0)
 
         if categories is not None:
+            # Scrape listing
             if listing == True:
                 if num_products is not None and isinstance(num_products, list):
                     assert len(num_products) == len(categories)
@@ -2033,31 +2069,21 @@ if __name__ == '__main__':
                         results = scrape_categories(categories=categories, pages=pages, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n, instance_id=instance_id)
                     else:
                         results = scrape_categories(categories=categories, pages=None, dump=dump, detail=detail, threshold_date=threshold_date, products=num_products, review_pages=review_pages, qanda_pages=qanda_pages, no_listing=no_listing, num_workers=num_workers, worker_pages=worker_pages, detail_override=detail_override, top_n=top_n, instance_id=instance_id)
+            # Directly scrape details
             else:
                 for category in categories:
                     if product_ids is None:
-                        with open(f'dumps/{category}.pkl', 'rb') as f:
-                            results = pickle.load(f)
-                        curr_item = 0
-                        curr_page = 1
-
-                        while curr_item < num_items:
-                            if curr_page in results[category]:
-                                for title in results[category][curr_page]:
-                                    if results[category][curr_page][title]['product_url'] is not None:
-                                        product_url = results[category][curr_page][title]['product_url']
-                                        try:
-                                            product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
-                                        except Exception as ex:
-                                            logger.critical(f"{ex}")
-                                            logger.warning(f"Could not scrape details of Product - URL = {product_url}")
-                                            logger.newline()
-                                        curr_item += 1
-                                        if curr_item == num_items:
-                                            break
-                            else:
-                                break
-                            curr_page += 1
+                        # Get product urls for categories with detail_completed = None or done a week prior
+                        product_urls = db_manager.fetch_product_urls_unscrapped_details(db_session,category,'ProductListing')
+                        for product_url in product_urls:
+                            pd_id = product_url.split('/')[3]
+                            logger.info(f"Scraping product details for product_id {pd_id}")
+                            try:
+                                product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                            except Exception as ex:
+                                logger.critical(f"{ex}")
+                                logger.warning(f"Could not scrape details of Product - URL = {product_url}")
+                                logger.newline()
                     else:
                         # Product ids are also there
                         jobs = []
@@ -2094,30 +2120,30 @@ if __name__ == '__main__':
                                     logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
                                     logger.newline()
                         
-                        if use_multithreading == True:
-                            num_jobs = len(jobs)
-                            for idx, _job in enumerate(jobs[::num_workers]):
-                                if terminate == True:
-                                    logger.info("Terminating....")
-                                batch_size = min(num_jobs - num_workers*idx, num_workers)
-                                logger.info(f"Now going for batch from idx {idx} with batch size {batch_size}...")
-                                time.sleep(5)
-                                with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as executor:
-                                    future_to_category = dict()
-                                    for i, job in enumerate(jobs[num_workers*idx: num_workers*idx + batch_size]):
-                                        product_id = ids[num_workers*idx + i]
-                                        future_to_category[executor.submit(scrape_product_detail, *job)] = f"{product_id}_detail"   
-                                    
-                                    for future in concurrent.futures.as_completed(future_to_category):
-                                        product_id = future_to_category[future]
-                                        try:
-                                            _ = future.result()
-                                        except Exception as exc:
-                                            logger.critical('%r generated an exception: %s' % (category, exc))
-                                            exception_logger.critical(f"Thread {product_id} generated an exception {exc}")
-                                            exception_logger.critical("".join(traceback.TracebackException.from_exception(exc).format()))
-                                        else:
-                                            logger.info(f"Product ID {product_id} is done!")
+                            if use_multithreading == True:
+                                num_jobs = len(jobs)
+                                for idx, _job in enumerate(jobs[::num_workers]):
+                                    if terminate == True:
+                                        logger.info("Terminating....")
+                                    batch_size = min(num_jobs - num_workers*idx, num_workers)
+                                    logger.info(f"Now going for batch from idx {idx} with batch size {batch_size}...")
+                                    time.sleep(5)
+                                    with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as executor:
+                                        future_to_category = dict()
+                                        for i, job in enumerate(jobs[num_workers*idx: num_workers*idx + batch_size]):
+                                            product_id = ids[num_workers*idx + i]
+                                            future_to_category[executor.submit(scrape_product_detail, *job)] = f"{product_id}_detail"   
+                                        
+                                        for future in concurrent.futures.as_completed(future_to_category):
+                                            product_id = future_to_category[future]
+                                            try:
+                                                _ = future.result()
+                                            except Exception as exc:
+                                                logger.critical('%r generated an exception: %s' % (category, exc))
+                                                exception_logger.critical(f"Thread {product_id} generated an exception {exc}")
+                                                exception_logger.critical("".join(traceback.TracebackException.from_exception(exc).format()))
+                                            else:
+                                                logger.info(f"Product ID {product_id} is done!")
 
         else:
             # Categories is None

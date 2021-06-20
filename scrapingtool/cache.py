@@ -33,7 +33,7 @@ except UndefinedValueError:
 KEY_EXPIRED = -2
 KEY_NON_VOLATILE = -1
 
-
+# if cache is connected
 def is_connected(func): 
     def wrapper(*args, **kwargs):
         if hasattr(args[0], 'cache'):
@@ -78,6 +78,7 @@ class Cache():
             self.cache = self.local_cache
             logger.info("Not using redis. Defaulting to local cache")
 
+    # time to live - for the key in the cache to expire
     @is_connected
     def ttl(self, key):
         if self.use_redis == True:
@@ -91,6 +92,7 @@ class Cache():
         else:
             return None
     
+    # get the value for the key
     @is_connected
     def get(self, key):
         if self.use_redis == False:
@@ -110,6 +112,7 @@ class Cache():
             
             return value
     
+    # set the value of the key
     @is_connected
     def set(self, key, value, timeout=-1):
         if self.use_redis == False:
@@ -124,6 +127,7 @@ class Cache():
             if timeout is not None:
                 self.cache.expire(key, timeout)
     
+    # delete the key
     @is_connected
     def delete(self, key):
         if self.use_redis == False:
@@ -134,6 +138,7 @@ class Cache():
             if key in self.shared_state:
                 del self.shared_state[key]
 
+    # Append at end of list
     @is_connected
     def lpush(self, key, value):
         if self.use_redis == False:
@@ -151,6 +156,7 @@ class Cache():
             
             self.cache.lpush(key, value)
     
+    # Gives whole range from start to end
     @is_connected
     def lrange(self, key, start=0, end=None):
         if end is None:
@@ -180,6 +186,7 @@ class Cache():
         else:
             return self.cache.get(key)[start : end]
     
+    # Add to a set
     @is_connected
     def sadd(self, set_name, element):
         if self.use_redis == True:
@@ -195,6 +202,7 @@ class Cache():
             self.cache[set_name] = _set
             return True
     
+    # Checks if it's member of the set
     @is_connected
     def sismember(self, set_name, element):
         if self.use_redis == True:
@@ -218,6 +226,7 @@ class Cache():
         else:
             raise ValueError("Only allowed in Redis")
     
+    # Avoids conflict, either completely updates or fails
     @is_connected
     def atomic_set_add(self, set_name, value):
         if self.use_redis == True:
@@ -249,6 +258,7 @@ class Cache():
         else:
             raise ValueError("Only allowed in Redis")
 
+    # Atomic updates a counter variable
     @is_connected
     def atomic_increment(self, key, value=1):
         if self.use_redis == True:
@@ -272,6 +282,7 @@ class Cache():
         else:
             raise ValueError("Only allowed in Redis")
 
+    # Atomic decrements a counter variable
     @is_connected
     def atomic_decrement(self, key, value=1):
         if self.use_redis == True:

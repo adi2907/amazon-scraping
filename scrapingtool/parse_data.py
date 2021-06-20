@@ -56,6 +56,8 @@ def get_product_mapping(soup) -> dict:
 
 def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
     """Fetches the product details for all the products for a single page
+    :return: product_info{}{} of product details
+    :curr_serial_no: Tracker of total products scraped till now, @param curr_serial_no + # of products on page
     """
     product_bars = soup.find_all("div", class_="sg-col-inner")
     
@@ -522,6 +524,10 @@ def get_qanda(soup, page_num=None):
                     qanda['page_num'] = page_num
                     results.append(qanda)
     
+    # Check for number of Q&A results in page
+    if len(results) == 0:
+        logger.error(f"Result not found for Q&A, possible captcha or javascript")
+
     # Get the url of the next page, if it exists
     page_node = soup.find("ul", class_="a-pagination")
     next_url = None
@@ -531,6 +537,8 @@ def get_qanda(soup, page_num=None):
             next_url = next_url.find("a")
             if next_url is not None:
                 next_url = next_url.attrs['href']
+                if len(results) < 10:
+                    logger.error(f"Result partially found for Q&A, possible captcha or javascript")
 
     return results, next_url
 

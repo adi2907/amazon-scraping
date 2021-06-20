@@ -32,12 +32,16 @@ old_listing_templates = [
     Template('https://www.amazon.in/s?k=headphones&i=electronics&rh=n%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_72%3A1318478031&dc&page=$PAGE_NUM&qid=1597664105&rnid=1318475031&ref=sr_pg_$PAGE_NUM'),
 ]
 
-
-if not os.path.exists(os.path.join(os.getcwd(), 'categories.json')):
+#Todo: Find a way to figure out the root path
+#root_dir = os.path.join(os.path.abspath(".."))
+root_dir = os.getcwd()
+# If categories.json exists in currnet or parent directory
+if not os.path.exists(os.path.join(root_dir,'categories.json')):
     raise ValueError(f"categories.json file not found")
 
+
 # All the categories to be scraped (Listing + Details)
-with open(os.path.join(os.getcwd(), 'categories.json'), 'r') as f:
+with open(os.path.join(root_dir, 'categories.json'), 'r') as f:
     json_info = json.load(f)
 
 if 'categories' not in json_info or 'domains' not in json_info:

@@ -15,7 +15,7 @@ import pymysql
 from decouple import UndefinedValueError, config
 from pytz import timezone
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        MetaData, String, Table, Text, create_engine, exc)
+                        MetaData, String, Table, Text, create_engine, exc,func,and_,or_)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import FlushError, NoResultFound
@@ -216,7 +216,6 @@ except:
 
 def get_credentials():
     from decouple import config
-
     try:
         if config('DB_TYPE') == 'sqlite':
             connection_params = {
@@ -233,9 +232,9 @@ def get_credentials():
             'password': config('DB_PASSWORD'),
             'server': config('DB_SERVER'),
         }
+     
     except:
         connection_params = None
-
     return connection_params
 
 
@@ -393,6 +392,12 @@ def get_short_title(product_title):
 
 
 def insert_product_listing(session, data, table='ProductListing', domain='amazon.in'):
+    """
+    Insert data as a row into ProductListing table
+
+    Args:
+        data = Nested dictionary with listing details e.g. data[category][curr_page][title]['is_duplicate']
+    """
     row = dict()
     row['domain'] = domain
     for category in data:
@@ -477,6 +482,12 @@ def insert_product_listing(session, data, table='ProductListing', domain='amazon
 
 
 def insert_daily_product_listing(session, data, table='DailyProductListing'):
+    """
+    Insert data as a row into DailyProductListing table
+
+    Args:
+        data = Nested dictionary with listing details e.g. data[category][curr_page][title]['is_duplicate']
+    """
     row = dict()
     for category in data:
         for page_num in data[category]:
@@ -583,7 +594,7 @@ def insert_product_qanda(session, qanda, product_id, table='QandA', duplicate_se
         obj = table_map[table]()
         [setattr(obj, key, val) for key, val in row.items()]
         session.add(obj)
-    # TODO: Change this later outisde the loop
+    # TODO: Change this later outside the loop
     try:
         session.commit()
         return True
@@ -674,6 +685,7 @@ def query_table(session, table, query='all', filter_cond=None):
                 return instance
             except:
                 return None
+        # TODO: How does this work? Not used anywhere
         elif isinstance(filter_cond, list):
             # Filter IN
             filter_type = filter_cond[0]
@@ -681,7 +693,7 @@ def query_table(session, table, query='all', filter_cond=None):
             try:
                 if filter_type == 'in':
                     assert len(filter_cond) == 3
-                    column = filter_cond[1]
+                    column = filter_cond[1] 
                     choices = filter_cond[2]
                     instance = session.query(table_map[table]).filter(getattr(table_map[table], column).in_(choices)).all()
                     return instance
@@ -726,6 +738,31 @@ def fetch_product_ids(session, table, categories):
             result.extend([getattr(instance, 'product_id') for instance in instances])
         except:
             result.extend([])
+    return result
+
+def fetch_product_urls_unscrapped_details(session,category,table="ProductListing"):
+    result = []
+    if category is None:
+        raise ValueError("Category can't be empty")
+    try:
+        tbl =  table_map[table]
+
+        # Get max date for each duplicate_set
+        maxdates = session.query(
+            func.max(tbl.detail_completed),
+            tbl.product_url,
+            tbl.duplicate_set
+        ).group_by(tbl.duplicate_set).all()
+        
+        # Add all list entries unless the last scrapped date (detail_scrapped) is less than 1 week old       
+        for maxdate in maxdates:
+            if(isinstance(maxdate[0],datetime.datetime)):
+                if ((datetime.datetime.today() - maxdate[0]).days<7):
+                    continue
+            result.append(maxdate[1]) #Domain + product_url
+    except Exception as ex:
+        logger.error("Exception in fetching product ids"+ex)
+    
     return result
 
 
