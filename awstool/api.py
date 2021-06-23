@@ -148,7 +148,7 @@ def pretty_print_instances(ec2):
         print("--------------------")
 
 
-def create_instance(ec2, security_group_id, key_pair='medium_keypair', volume_size=64, image_id='ami-0cda377a1b884a1bc', instance_type='t2.medium', num_instances=1):
+def create_instance(ec2, security_group_id, key_pair=config('KEY_PAIR_NAME'), volume_size=64, image_id=config('INSTANCE_AMI'), instance_type='t2.medium', num_instances=1):
     '''
         volume_size (GB)
         instance_type
