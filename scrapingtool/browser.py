@@ -30,7 +30,7 @@ connection_params = db_manager.get_credentials()
 
 def run_category(browser='Firefox'):
     options = Options()
-    options.headless = False
+    options.headless = True
     if browser == 'Chrome':
         # Use chrome
         driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
