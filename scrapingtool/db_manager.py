@@ -740,6 +740,7 @@ def fetch_product_ids(session, table, categories):
             result.extend([])
     return result
 
+# Fetch unscrapped product urls - based on category
 def fetch_product_urls_unscrapped_details(session,category,table="ProductListing"):
     result = []
     if category is None:
@@ -752,7 +753,7 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
             func.max(tbl.detail_completed),
             tbl.product_url,
             tbl.duplicate_set
-        ).group_by(tbl.duplicate_set).all()
+        ).group_by(tbl.duplicate_set).filter(ProductListing.category == category).all()
         
         # Add all list entries unless the last scrapped date (detail_scrapped) is less than 1 week old       
         for maxdate in maxdates:

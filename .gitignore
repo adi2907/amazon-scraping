@@ -3,3 +3,5 @@ dumps
 .env
 data
 logs
+.log
+.vscode

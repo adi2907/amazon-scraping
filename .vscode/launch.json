@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            //"args": ["--categories","smartphones","--detail","--no_listing","--num_workers","2"]
-            "args":["category"],
+            "args": ["--categories","smartphones","--detail","--no_listing","--num_workers","5"]
+            //"args":["category"],
         },
     ]
 }
