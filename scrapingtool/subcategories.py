@@ -1,5 +1,13 @@
 # Here, all fields must belong to ProductDetails ('field' parameter)
 subcategory_dict = {
+    'smartphones': {
+        'Price': {
+            'budget (<10000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A1318505031&dc&qid=1604122900&rnid=1318502031&ref=sr_nr_p_36_1',
+            'economy (10000-20000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A1000000-2000000&dc&qid=1604122922&rnid=1318502031&ref=sr_nr_p_36_1',
+            'mid premium (20000-30000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A2000000-3000000&dc&qid=1604122997&rnid=1318502031&ref=sr_nr_p_36_1',
+            'premium (>30000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A3000000-9000000&dc&qid=1604123115&rnid=1318502031&ref=sr_pg_1',
+        },
+    },
     'headphones': {
         'Type': {
             'wired': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564046031&dc&fst=as%3Aoff&qid=1599294897&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',
@@ -13,14 +21,6 @@ subcategory_dict = {
             '2000-3000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A200000-300000&dc&fst=as%3Aoff&qid=1599295874&rnid=1318502031&ref=sr_nr_p_36_1',
             '3000-5000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A300000-500000&dc&fst=as%3Aoff&qid=1599295929&rnid=1318502031&ref=sr_nr_p_36_5',
             '>5000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A500000-5000000&dc&fst=as%3Aoff&qid=1599296034&rnid=1318502031&ref=sr_nr_p_36_5',
-        },
-    },
-    'smartphones': {
-        'Price': {
-            'budget (<10000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A1318505031&dc&qid=1604122900&rnid=1318502031&ref=sr_nr_p_36_1',
-            'economy (10000-20000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A1000000-2000000&dc&qid=1604122922&rnid=1318502031&ref=sr_nr_p_36_1',
-            'mid premium (20000-30000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A2000000-3000000&dc&qid=1604122997&rnid=1318502031&ref=sr_nr_p_36_1',
-            'premium (>30000)': 'https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A3000000-9000000&dc&qid=1604123115&rnid=1318502031&ref=sr_pg_1',
         },
     },
     'ceiling fan': {
