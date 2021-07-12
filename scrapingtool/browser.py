@@ -144,7 +144,6 @@ def run_category(browser='Firefox'):
                                 print("Tag element not found")
                             
                             url = e.get_attribute("href")
-                            print(url)
 
                             if url is not None:
                                 if not url.startswith(server_url):
@@ -241,79 +240,65 @@ def run_subcategory(browser='Firefox'):
                             os.remove(filename)
                     
                     curr = 1
-
-                    print(f"GET URL {url}")
-                    driver.get(url)
-
+                    
+                    
                     while True:
-
+                        print(f"GET URL {url}")
+                        driver.get(url)
+                        
                         print(f"At Page Number {curr}")
                         print("Sleeping...")
                         time.sleep(12) # Wait for some time to load
 
                         html = driver.page_source.encode('utf-8', errors='ignore')
-
-                        try:
-                            captcha = driver.find_element_by_id("captchacharacters")
-                            print("Fuck. Captcha")
-                            time.sleep(10)
-                            driver.get(url)
-                            continue
-                        except:
-                            pass
                 
                         with open(f'dumps/{category}_{subcategory_name}_{curr}.html', 'wb') as f:
                             f.write(html)
 
                         print("Written html. Sleeping...")
                         time.sleep(2)
-
-                        flag = True
-
+                        
+                        # Find link of next page, if "Next" link is not enabled, then quit
                         try:
-                            elements = driver.find_elements_by_class_name("a-last")
-                        except:
+                            element = driver.find_element_by_css_selector(".a-pagination .a-last")
+                            if element.is_enabled() == False:
+                                break
+                        except Exception as ex: #Link not found
+                            print(ex)
                             print("Next page not found. Quitting...")
                             break
 
-                        for element in elements:
-                            try:
-                                #url = element.get_attribute("href")
-                                e = driver.find_element_by_css_selector(".a-last > a:nth-child(1)")
-                                url = e.get_attribute("href")
-                                print(url)
-                                if url is not None:
-                                    if not url.startswith(server_url):
-                                        url = server_url + url
-                                    print(f"URL is {url}")
-                                    curr += 1
-                                    alpha = 1000
-                                    while alpha <= 5000:
-                                        try:
-                                            actions = ActionChains(driver)
-                                            driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
-                                            time.sleep(5)
-                                            actions.move_to_element(e)
-                                            time.sleep(2)
-                                            actions.click(element).perform()
-                                            time.sleep(5)
-                                            break
-                                        except Exception as ex:
-                                            print(ex)
-                                            print(f"Alpha is {alpha}. Now incrementing")
-                                            alpha += 500
-                                            time.sleep(1)
-
-                                    print("Went to the next URL")
-                                    flag = False
-                                    break
-                            except Exception as ex:
-                                print(ex)
-                                continue
-
-                        if flag == True:
+                        #Child link of this element
+                        try:
+                            e = element.find_element_by_tag_name("a")
+                        except:
+                            print("Tag element not found")
                             break
+                        
+                        url = e.get_attribute("href")
 
+                        if url is not None:
+                            print(f"URL is {url}")
+                            curr += 1
+                            alpha = 1000 #Changes scroll height for all pages
+                            while alpha <= 5000:
+                                try:
+                                    actions = ActionChains(driver)
+                                    driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
+                                    time.sleep(5)
+                                    actions.move_to_element(element)
+                                    time.sleep(2)
+                                    actions.click(element).perform()
+                                    time.sleep(5)
+                                    break
+                                except Exception as ex:
+                                    print(ex)
+                                    print(f"Alpha is {alpha}. Now incrementing")
+                                    alpha += 500
+                                    time.sleep(1)
+
+                            print("Went to the next URL")
+                                
                         print("Sleeping...")
                         time.sleep(2)
         driver.quit()
