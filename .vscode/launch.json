@@ -11,7 +11,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             //"args": ["--categories","smartphones","--detail","--no_listing","--num_workers","5"]
-            "args":["subcategory"],
+            "args":["category"],
+            //"args":["--category","smartphones","--start_date","2021-01-01","--end_date","2021-06-30"],
         },
     ]
 }

@@ -53,6 +53,16 @@ def get_product_mapping(soup) -> dict:
     
     return product_map
 
+# Returns total number of products for the listing
+def get_total_products_number(soup):
+    # Gets response like "1-24 of 334 results for smartphones"
+    result_info_bar = soup.find("div",class_="a-section a-spacing-small a-spacing-top-small").text
+    
+    # Extract the total number i.e 334 and convert to number
+    w=re.findall("\s[0-9]+\s", result_info_bar)[0]
+    return int(w)
+
+
 
 def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
     """Fetches the product details for all the products for a single page
@@ -87,6 +97,7 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
         else:
             product_info[title]['product_url'] = None
             product_info[title]['product_id'] = None
+            logger.warning(f"Product url and id data missing for product {title}")
         
         rating_row = product_bar.find("div", class_="a-row a-size-small")
         if rating_row is not None:
@@ -98,6 +109,7 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
                         total_ratings = row.attrs['aria-label'].strip()
         else:
             avg_rating, total_ratings = None, None
+            logger.warning(f"Avg and total ratings missing for {title}")
         
         
         product_info[title]['avg_rating'] = avg_rating
@@ -127,6 +139,7 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
                         product_info[title]['price'] += '.0'
         else:
             product_info[title]['price'] = None
+            logger.warning(f"Price missing for {title}")
 
         # If the price is reduced, get the old price as well
         old_price = product_bar.find("span", class_="a-price a-text-price")
@@ -136,6 +149,7 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
                 product_info[title]['old_price'] = product_info[title]['old_price'][1:]
         else:
             product_info[title]['old_price'] = None
+            logger.warning(f"Old Price missing for {title}")
         
         # Check if this item is currently deliverable using secondary pricing information
         secondary_information = product_bar.find("span", class_="a-color-price")

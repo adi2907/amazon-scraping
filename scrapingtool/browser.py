@@ -2,6 +2,7 @@ import glob
 import os
 import time
 import traceback
+import math
 from datetime import datetime
 from string import Template
 
@@ -25,7 +26,7 @@ from utils import (category_to_domain, create_logger, domain_map, domain_to_db,
 logger = create_logger('browser')
 
 today = datetime.today().strftime("%d-%m-%y")
-
+PRODUCTS_PER_PAGE = 25
 connection_params = db_manager.get_credentials()
 
 def run_category(browser='Firefox'):
@@ -44,10 +45,8 @@ def run_category(browser='Firefox'):
         for domain in domain_map:
             logger.info(f"Domain: {domain}")
             curr = 1
-
-            server_url = f'https://www.{domain}'
             
-            try:
+            try: #Initialize DB ses
                 engine, Session = db_manager.connect_to_db(domain_to_db[domain], connection_params)
                 engine.execute(f"UPDATE ProductListing SET is_active = False")
             except Exception as ex:
@@ -62,18 +61,18 @@ def run_category(browser='Firefox'):
 
                     logger.info(f"Scraping category {category} with URL {url}")
                     
+                    # page number
                     curr = 1
 
                     print(f"GET URL {url}")
                     driver.get(url)
-                    flag = False
                     while True:
                         if url == prev_url:
                             logger.warning(f"Got the same URL {url}. Skipping the rest...")
                             break
                         print(f"At Page Number {curr}")
                         print("Sleeping...")
-                        time.sleep(12) # Wait for some time to load
+                        time.sleep(5) # Wait for some time to load
 
                         html = driver.page_source.encode('utf-8', errors='ignore')
 
@@ -90,7 +89,7 @@ def run_category(browser='Firefox'):
                         try:
                             soup = BeautifulSoup(html, 'lxml')
                             product_info, _ = parse_data.get_product_info(soup)
-                          
+                            
                             page_results = dict()
                             page_results[category] = dict()
                             page_results[category][curr] = product_info
@@ -107,9 +106,6 @@ def run_category(browser='Firefox'):
                             if not status:
                                 logger.warning(f"Error while inserting DAILY LISTING Page {curr} of category - {category}")
 
-                            # If the "Link" was disabled in the last iteration, quit the program
-                            if flag == True:
-                                break
 
                         except Exception as ex:
                             traceback.print_exc()
@@ -127,56 +123,66 @@ def run_category(browser='Firefox'):
                         try:
                             element = driver.find_element_by_css_selector(".a-pagination .a-last")
                             if element.is_enabled() == False:
-                                flag = True
+                                print("link  disabled")
+                                # Check if number of pages correspond to total elements
+                                total_products = parse_data.get_total_products_number(soup)
+                                if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                                    logger.warning(f"{category} category: No of items mismatch")
+                                break
                         except Exception as ex: #Link not found
                             print(ex)
+                            total_products = parse_data.get_total_products_number(soup)
+                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                                logger.warning(f"{category} category: No of items mismatch")
                             print("Next page not found. Quitting...")
                             break
 
                         # Click on next link
+                        
+                        tmp = url
+                        #Child link of this element
                         try:
-                            tmp = url
-                            #Child link of this element
-                            try:
-                                e = element.find_element_by_tag_name("a")
-                            except:
-                                flag = True
-                                print("Tag element not found")
-                            
-                            url = e.get_attribute("href")
+                            e = element.find_element_by_tag_name("a")
+                        except:
+                            print("Tag element not found")
+                            total_products = parse_data.get_total_products_number(soup)
+                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                                logger.warning(f"{category} category: No of items mismatch")
+                            break
+                        
+                        url = e.get_attribute("href")
 
-                            if url is not None:
-                                if not url.startswith(server_url):
-                                    url = server_url + url
-                                print(f"URL is {url}")
-                                curr += 1
-                                alpha = 1000 #Changes scroll height for all pages
-                                while alpha <= 5000:
-                                    try:
-                                        actions = ActionChains(driver)
-                                        driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
-                                        time.sleep(5)
-                                        #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                                        actions.move_to_element(element)
-                                        time.sleep(2)
-                                        actions.click(element).perform()
-                                        time.sleep(5)
-                                        break
-                                    except Exception as ex:
-                                        print(ex)
-                                        print(f"Alpha is {alpha}. Now incrementing")
-                                        alpha += 500
-                                        time.sleep(1)
+                        if url is not None:
+                            print(f"URL is {url}")
+                            curr += 1
+                            alpha = 1000 #Changes scroll height for all pages
+                            while alpha <= 5000:
+                                try:
+                                    actions = ActionChains(driver)
+                                    driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
+                                    time.sleep(5)
+                                    #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                                    actions.move_to_element(element)
+                                    time.sleep(2)
+                                    actions.click(element).perform()
+                                    time.sleep(5)
+                                    break
+                                except Exception as ex:
+                                    print(ex)
+                                    print(f"Alpha is {alpha}. Now incrementing")
+                                    alpha += 500
+                                    time.sleep(1)
 
-                                print("Went to the next URL")
-                                prev_url = tmp
+                            print("Went to the next URL")
+                            prev_url = tmp
+                        else:
+                            total_products = parse_data.get_total_products_number(soup)
+                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                                logger.warning(f"{category} category: No of items mismatch")
+                            break
                                 
-                        except Exception as ex:
-                            print(ex)
-                            continue
-
-                        print("Sleeping...")
-                        time.sleep(2)
+                    print("Sleeping...")
+                    time.sleep(2)
                 
             except Exception as ex:
                 print(ex)
@@ -219,7 +225,6 @@ def run_subcategory(browser='Firefox'):
 
     try:
         for category in subcategory_dict:
-            server_url = 'https://' + category_to_domain[category]
             for subcategory in subcategory_dict[category]:
                 for subcategory_name in subcategory_dict[category][subcategory]:
                     value = subcategory_dict[category][subcategory][subcategory_name]
@@ -240,8 +245,7 @@ def run_subcategory(browser='Firefox'):
                             os.remove(filename)
                     
                     curr = 1
-                    
-                    
+                          
                     while True:
                         print(f"GET URL {url}")
                         driver.get(url)
@@ -262,9 +266,15 @@ def run_subcategory(browser='Firefox'):
                         try:
                             element = driver.find_element_by_css_selector(".a-pagination .a-last")
                             if element.is_enabled() == False:
+                                total_products = parse_data.get_total_products_number(soup)
+                                if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                                    logger.warning(f"{subcategory} subcategory: No of items mismatch")
                                 break
                         except Exception as ex: #Link not found
                             print(ex)
+                            total_products = parse_data.get_total_products_number(soup)
+                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                                logger.warning(f"{subcategory} subcategory: No of items mismatch")
                             print("Next page not found. Quitting...")
                             break
 
@@ -273,6 +283,9 @@ def run_subcategory(browser='Firefox'):
                             e = element.find_element_by_tag_name("a")
                         except:
                             print("Tag element not found")
+                            total_products = parse_data.get_total_products_number(soup)
+                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                                logger.warning(f"{subcategory} subcategory: No of items mismatch")
                             break
                         
                         url = e.get_attribute("href")
@@ -307,63 +320,6 @@ def run_subcategory(browser='Firefox'):
         driver.quit()
 
 
-def insert_category_to_db(category, domain='all'):
-    # Deprecated function: No longer needed
-    DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
-    if not os.path.exists(DUMP_DIR):
-        raise ValueError("Dump Directory not present")
-
-    from sqlalchemy.orm import sessionmaker
-
-    if category != 'all':
-        raise ValueError(f"Need to provide category = all")
-
-    for _domain in domain_map:
-        if domain == 'all':
-            pass
-        else:
-            if _domain != domain:
-                continue
-        try:
-            try:
-                engine, Session = db_manager.connect_to_db(domain_to_db[_domain], connection_params)
-            except Exception as ex:
-                traceback.print_exc()
-                logger.critical(f"Error during initiation session: {ex}")
-
-            for category, _ in domain_map[domain].items():
-
-                files = sorted(glob.glob(os.path.join(DUMP_DIR, f"listing_{category}_*")), key=lambda x: int(x.split('.')[0].split('_')[-1]))
-
-                final_results = dict()
-
-                final_results[category] = dict()
-
-                for idx, filename in enumerate(files):
-                    with open(filename, 'rb') as f:
-                        html = f.read()
-
-                    soup = BeautifulSoup(html, 'lxml')
-                    product_info, _ = parse_data.get_product_info(soup)
-
-                    final_results[category][idx + 1] = product_info
-
-                    page_results = dict()
-                    page_results[category] = dict()
-                    page_results[category][idx + 1] = final_results[category][idx + 1]
-
-                    with db_manager.session_scope(Session) as session:
-                        status = db_manager.insert_product_listing(session, page_results, domain=_domain)
-
-                    if not status:
-                        print(f"Error while inserting Page {idx + 1} of category - {category}")
-                        continue
-        finally:
-            try:
-                db_manager.close_all_db_connections(engine, Session)
-            except Exception as ex:
-                logger.critical(f"Error when trying to close all sessions: {ex}")
-
 
 if __name__ == '__main__':
     import sys
@@ -374,17 +330,6 @@ if __name__ == '__main__':
         elif sys.argv[1] == 'category':
             print("Category")
             run_category()
-        elif sys.argv[1] == 'listing':
-            if len(sys.argv) == 4:
-                category = sys.argv[2]
-                domain = sys.argv[3]
-                print("Inserting listing")
-                if category == 'all' and domain == 'all':
-                    insert_category_to_db('all', domain='all')
-                else:
-                    insert_category_to_db(category, domain)
-            else:
-                print("Need to specify category, domain")
         else:
             print("Invalid argument")
     else:

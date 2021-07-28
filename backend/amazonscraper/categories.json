@@ -10,7 +10,7 @@
         }
     },
     "domains": {
-        "amazon.in": "freshdb",
+        "amazon.in": "amazonin",
         "amazon.com": "amazonusa"
     }
 }
