@@ -17,7 +17,7 @@ url_template = Template('https://www.amazon.in/s?k=$category&ref=nb_sb_noss_2')
 
 customer_reviews_template = Template('https://www.amazon.in/review/widgets/average-customer-review/popover/ref=acr_search__popover?ie=UTF8&asin=$PID&ref=acr_search__popover&contextId=search')
 
-qanda_template = Template('https://www.amazon.in/ask/questions/asin/$PID/$PAGE/ref=ask_dp_iaw_ql_hza')
+qanda_template = Template('https://www.amazon.in/ask/questions/asin/$PID/$PAGE/ref=ask_dp_iaw_ql_hza?sort=$SORT_TYPE')
 
 # Not needed anymore
 listing_templates = [
@@ -35,6 +35,8 @@ old_listing_templates = [
 #Todo: Find a way to figure out the root path
 #root_dir = os.path.join(os.path.abspath(".."))
 root_dir = os.getcwd()
+#root_dir = os.path.dirname(os.path.abspath(__file__))
+print(root_dir)
 # If categories.json exists in currnet or parent directory
 if not os.path.exists(os.path.join(root_dir,'categories.json')):
     raise ValueError(f"categories.json file not found")

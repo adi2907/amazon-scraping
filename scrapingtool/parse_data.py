@@ -557,26 +557,10 @@ def get_qanda(soup, page_num=None):
     return results, next_url
 
 
-def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
+def get_customer_reviews(soup, content={}):
     # Now capture the reviews
     reviews = soup.find_all("div", id=re.compile(r'customer_review-.+'))
-    num_reviews = None
-
-    if first_request == True:
-        # Get the number of reviews
-        num_reviews = soup.find("span", {"data-hook": "cr-filter-info-review-count"})
-        if num_reviews is not None:
-            try:
-                num_reviews = num_reviews.text.strip().split() # Showing, 1-5, of, 5, reviews
-                try:
-                    num_reviews = int(num_reviews[-2])
-                except:
-                    num_reviews = 100000
-            except Exception as ex:
-                print(ex)
-    else:
-        num_reviews = None
-
+    
     if reviews is None:
         content['reviews'] = None
     else:        
@@ -693,10 +677,7 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
                     mapping = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9}
                     data['helpful_votes'] = mapping[value]
 
-            data['page_num'] = page_num
-            
             review_data.append(data)
-
         content['reviews'] = review_data
     
     # Now get the next page url, if there is one
@@ -708,7 +689,7 @@ def get_customer_reviews(soup, content={}, page_num=None, first_request=False):
             next_url = next_url.find("a")
             if next_url is not None:
                 next_url = next_url.attrs['href']
-    return content, next_url, num_reviews
+    return content, next_url
 
 
 if __name__ == '__main__':
@@ -723,7 +704,7 @@ if __name__ == '__main__':
 
     #soup = init_parser('mobile/sample')
     soup = init_parser('haircolor_reviews')
-    results = get_customer_reviews(soup, page_num=2, first_request=True)
+    results = get_customer_reviews(soup)
     #results = get_product_info(soup)
     print(results)
     exit(0)

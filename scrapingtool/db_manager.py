@@ -15,7 +15,7 @@ import pymysql
 from decouple import UndefinedValueError, config
 from pytz import timezone
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        MetaData, String, Table, Text, create_engine, exc,func,and_,or_)
+                        MetaData, String, Table, Text, desc,create_engine, exc,func,and_,or_)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import FlushError, NoResultFound
@@ -584,8 +584,8 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
         return False
 
 
-def insert_product_qanda(session, qanda, product_id, table='QandA', duplicate_set=None):
-    for pair in qanda:
+def insert_product_qanda(session, qandas, product_id, table='QandA', duplicate_set=None):
+    for pair in qandas:
         row = {key: (value if not isinstance(value, list) and not isinstance(value, dict) else json.dumps(value)) for key, value in pair.items()}
         # Add product id
         row['product_id'] = product_id
@@ -622,7 +622,6 @@ def insert_product_reviews(session, reviews, product_id, table='Reviews', duplic
             row['product_info'] = json.dumps(review['product_info'])
         row['verified_purchase'] = review['verified_purchase']
         row['helpful_votes'] = review['helpful_votes']
-        row['page_num'] = review['page_num']
         row['is_duplicate'] = False
         row['duplicate_set'] = duplicate_set
         obj = table_map[table]()
@@ -743,6 +742,13 @@ def fetch_product_ids(session, table, categories):
 # Fetch unscrapped product urls - based on category
 def fetch_product_urls_unscrapped_details(session,category,table="ProductListing"):
     result = []
+    # try:
+    #     queries = session.query(table_map[table]).filter(and_(ProductListing.category==category,ProductListing.total_ratings>100,ProductListing.total_ratings<1000,ProductListing.detail_completed == None)).all()
+    # except Exception as ex:
+    #     print(ex)
+    
+    # for query in queries:
+    #     result.append(query.product_url)
     if category is None:
         raise ValueError("Category can't be empty")
     try:
@@ -753,7 +759,7 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
             func.max(tbl.detail_completed),
             tbl.product_url,
             tbl.duplicate_set
-        ).group_by(tbl.duplicate_set).filter(ProductListing.category == category).all()
+        ).group_by(tbl.duplicate_set).filter(and_(ProductListing.category == category,ProductListing.total_ratings>500)).all()
         
         # Add all list entries unless the last scrapped date (detail_scrapped) is less than 1 week old       
         for maxdate in maxdates:
@@ -766,6 +772,20 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
     
     return result
 
+def get_last_review_date(session,product_id,table="Reviews"):
+    try:
+        obj = session.query(table_map[table]).filter(Reviews.product_id == product_id).order_by(desc(Reviews.review_date)).one()
+        return obj.review_date
+    except: # No row was found
+        return None
+    
+def get_last_qanda_date(session,product_id,table="QandA"):
+    try:
+        obj = session.query(table_map[table]).filter(QandA.product_id == product_id).order_by(desc(QandA.date)).one()
+        return obj.review_date
+    except: # No row was found
+        return None
+    
 
 def add_column(engine, table_name: str, column: Column):
     column_name = column.compile(dialect=engine.dialect)
@@ -2005,7 +2025,7 @@ if __name__ == '__main__':
     parser.add_argument('--restore_reviews', help='Restore reviews', default=False, action='store_true')
     parser.add_argument('--finalize_reviews', help='Finalize Reviews', default=False, action='store_true')
     parser.add_argument('--find_inactive_products', help='Find the number of inactive products', default=False, action='store_true')
-
+    parser.add_argument('--get_last_review_date', help='Get the date of the last review given the product ID', default=None, type=str)
     parser.add_argument('--import_product_data', help='Import Data (Duplicate Sets)', default=False, action='store_true')
 
     parser.add_argument('--csv', help='An external CSV file', type=str, default=None)
@@ -2016,6 +2036,8 @@ if __name__ == '__main__':
     parser.add_argument('--insert_sentiment_breakdown', help='Inserts the sentiment summary to the DB', default=False, action='store_true')
     parser.add_argument('--insert_sentiment_reviews', help='Inserts the sentiment reviews to the DB', default=False, action='store_true')
     parser.add_argument('--filename', help='Filename', default=None, type=str)
+    
+
 
     args = parser.parse_args()
 
@@ -2044,6 +2066,7 @@ if __name__ == '__main__':
     _restore_reviews = args.restore_reviews
     _finalize_reviews = args.finalize_reviews
     _find_inactive_products = args.find_inactive_products
+    _get_last_review_date = args.get_last_review_date
 
     _csv = args.csv
     _table = args.table
@@ -2148,6 +2171,8 @@ if __name__ == '__main__':
         update_product_data(engine, dump=False)
     if _find_inactive_products == True:
         find_inactive_products(engine, Session)
+    if _get_last_review_date is not None:
+        get_last_review_date(session,_get_last_review_date)
     if _import_product_data == True:
         if _csv is None:
             raise ValueError(f"Must provide a csv file")

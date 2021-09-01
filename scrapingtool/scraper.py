@@ -6,6 +6,9 @@ import os
 import pickle
 import random
 import re
+
+from sqlalchemy.sql.operators import is_
+import parse_data
 import signal
 import sqlite3
 import sys
@@ -13,7 +16,7 @@ import time
 import traceback
 from collections import OrderedDict
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from string import Template
 
 import requests
@@ -153,15 +156,8 @@ logger.info(f"USE_DB is - {USE_DB}")
 session = requests.Session()
 
 # Use a proxy if possible
-my_proxy = proxy.Proxy(OS=OS, use_tor=USE_TOR, use_proxy=USE_PROXY)
+my_proxy = proxy.Proxy(OS=OS, use_proxy=USE_PROXY) if USE_PROXY == True else None
 
-
-try:
-    my_proxy.change_identity()
-except:
-    logger.warning('No Proxy available via Tor relay. Mode = Normal')
-    logger.newline()
-    my_proxy = None
 
 # Database Session setup
 try:
@@ -456,13 +452,13 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
                 logger.info(f"Overriding: Scraping FULL Details for {product_id}")
 
             if rescrape == 0:
-                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=0)
+                _ = scrape_product_detail(product_url,category, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=0)
             elif rescrape == 1:
                 # Only details
-                _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=_date, listing_url=curr_url, total_ratings=0, incomplete=True)
+                _ = scrape_product_detail(product_url,category, review_pages=0, qanda_pages=0, threshold_date=_date, listing_url=curr_url, total_ratings=0, incomplete=True)
             elif rescrape == 2:
                 # Whole thing again
-                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=0, incomplete=True, jump_page=jump_page)
+                _ = scrape_product_detail(product_url,category, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=0, incomplete=True, jump_page=jump_page)
 
             idx += 1
         except Exception as ex:
@@ -478,7 +474,7 @@ def process_product_detail(category, base_url, num_pages, change=False, server_u
 
         if my_proxy is not None and no_refer == False:
             if num_products is None or idx <= num_products:
-                response = my_proxy.get(curr_url, referer=server_url + product_url)
+                response = my_proxy.get(curr_url, server_url + product_url)
                 time.sleep(random.randint(3, 5)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
             elif num_products is not None and idx > num_products:
                 # We're done for this product
@@ -555,9 +551,9 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 time.sleep(random.randint(2, 5))
             logger.info(f"Proxy Cookies = {my_proxy.cookies}")
             if no_refer == True:
-                response = my_proxy.get(base_url, ref_count='constant')
+                response = my_proxy.get(base_url)
             else:
-                response = my_proxy.get(base_url, referer=server_url)
+                response = my_proxy.get(base_url,server_url)
             setattr(my_proxy, 'category', category)
             logger.info(f"Proxy Cookies = {my_proxy.cookies}")
         else:
@@ -612,7 +608,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 if my_proxy is None:
                     response = session.get(base_url, headers=headers, cookies=cookies)
                 else:
-                    response = my_proxy.get(base_url, referer=curr_url)
+                    response = my_proxy.get(base_url,curr_url)
                 
                 if hasattr(response, 'cookies'):
                     cookies = {**cookies, **dict(response.cookies)}
@@ -859,13 +855,13 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                                 total_ratings = int(value['total_ratings'].replace(',', '').replace('.', ''))
                             
                             if rescrape == 0:
-                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings)
+                                _ = scrape_product_detail(product_url,category, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings)
                             elif rescrape == 1:
                                 # Only details
-                                _ = scrape_product_detail(category, product_url, review_pages=0, qanda_pages=0, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True)
+                                _ = scrape_product_detail(product_url,category, review_pages=0, qanda_pages=0, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True)
                             elif rescrape == 2:
                                 # Whole thing again
-                                _ = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True, jump_page=jump_page)
+                                _ = scrape_product_detail(product_url,category, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=_date, listing_url=curr_url, total_ratings=total_ratings, incomplete=True, jump_page=jump_page)
 
                             idx += 1
                         except Exception as ex:
@@ -880,7 +876,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
 
                         if my_proxy is not None and no_refer == False:
                             if num_products is None or idx <= num_products:
-                                response = my_proxy.get(curr_url, referer=server_url + product_url)
+                                response = my_proxy.get(curr_url, server_url + product_url)
                                 time.sleep(random.randint(3, 5)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
                             elif num_products is not None and idx > num_products:
                                 # We're done for this product
@@ -925,7 +921,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
                 if my_proxy is None:       
                     response = session.get(server_url + page_url, headers={**headers, 'referer': curr_url}, cookies=cookies)
                 else:
-                    response = my_proxy.get(server_url + page_url, referer=curr_url, ref_count='constant')
+                    response = my_proxy.get(server_url + page_url, curr_url)
                 
                 if DEVELOPMENT == True and detail == False and category == 'headphones':
                     logger.info(f"CURR PAGE: {curr_page}, next URL = {server_url + page_url}")
@@ -997,7 +993,7 @@ def fetch_category(category, base_url, num_pages, change=False, server_url='http
             remove_from_cache(category)
 
 
-def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None, total_ratings=None, incomplete=False, jump_page=0):
+def scrape_product_detail(product_url,category=None, review_pages=None, qanda_pages=None, threshold_date=None, listing_url=None, total_ratings=None, incomplete=False, jump_page=0):
     """
     Scrapes the product details + qanda + reviews, given the detail URL of a product
 
@@ -1014,12 +1010,10 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     global use_multithreading
     global cache_file, use_cache
     global USE_DB
-    # session = requests.Session()
-    server_url = 'https://www.amazon.in'
-
-    domain = category_to_domain[category]
-
-    server_url = 'https://' + domain
+    # set default domain
+    domain = category_to_domain[category] if category is not None else 'amazon.in'
+    
+    server_url = 'https://www.' + domain
 
     product_id = parse_data.get_product_id(product_url)
 
@@ -1027,6 +1021,14 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     connection_params = db_manager.get_credentials()
     _engine, SessionFactory = db_manager.connect_to_db(domain_to_db[domain], connection_params)
 
+    reviews_completed = False
+    qanda_completed = False
+    detail_completed = False
+    
+    #Assign threshold_date if none
+    if threshold_date is None:
+        threshold_date = datetime.datetime.now() - datetime.timedelta(months=3)
+        
     logger.info(f"Going to Details page for PID {product_id}")
 
     with db_manager.session_scope(SessionFactory) as db_session:
@@ -1056,7 +1058,7 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
         qanda_pages = 50
     
     if my_proxy is None:
-        response = session.get(server_url, headers=headers)
+        response = session.get(server_url, headers=headers,cookies=cookies)
     else:
         response = my_proxy.get(server_url)
         setattr(my_proxy, 'category', category)
@@ -1075,9 +1077,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             response = session.get(server_url + product_url, headers=headers, cookies=cookies)
         else:
             if listing_url is not None:
-                response = my_proxy.get(server_url + product_url, referer=listing_url, product_url=product_url)
+                response = my_proxy.get(server_url + product_url, listing_url)
             else:
-                response = my_proxy.get(server_url + product_url, product_url=product_url)
+                response = my_proxy.get(server_url + product_url)
         
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
@@ -1100,8 +1102,6 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
             logger.warning("Trying again...")
             time.sleep(random.randint(3, 10) + random.uniform(0, 4)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-            if my_proxy is not None:
-                my_proxy.goto_product_listing(category)
 
     details['product_id'] = product_id # Add the product ID
     details['duplicate_set'] = duplicate_set
@@ -1116,31 +1116,16 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             mydict[f"IS_SPONSORED_{product_id}"] = sponsored
     
     # Validate some important fields, store into cache before finally inserting into DB later
-    try:
-        important_fields = ['product_title', 'description', 'product_details', 'reviews_url', 'customer_qa']
-        empty_fields = []
-        for field in important_fields:
-            if details.get(field) in [None, "", {}, []]:
-                empty_fields.append(field)
-        
-        if empty_fields != []:
-            msg = ','.join([field for field in empty_fields])
-            raise ValueError(f"For Product ID {product_id}, fields {msg} is empty")
-    except Exception as ex:
-        logger.critical(f"Error during parsing details: {ex}")
-        error_msg = str(ex)
-        try:
-            details['alert'] = True
-            with SqliteDict(cache_file, autocommit=True) as _mydict:
-                key = f"DETAIL_ALERT_{category}_{today}"
-                if key not in _mydict:
-                    _mydict[key] = list()
-                alerts = _mydict[key]
-                alerts.append(error_msg)
-                _mydict[key] = alerts
-        except Exception as ex:
-            logger.critical(f"Error when trying to store alert for PID {product_id}: {ex}")
-
+    important_fields = ['product_title', 'description', 'product_details', 'reviews_url', 'customer_qa']
+    empty_fields = []
+    for field in important_fields:
+        if details.get(field) in [None, "", {}, []]:
+            empty_fields.append(field)
+    
+    if empty_fields != []:
+        msg = ','.join([field for field in empty_fields])
+        logger.critical(f"{msg} fields are missing in product details" )
+    
 
     if USE_DB == True:
         # Insert to the DB
@@ -1148,7 +1133,9 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             with db_manager.session_scope(SessionFactory) as db_session:
                 status = db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
                 # if Database insertion fails, store in cache to examine later
-                if status == False:
+                if status == True:
+                    detail_completed = True
+                else:
                     try:
                         store_to_cache(f"DETAILS_{product_id}", details, html=html)
                     except NameError:
@@ -1163,463 +1150,44 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     
     time.sleep(4)
 
-    curr_reviews = -1
-
-    if incomplete == True:
-        # Don't scrape QandA
-        qanda_pages = 0
-
-        if jump_page > 0:
-            curr_reviews = REVIEWS_PER_PAGE * jump_page
-        else:
-            # Start from page 0
-            with db_manager.session_scope(SessionFactory) as db_session:
-                num_reviews_none = 0
-                num_reviews_not_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num != None).count()
-                
-                if num_reviews_not_none == 0:
-                    num_reviews_none = db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id, db_manager.Reviews.page_num == None).count()
-                
-                curr_reviews = max(num_reviews_not_none, num_reviews_none)
-    
-    # Get the qanda for this product TODO: investigate customer_lazy flag
-    if 'customer_lazy' in details and details['customer_lazy'] == True:
-        qanda_url = details['customer_qa']
-        curr = 0
-        factor = 0
-        first_request = True
-        cooldown = False
-        prev_url = product_url
-        
-        # Substitute the page number and product id in template url for Q&A
-        qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + '?isAnswered=true'
-        
-        #Scrape all Q&A pages
-        while qanda_url is not None:
-            if qanda_pages <= 0:
-                break
-            if my_proxy is None:
-                response = session.get(qanda_url, headers={**headers, 'referer': server_url + product_url}, cookies=cookies)
-            else:
-                if curr == 0:
-                    if first_request == True:
-                        response = my_proxy.get(qanda_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
-                    else:
-                        pass
-                else:
-                    # prev_url has the full path
-                    response = my_proxy.get(qanda_url, referer=prev_url, product_url=product_url, ref_count='constant')
-            
-            if hasattr(response, 'cookies'):
-                cookies = {**cookies, **dict(response.cookies)}
-            assert response.status_code == 200
-            
-            time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-            html = response.content
-            soup = BeautifulSoup(html, 'lxml')
-
-            # Check if this is a CAPTCHA page
-            captcha_id = "captchacharacters"
-            captcha_node = soup.find("input", id=captcha_id)
-            if captcha_node is not None:
-                # We need to retry
-                if factor >= 4:
-                    if cooldown == False:
-                        logger.critical(f"Time limit exceeded during backoff. Cooling down for sometime before trying...")
-                        factor = 0
-                        time.sleep(random.randint(200, 350))
-                        my_proxy.change_identity()
-                        cooldown = True
-                        continue
-                    else:
-                        cooldown = False
-                        logger.critical("Trying again...")
-                        time.sleep(random.randint(7, 15))
-                        factor = 0
-                        continue
-
-                logger.warning(f"Encountered a CAPTCHA page. Using exponential backoff. Current Delay = {my_proxy.delay}")
-                factor += 1
-                my_proxy.delay *= 2
-                continue
-
-            try:
-                if first_request == True:
-                    page_num = 0
-                else:
-                    page_num = curr + 1
-            except Exception as e:
-                page_num = None
-                print(e)
-                pass
-
-            qanda, next_url = parse_data.get_qanda(soup, page_num=page_num)
-
-            if qanda == []:
-                try:
-                    with SqliteDict(cache_file, autocommit=True) as _mydict:
-                        key = f"QANDA_ALERT_{today}"
-                        if key not in _mydict:
-                            _mydict[key] = set()
-                        val = _mydict[key]
-                        val.add(product_id)
-                        _mydict[key] = val
-                except Exception as ex:
-                    logger.critical(f"Error when trying to store QandA alert for PID {product_id}: {ex}")
-
-            if use_cache:
-                # Store to cache first
-                with SqliteDict(cache_file, autocommit=True) as mydict:
-                    mydict[f"QANDA_{product_id}_{curr}"] = qanda
-            
-            if USE_DB == True:
-                # Insert to the DB
-                try:
-                    if curr == 0:
-                        try:
-                            store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
-                        except NameError:
-                            store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
-                    else:
-                        with db_manager.session_scope(SessionFactory) as db_session:
-                            status = db_manager.insert_product_qanda(db_session, qanda, product_id=product_id, duplicate_set=duplicate_set)
-                            if status == False:
-                                try:
-                                    store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
-                                except NameError:
-                                    store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
-                except:
-                    try:
-                        store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=html)
-                    except NameError:
-                        store_to_cache(f"QANDA_{product_id}_{curr}", qanda, html=None)
-            
-            if next_url is not None:
-                logger.info(f"QandA: Going to Page {curr}")
-                t_curr = qanda_url
-                t_prev = prev_url
-                prev_url = qanda_url
-                qanda_url = server_url + next_url
-                curr += 1
-                rand = random.randint(4, 17)
-                time.sleep(rand) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(3, 8)))
-                rand = random.randint(0, 100)
-                
-                if rand <= 15:
-                    logger.info("Going back randomly")
-                    if curr == 1:
-                        # Prev URL doesnt have full path
-                        t_prev = server_url + t_prev
-                    response = my_proxy.get(t_prev, referer=t_curr, product_url=product_url, ref_count='constant')
-                    time.sleep(random.randint(6, 12)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-                    response = my_proxy.get(t_curr, referer=t_prev, product_url=product_url, ref_count='constant')
-                    time.sleep(random.randint(6, 12)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-
-                if qanda_pages is not None and curr == qanda_pages:
-                    error_logger.info(f"QandA (Current Page = {curr}) - Finished last page. Going to Reviews now...")
-                    error_logger.newline()
-                    break
-                
-                if first_request == True:
-                    # First Request
-                    first_request = False
-                    qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + f"?sort=SUBMIT_DATE&isAnswered=true"
-                    response = my_proxy.get(qanda_url, referer=prev_url, product_url=product_url, ref_count='constant')
-                    assert response.status_code == 200
-
-                    time.sleep(random.randint(4, 5) + random.uniform(0, 1)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5) + random.uniform(0, 1)))
-                    
-                    # Now sort by date
-                    logger.info("Now moving into sorting by most recent.")
-                    continue
-                else:
-                    # We're sorting by most recent
-                    qanda_url = qanda_template.substitute(PID=product_id, PAGE=curr+1) + f"?sort=SUBMIT_DATE&isAnswered=true"
-                    if threshold_date is None:
-                        pass
-                    else:
-                        limit = False
-                        for pair in qanda:
-                            qanda_date = pair['date']
-                            if qanda_date is not None:
-                                # Review Date must be greater than threshold
-                                if qanda_date < threshold_date:
-                                    error_logger.info(f"{product_id} : QandA (Current Page = {curr}) - Date Limit Exceeded.")
-                                    error_logger.newline()
-                                    limit = True
-                                    break
-                        if limit == True:
-                            break
-            else:
-                error_logger.info(f"{product_id} : QandA (Current Page = {curr}) - Next Page is None. Going to Reviews now...")
-                break
-    
-    # Get the customer reviews
-    if details is not None and 'reviews_url' in details:
-        reviews_url = details['reviews_url']
-        obj = True
+    # Scrape QandA 
+    logger.info(f"Scraping QandA for product {product_id}")
+    qanda_url = details['customer_qa']
+    if qanda_url is None:
+        qanda_completed = True
     else:
-        logger.warning(f"For ID {product_id}, reviews_url is not in details")
-        if details is not None:
-            logger.warning("Trying to search from DB....")
-            with db_manager.session_scope(SessionFactory) as db_session:
-                obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                reviews_url = obj.reviews_url
-                flag = True
-    
-    if obj is not None:
-        if obj == True:
-            pass
+        # Check last review currently in database. Assign threhold date as last reviewed date else default    
+        last_qanda_date = db_manager.get_last_qanda_date(db_session,product_id)
         
-        prev_url = product_url
-        curr = 0
-        factor = 0
-        first_request = True
-        cooldown = False
+        # If reviews exist in DB, scrape only till last review date
+        if last_qanda_date is not None:
+            threshold_date = last_qanda_date + datetime.timedeltatimedelta(days=1) if last_qanda_date > threshold_date else threshold_date
         
-        retry = 0
-        MAX_RETRIES = 3
-
-        while reviews_url is not None:
-            if review_pages <= 0:
-                dont_update = True
-                break
-            if reviews_url is not None and product_url is not None:
-                if my_proxy is None:
-                    response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + prev_url}, cookies=cookies)
-                else:
-                    if curr == 0 and first_request == False:
-                        response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
-                    else:
-                        response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
-               
-                if hasattr(response, 'cookies'):
-                    cookies = {**cookies, **dict(response.cookies)}
-                
-                if response.status_code != 200:
-                    logger.error(f"{product_id} : Review Page - Got code {response.status_code}")
-                    error_logger.error(f"{product_id} : Review Page - Got code {response.status_code}")
-                    logger.error(f"Content = {response.content}")
-
-                assert response.status_code == 200
-                time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
-                
-                html = response.content
-                soup = BeautifulSoup(html, 'lxml')
-
-                # Check if this is a CAPTCHA page
-                captcha_id = "captchacharacters"
-                captcha_node = soup.find("input", id=captcha_id)
-                if captcha_node is not None:
-                    # We need to retry
-                    if factor >= 4:
-                        if cooldown == False:
-                            logger.critical(f"Time limit exceeded during backoff. Cooling down for sometime before trying...")
-                            factor = 0
-                            time.sleep(random.randint(200, 350))
-                            my_proxy.change_identity()
-                            cooldown = True
-                            continue
-                        else:
-                            cooldown = False
-                            logger.critical("Trying again...")
-                            time.sleep(random.randint(7, 15))
-                            factor = 0
-                            continue
-
-                    logger.warning(f"Encountered a CAPTCHA page. Using exponential backoff. Current Delay = {my_proxy.delay}")
-                    factor += 1
-                    my_proxy.delay *= 2
-                    continue
-
-                try:
-                    if first_request == True:
-                        page_num = 0
-                    else:
-                        page_num = curr + 1
-                except Exception as e:
-                    page_num = None
-                    print(e)
-                    pass
-                
-                reviews, next_url, num_reviews = parse_data.get_customer_reviews(soup, page_num=page_num, first_request=first_request)
-
-                if (reviews == {}) or ('reviews' not in reviews) or (reviews['reviews'] in [None, []]):
-                    try:
-                        with SqliteDict(cache_file, autocommit=True) as _mydict:
-                            key = f"REVIEWS_ALERT_{today}"
-                            if key not in _mydict:
-                                _mydict[key] = set()
-                            val = _mydict[key]
-                            val.add(product_id)
-                            _mydict[key] = val
-                    except Exception as ex:
-                        logger.critical(f"Error when trying to store Reviews alert for PID {product_id}: {ex}")
-
-                if first_request == True:
-                    # Try to get the number of reviews, to get an idea of how much we are away from completing the reviews for this product
-                    # This is to set the completed flag `completed = True`
-                    if num_reviews is None:
-                        logger.warning(f"For {product_id}, num_reviews is None. Taking it from the listing page")
-                    else:
-                        logger.info(f"For {product_id}, num_reviews is {num_reviews}")
-                        store_to_cache(f"NUM_REVIEWS_{product_id}", num_reviews)
-                        total_ratings = num_reviews
-
-                        if not isinstance(total_ratings, int):
-                            total_ratings = 100000
-                        
-                        if incomplete == True:
-                            # If already completed 90% of ratings, mark as completed
-                            if curr_reviews >= round(int(0.9 * total_ratings)) and jump_page == 0:
-                                # Mark as completed
-                                logger.info(f"For Product {product_id}, marking as completed")
-                                with db_manager.session_scope(SessionFactory) as db_session:
-                                    obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                                    if obj is not None:
-                                        is_completed = True
-                                        logger.info(f"Product with ID {product_id} is completed = {is_completed}")
-                                        if hasattr(obj, 'completed'):
-                                            setattr(obj, 'completed', True)
-                                            db_session.add(obj)
-                                    else:
-                                        error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
-                                        break
-                            else:
-                                logger.info(f"For Product {product_id}, scraping reviews again. Curr Reviews = {curr_reviews}, while num_reviews = {total_ratings}")                                
-                                if jump_page == 0:
-                                    try:
-                                        db_session.query(db_manager.Reviews).filter(db_manager.Reviews.product_id == product_id).delete(synchronize_session=False)
-                                    except Exception as ex:
-                                        error_logger.critical(f"{ex}")
-                                        error_logger.critical(f"Product ID {product_id}, deletion failed")
-                                        break
-                                    logger.info(f"ID {product_id}, deleted old reviews")
-                                else:
-                                    logger.info(f"Jumping to page {jump_page}")
-                
-                if use_cache:
-                    # Store to cache first
-                    with SqliteDict(cache_file, autocommit=True) as mydict:
-                        mydict[f"REVIEWS_{product_id}_{curr}"] = reviews
-                
-                if USE_DB == True:
-                    # Insert the reviews to the DB
-                    if jump_page == 0:
-                        try:
-                            if first_request == True:
-                                try:
-                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
-                                except NameError:
-                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
-                            else:
-                                with db_manager.session_scope(SessionFactory) as db_session:
-                                    status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
-                                    if not status:
-                                        try:
-                                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
-                                        except NameError:
-                                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
-                        except:
-                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews)
-                    else:
-                        if curr <= jump_page:
-                            try:
-                                store_to_cache(f"JUMP_REVIEWS_{product_id}_{curr}", reviews)
-                            except:
-                                pass
-                        else:
-                            try:
-                                with db_manager.session_scope(SessionFactory) as db_session:
-                                    status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id, duplicate_set=duplicate_set)
-                                    if not status:
-                                        try:
-                                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
-                                        except NameError:
-                                            store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
-                            except:
-                                try:
-                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=html)
-                                except NameError:
-                                    store_to_cache(f"REVIEWS_{product_id}_{curr}", reviews, html=None)
-                                
-                if first_request == True:
-                    # First Request
-                    first_request = False
-                    response = my_proxy.get(server_url + reviews_url, referer=server_url + prev_url, product_url=product_url, ref_count='constant')
-                    assert response.status_code == 200
-
-                    time.sleep(random.randint(4, 5) + random.uniform(0, 1)) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5) + random.uniform(0, 1)))
-
-                    prev_url = reviews_url
-                    reviews_url = reviews_url + f"&sortBy=recent&pageNumber={curr+1}"
-                    
-                    # Now sort by date
-                    logger.info("Now moving into sorting by most recent.")
-                    continue
-                else:
-                    # We're sorting by most recent
-                    if threshold_date is None:
-                        pass
-                    else:
-                        limit = False
-                        for review in reviews['reviews']:
-                            review_date = review['review_date']
-                            if review_date is not None:
-                                # Review Date must be greater than threshold
-                                if review_date < threshold_date:
-                                    error_logger.info(f"{product_id} : Reviews (Current Page = {curr}) - Date Limit Exceeded.")
-                                    limit = True
-                                    is_completed = True
-                                    break
-                        if limit == True:
-                            break
-                
-                if next_url is not None:
-                    t_curr = reviews_url
-                    t_prev = prev_url
-                    prev_url = reviews_url
-                    reviews_url = next_url
-                    curr += 1
-                    rand = random.randint(4, 17)
-                    time.sleep(rand) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(3, 8)))
-                    rand = random.randint(0, 100)
-                    
-                    if rand <= 15 and curr > 1:
-                        logger.info("Going back randomly")
-                        response = my_proxy.get(server_url + t_prev, referer=server_url + t_curr, product_url=product_url, ref_count='constant')
-                        time.sleep(random.randint(6, 12))
-                        response = my_proxy.get(server_url + t_curr, referer=server_url + t_prev, product_url=product_url, ref_count='constant')
-                        time.sleep(random.randint(6, 12))
-                    
-                    if review_pages is not None and curr == review_pages:
-                        error_logger.info(f"{product_id} : Reviews (Current Page = {curr}) - Finished last page.")
-                        is_completed = True
-                        break
-                    logger.info(f"Reviews: Going to Page {curr}")
-                else:
-                    # Approximating it to 75% total reviews (this won't happen, due to our human-like simulation)
-                    if total_ratings is not None and curr < round((0.75 * total_ratings) // REVIEWS_PER_PAGE):
-                        t_curr = reviews_url
-                        t_prev = prev_url
-                        error_logger.warning(f"{product_id} : Reviews (Current Page = {curr}). Next Page is None. But total_ratings = {total_ratings}. Is there an error????")
-                        error_logger.info("Trying again....")
-                        
-                        retry += 1
-                        
-                        if retry <= MAX_RETRIES:
-                            response = my_proxy.get(server_url + t_prev, referer=server_url + t_curr, product_url=product_url, ref_count='constant')
-                            time.sleep(random.randint(6, 12))
-                            response = my_proxy.get(server_url + t_curr, referer=server_url + t_prev, product_url=product_url, ref_count='constant')
-                            time.sleep(random.randint(6, 12))
-                        else:
-                            error_logger.error(f"{product_id} : Reviews (Current Page = {curr}). Next Page is None. Max retries exceeded. Exiting product...")
-                            break
-                    else:
-                        error_logger.info(f"{product_id} : Reviews (Current Page = {curr}). Next Page is None. Finished Scraping Reviews for this product")
-                        is_completed = True
-                        break
+        # scrape reviews till threshold date sorted by most recent
+        qanda_completed = scrape_qanda(server_url,qanda_url,product_id,threshold_date)
+        if qanda_completed is not True:
+            logger.error(f"Reviews for product id {product_id} could not be completed")
     
+    # Scrape reviews  
+    logger.info(f"Scraping reviews for product {product_id}") 
+    reviews_url = details['reviews_url']
+    # Check if reviews_url exists, If no reviews, move on
+    if reviews_url is None:
+        reviews_completed = True
+    else:
+        # Check last review currently in database. Assign threhold date as last reviewed date else default    
+        last_review_date = db_manager.get_last_review_date(db_session,product_id)
+        
+        # If reviews exist in DB, scrape only till last review date
+        if last_review_date is not None:
+            threshold_date = last_review_date + datetime.timedeltatimedelta(days=1) if last_review_date > threshold_date else threshold_date
+        
+        # scrape reviews till threshold date sorted by most recent
+        reviews_completed = scrape_reviews(server_url,reviews_url,product_id,threshold_date)
+        if reviews_completed is not True:
+            logger.error(f"Reviews for product id {product_id} could not be completed")
+
+    is_completed = detail_completed and qanda_completed and reviews_completed
     # Finally add completed flag and date_completed flag to ProductDetails table
     # Also update the detail_completed flag in Listing table
     if dont_update == True:
@@ -1629,24 +1197,22 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
             #Update ProductDetails table
             obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
             if obj is not None:
-                logger.info(f"Product with ID {product_id} is completed = {is_completed}")
-                if hasattr(obj, 'completed'):
-                    setattr(obj, 'completed', is_completed)
-                    if obj.completed == True:
-                        if hasattr(obj, 'date_completed'):
-                            obj.date_completed = datetime.now()
+                logger.info(f"Product with ID {product_id} is completed = {is_completed}")             
+                setattr(obj, 'completed', is_completed)
+                if obj.completed == True:
+                    obj.date_completed = datetime.now()
 
-                            # Update ProductListing table detail_completed field
-                            listing_obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                            if listing_obj is not None:
-                                if hasattr(listing_obj, 'detail_completed'):
-                                    listing_obj.detail_completed = datetime.now()
-                                else:
-                                    error_logger.critical(f"Unable to update listing table for product id {product_id}")
-                            else:
-                                 error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+                    # Update ProductListing table detail_completed field
+                    listing_obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                    if listing_obj is not None:
+                        if hasattr(listing_obj, 'detail_completed'):
+                            listing_obj.detail_completed = datetime.now()
+                        else:
+                            error_logger.critical(f"Unable to update listing table for product id {product_id}")
+                    else:
+                            error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
 
-                    db_session.add(obj)
+                db_session.add(obj)
             else:
                 error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
            
@@ -1654,6 +1220,153 @@ def scrape_product_detail(category, product_url, review_pages=None, qanda_pages=
     time.sleep(3)
 
     return final_results
+
+#TODO: Need to handle following usecases
+# 1. Not able to scrape all QandA till a date - retry mechanism or delete all entries in case not successful
+# 2. Only one page of QandA
+
+def scrape_qanda(server_url,qanda_url,product_id,threshold_date):
+    '''
+    Scrapes all Q&A for a product
+
+    Important Parameters:
+        qanda_url: URL for QandA of the product
+        server_url: The domain e.g. amazon.in
+        product_id: ID of the prodct to be scraped
+        threshold_date: The date prior to which Q&A won't be scrapped
+    '''
+    curr =  1
+    is_completed = False
+
+    # Sort Q&A by most recent first
+    prev_url = qanda_url
+    qanda_url = qanda_url+"?sort=SUBMIT_DATE"
+
+    while qanda_url is not None and is_completed == False:
+        if my_proxy is None:
+            response = session.get(qanda_url, headers={**headers, 'referer':prev_url}, cookies=cookies)
+        else:  
+            response = my_proxy.get(qanda_url, prev_url)
+        
+        # Error response for QandA
+        if response.status_code != 200:
+            logger.error(f"{product_id} : QandA Page - Got code {response.status_code}")
+            error_logger.error(f"{product_id} : QandA Page - Got code {response.status_code}")
+            logger.error(f"Content = {response.content}")
+
+        time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
+        
+        html = response.content
+        soup = BeautifulSoup(html, 'lxml')
+        
+        qandas, next_url = parse_data.get_qanda(soup)
+        
+        # if review date for this page is lower than threshold date, mark true
+        for qanda in qandas:
+            qanda_date = qanda['date']
+            if qanda_date is not None:
+                # QandA Date must be greater than threshold
+                if qanda_date < threshold_date:
+                    error_logger.info(f"{product_id} : QandA (Current Page = {curr}) - Date Limit Exceeded.")
+                    is_completed = True
+                    break
+        if use_cache:
+            # Store to cache first
+            with SqliteDict(cache_file, autocommit=True) as mydict:
+                mydict[f"QandA_{product_id}_{curr}"] = qandas
+        
+        # Insert QandA to dB
+        status = db_manager.insert_product_qanda(db_session, qandas, product_id=product_id)
+        if not status:
+            logger.error(f"Not able to store reviews for {product_id}")     
+        
+            
+        # Go to next page
+        if next_url is not None:        
+            prev_url = qanda_url
+            qanda_url = next_url
+            
+            # next_url obtained from parse_data will not contain server_url, hence will need to prefix it for 2nd page onwards
+            qanda_url = qanda_url if qanda_url.startswith("http") else server_url + qanda_url
+            
+            curr += 1
+            rand = random.randint(4, 17)
+            time.sleep(rand) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(3, 8)))
+            logger.info(f"QandA: Going to Page {curr}")
+    
+    return is_completed
+
+#TODO: Need to handle following usecases
+# 1. Not able to scrape all reviews till a date - retry mechanism or delete all DB entries in case not successful
+# 2. Only one page of review
+
+
+def scrape_reviews(server_url,reviews_url,product_id,threshold_date):
+    '''
+    Scrapes all reviews for a product
+
+    Important Parameters:
+        review_url: URL for reviews of the product
+        server_url: The domain e.g. amazon.in
+        product_id: ID of the prodct to be scraped
+        threshold_date: The date prior to which reviews won't be scrapped
+    '''
+    curr =  0
+    is_completed = False
+
+    # Sort reviews by most recent first
+    prev_url = reviews_url
+    reviews_url = reviews_url + f"&sortBy=recent&pageNumber={curr+1}"
+
+    while reviews_url is not None and is_completed == False:
+        if my_proxy is None:
+            response = session.get(server_url + reviews_url, headers={**headers, 'referer': server_url + prev_url}, cookies=cookies)
+        else:  
+            response = my_proxy.get(server_url + reviews_url, server_url + prev_url)
+        
+        # Error response for reviews
+        if response.status_code != 200:
+            logger.error(f"{product_id} : Review Page - Got code {response.status_code}")
+            error_logger.error(f"{product_id} : Review Page - Got code {response.status_code}")
+            logger.error(f"Content = {response.content}")
+
+        time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
+        
+        html = response.content
+        soup = BeautifulSoup(html, 'lxml')
+        
+        reviews, next_url = parse_data.get_customer_reviews(soup)
+        
+        # if review date for this page is lower than threshold date, mark true
+        for review in reviews['reviews']:
+            review_date = review['review_date']
+            if review_date is not None:
+                # Review Date must be greater than threshold
+                if review_date < threshold_date:
+                    error_logger.info(f"{product_id} : Reviews (Current Page = {curr}) - Date Limit Exceeded.")
+                    is_completed = True
+                    break
+        if use_cache:
+            # Store to cache first
+            with SqliteDict(cache_file, autocommit=True) as mydict:
+                mydict[f"REVIEWS_{product_id}_{curr}"] = reviews
+        
+        # Insert reviews to dB
+        status = db_manager.insert_product_reviews(db_session, reviews, product_id=product_id)
+        if not status:
+            logger.error(f"Not able to store reviews for {product_id}")     
+               
+        # Go to next page
+        if next_url is not None:
+            
+            prev_url = reviews_url
+            reviews_url = next_url
+            curr += 1
+            rand = random.randint(4, 17)
+            time.sleep(rand) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(3, 8)))
+            logger.info(f"Reviews: Going to Page {curr+1}")
+   
+    return is_completed
 
 
 
@@ -1897,6 +1610,7 @@ if __name__ == '__main__':
     parser.add_argument('--jump_page', help='Jump page', type=int, default=0)
     parser.add_argument('--assign_subcategories', help='Assign Subcategories', default=False, action='store_true')
     parser.add_argument('--instance_id', help='Instance ID', default=None, type=int)
+    parser.add_argument('--reviews_url', help='Scrape reviews for product with given review url', default=None, type=int)
 
     args = parser.parse_args()
 
@@ -1924,6 +1638,7 @@ if __name__ == '__main__':
     jump_page = args.jump_page
     assign_subcategories = args.assign_subcategories
     instance_id = args.instance_id
+    reviews_url = args.reviews_url
 
     if num_workers <= 0:
         num_workers = None
@@ -2036,18 +1751,16 @@ if __name__ == '__main__':
 
         # Set the attribute for my_proxy
         if my_proxy is not None:
-            setattr(my_proxy, 'use_tor', use_tor)
-            if use_tor == False:
-                my_proxy.proxy_list = my_proxy.get_proxy_list()
-                my_proxy.switch_proxy()
-        else:
-            if use_tor == True:
-                raise ValueError("Tor service is not available. Please start it")
-            else:
-                my_proxy = my_proxy = proxy.Proxy(OS=OS, use_tor=use_tor)
+            my_proxy.proxy_list = my_proxy.get_proxy_list()
+            my_proxy.switch_proxy()
+            logger.info(f"Current proxy is {my_proxy.get_ip()}")
+        
+        if reviews_url:
+            scrape_reviews("https://www.amazon.in",reviews_url,'B07CTLZSQ3',datetime.datetime.now()-datetime.timedelta(days=30))
+            
         
         logger.info(f"no_listing is {no_listing}")
-
+        
         if assign_subcategories == True:
             print("Assigning Subcategories")
             assign_template_subcategories(categories=None, pages=None, dump=False, detail=False, threshold_date=None, products=None, review_pages=None, qanda_pages=None, no_listing=False, num_workers=None, worker_pages=None)
@@ -2079,7 +1792,7 @@ if __name__ == '__main__':
                             pd_id = product_url.split('/')[3]
                             logger.info(f"Scraping product details for product_id {pd_id}")
                             try:
-                                product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                                product_detail_results = scrape_product_detail(product_url,category, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
                             except Exception as ex:
                                 logger.critical(f"{ex}")
                                 logger.warning(f"Could not scrape details of Product - URL = {product_url}")
@@ -2114,7 +1827,7 @@ if __name__ == '__main__':
                             
                             if use_multithreading == False:
                                 try: 
-                                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                                    product_detail_results = scrape_product_detail(product_url,category, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
                                 except Exception as ex:
                                     logger.critical(f"{ex}")
                                     logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")
@@ -2169,7 +1882,7 @@ if __name__ == '__main__':
                 product_url = obj.product_url
                 category = obj.category
                 try:
-                    product_detail_results = scrape_product_detail(category, product_url, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
+                    product_detail_results = scrape_product_detail(product_url,category, review_pages=review_pages, qanda_pages=qanda_pages, threshold_date=threshold_date)
                 except Exception as ex:
                     logger.critical(f"{ex}")
                     logger.warning(f"Could not scrape details of Product ID {product_id} - URL = {product_url}")

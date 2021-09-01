@@ -23,7 +23,7 @@ python3 scrapingtool/browser.py category
 * Command to run the detail scraping:
 
 ```bash
-python3 scrapingtool/scraper.py --categories "headphones" --override --listing --detail --no_listing --num_workers 5
+python3 scrapingtool/scraper.py --categories "smartphones" --override --detail --no_listing --num_workers 5
 ```
 
 This will scrape the details of the headphones category, and will spawn 5 worker threads (need to set `MULTITHREADING=True` in `.env` if using `--num_workers` option)
