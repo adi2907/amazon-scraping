@@ -121,7 +121,7 @@ def run_category(browser='Firefox'):
 
                         # Find link of next page, if "Next" link is not enabled, then quit
                         try:
-                            element = driver.find_element_by_css_selector(".a-pagination .a-last")
+                            element = driver.find_element_by_css_selector("a[class^='s-pagination-item s-pagination-next']")
                             if element.is_enabled() == False:
                                 print("link  disabled")
                                 # Check if number of pages correspond to total elements
@@ -129,7 +129,7 @@ def run_category(browser='Firefox'):
                                 if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
                                     logger.warning(f"{category} category: No of items mismatch")
                                 break
-                        except Exception as ex: #Link not found
+                        except Exception as ex: #Link not foundc
                             print(ex)
                             total_products = parse_data.get_total_products_number(soup)
                             if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
@@ -142,44 +142,37 @@ def run_category(browser='Firefox'):
                         tmp = url
                         #Child link of this element
                         try:
-                            e = element.find_element_by_tag_name("a")
+                            url = element.get_attribute("href")
                         except:
-                            print("Tag element not found")
+                            print("Next page url not found")
                             total_products = parse_data.get_total_products_number(soup)
                             if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
                                 logger.warning(f"{category} category: No of items mismatch")
                             break
                         
-                        url = e.get_attribute("href")
+                        print(f"URL is {url}")
+                        curr += 1
+                        alpha = 1000 #Changes scroll height for all pages
+                        while alpha <= 5000:
+                            try:
+                                actions = ActionChains(driver)
+                                driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
+                                time.sleep(5)
+                                #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                                actions.move_to_element(element)
+                                time.sleep(2)
+                                actions.click(element).perform()
+                                time.sleep(5)
+                                break
+                            except Exception as ex:
+                                print(ex)
+                                print(f"Alpha is {alpha}. Now incrementing")
+                                alpha += 500
+                                time.sleep(1)
 
-                        if url is not None:
-                            print(f"URL is {url}")
-                            curr += 1
-                            alpha = 1000 #Changes scroll height for all pages
-                            while alpha <= 5000:
-                                try:
-                                    actions = ActionChains(driver)
-                                    driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
-                                    time.sleep(5)
-                                    #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                                    actions.move_to_element(element)
-                                    time.sleep(2)
-                                    actions.click(element).perform()
-                                    time.sleep(5)
-                                    break
-                                except Exception as ex:
-                                    print(ex)
-                                    print(f"Alpha is {alpha}. Now incrementing")
-                                    alpha += 500
-                                    time.sleep(1)
-
-                            print("Went to the next URL")
-                            prev_url = tmp
-                        else:
-                            total_products = parse_data.get_total_products_number(soup)
-                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                                logger.warning(f"{category} category: No of items mismatch")
-                            break
+                        print("Went to the next URL")
+                        prev_url = tmp
+                    
                                 
                     print("Sleeping...")
                     time.sleep(2)

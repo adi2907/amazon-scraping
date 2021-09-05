@@ -60,6 +60,7 @@ def get_total_products_number(soup):
     
     # Extract the total number i.e 334 and convert to number
     w=re.findall("\s[0-9]+\s", result_info_bar)[0]
+    print("Total number of products "+w)
     return int(w)
 
 
