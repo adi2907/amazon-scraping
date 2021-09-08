@@ -49,35 +49,23 @@ class Proxy():
             "Mozilla/5.0 (X11; Linux i686; rv:78.0) Gecko/20100101 Firefox/78.0",
         ]
     
-    def get(self,url,referrer_url=""):
-        limit =  5
-        tries = 0
+    def get(self,url,referrer_url=""):       
         if referrer_url:
                 self.headers['referer'] =  referrer_url
-        proxies_switch = False
 
-        # Retry for 5 times with increasing backoff for the same proxy
-        while tries <= limit:
-            tries +=1      
-            response = requests.get(url,headers = self.headers,proxies = self.proxies)
-            if response.status_code == 200:
-                if hasattr(response, 'cookies'):
-                    self.cookies = {**(self.cookies), **dict(response.cookies)}
-                return response
-            else:
-                # Retry logic
-                logger.info(f"Try number {tries} for {url} from ip {self.get_ip()}")
-                if tries > limit:
-                    logger.critical(f"Tries exceeded {limit} for {url} from ip {self.get_ip()}")
-                    if proxies_switch:
-                        return response
-                    else:
-                        tries = 0
-                        proxies_switch = True
-                        self.switch_proxy()
-                backoff_duration = random.randint(2,5)*tries
-                time.sleep(backoff_duration)
-
+        response = requests.get(url,headers = self.headers,proxies = self.proxies)
+        if response.status_code == 200:
+            if hasattr(response, 'cookies'):
+                self.cookies = {**(self.cookies), **dict(response.cookies)}
+        else:
+            logger.critical(f"Error received for proxy{self.get_ip}. Deleting it")
+            with open("proxy_list.txt", "r") as f:
+                lines = f.readlines()
+            with open("proxy_list.txt", "w") as f:
+                for line in lines:
+                    if line.strip("\n") != self.proxies['http']:
+                        f.write(line)
+        return response
             
     def get_proxy_list(self) -> list:
         """Fetches the list of active proxies

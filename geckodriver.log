@@ -474,3 +474,310 @@ JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A18
 * Can't use WebGL in headless mode (https://bugzil.la/1375585).
 JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
 * Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630898610845	geckodriver	INFO	Listening on 127.0.0.1:56465
+1630898611656	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofilelZAp7R"
+*** You are running in headless mode.
+1630898612259	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630898614465	Marionette	INFO	Listening on port 56478
+1630898614617	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630898922951	geckodriver	INFO	Listening on 127.0.0.1:57914
+1630898923967	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileYuqo6G"
+*** You are running in headless mode.
+1630898924458	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630898926556	Marionette	INFO	Listening on port 57925
+1630898926661	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+Exiting due to channel error.
+Exiting due to channel error.
+[GFX1-]: Receive IPC close with reason=AbnormalShutdown
+Exiting due to channel error.
+1630899006507	geckodriver	INFO	Listening on 127.0.0.1:58422
+1630899007523	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofile7Lch4n"
+*** You are running in headless mode.
+1630899008012	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630899010043	Marionette	INFO	Listening on port 58433
+1630899010167	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+Exiting due to channel error.
+[GFX1-]: Receive IPC close with reason=AbnormalShutdown
+[GFX1-]: Receive IPC close with reason=AbnormalShutdown
+Exiting due to channel error.
+Exiting due to channel error.
+1630899441671	geckodriver	INFO	Listening on 127.0.0.1:60454
+1630899442681	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileNo8V1A"
+*** You are running in headless mode.
+1630899443266	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630899445265	Marionette	INFO	Listening on port 60465
+1630899445588	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630899741996	geckodriver	INFO	Listening on 127.0.0.1:61860
+1630899743008	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofilev4yn3U"
+*** You are running in headless mode.
+1630899743829	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630899747262	Marionette	INFO	Listening on port 61871
+1630899747333	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630899970627	geckodriver	INFO	Listening on 127.0.0.1:62961
+1630899971648	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileKyW312"
+*** You are running in headless mode.
+1630899972126	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630899973993	Marionette	INFO	Listening on port 62972
+1630899974045	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630900072968	geckodriver	INFO	Listening on 127.0.0.1:63524
+1630900073985	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileNw1oCM"
+*** You are running in headless mode.
+1630900074453	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630900076150	Marionette	INFO	Listening on port 63535
+1630900076264	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630900185345	geckodriver	INFO	Listening on 127.0.0.1:64121
+1630900186363	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofilenjCsmC"
+*** You are running in headless mode.
+1630900186835	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630900189098	Marionette	INFO	Listening on port 64132
+1630900189257	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630900353196	geckodriver	INFO	Listening on 127.0.0.1:64949
+1630900354212	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileWeIoLV"
+*** You are running in headless mode.
+1630900354693	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630900356573	Marionette	INFO	Listening on port 64960
+1630900356640	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+console.log: WebExtensions: reset-default-search: starting.
+console.log: WebExtensions: reset-default-search: No addons in our list are installed.
+1630901108749	geckodriver	INFO	Listening on 127.0.0.1:52195
+1630901109764	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileh3pwfk"
+*** You are running in headless mode.
+1630901110257	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630901112332	Marionette	INFO	Listening on port 52206
+1630901112447	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630901836509	geckodriver	INFO	Listening on 127.0.0.1:55389
+1630901837523	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofiletMNjd0"
+*** You are running in headless mode.
+1630901838113	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630901840255	Marionette	INFO	Listening on port 55400
+1630901840449	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630902010934	geckodriver	INFO	Listening on 127.0.0.1:56283
+1630902011941	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofilezVWxvy"
+*** You are running in headless mode.
+1630902012504	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630902014708	Marionette	INFO	Listening on port 56294
+1630902014931	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630902124019	geckodriver	INFO	Listening on 127.0.0.1:56896
+1630902125038	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofile7xVJFX"
+*** You are running in headless mode.
+1630902125719	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630902129389	Marionette	INFO	Listening on port 56907
+1630902129491	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630902215754	geckodriver	INFO	Listening on 127.0.0.1:57469
+1630902216760	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileFjjRZF"
+*** You are running in headless mode.
+1630902217370	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630902221105	Marionette	INFO	Listening on port 57481
+1630902221389	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630902394785	geckodriver	INFO	Listening on 127.0.0.1:58417
+1630902395796	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofile5QQtXv"
+*** You are running in headless mode.
+1630902396286	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630902398332	Marionette	INFO	Listening on port 58428
+1630902398509	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630902436884	Marionette	INFO	Stopped listening on port 58428
+1630907596647	geckodriver	INFO	Listening on 127.0.0.1:64169
+1630907597662	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileKI2LGk"
+*** You are running in headless mode.
+1630907598330	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630907601089	Marionette	INFO	Listening on port 64180
+1630907601225	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630907635389	Marionette	INFO	Stopped listening on port 64180
+1630907699351	geckodriver	INFO	Listening on 127.0.0.1:64738
+1630907700385	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofilenAZi1l"
+*** You are running in headless mode.
+1630907701614	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630907706295	Marionette	INFO	Listening on port 64749
+1630907706359	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630907802695	geckodriver	INFO	Listening on 127.0.0.1:65350
+1630907803714	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileIyXSjn"
+*** You are running in headless mode.
+1630907804330	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630907806506	Marionette	INFO	Listening on port 65361
+1630907806652	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630907931239	geckodriver	INFO	Listening on 127.0.0.1:49638
+1630907932254	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileanw3FS"
+*** You are running in headless mode.
+1630907932786	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630907934949	Marionette	INFO	Listening on port 49650
+1630907935084	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630908163580	geckodriver	INFO	Listening on 127.0.0.1:50729
+1630908164599	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileYunmG4"
+*** You are running in headless mode.
+1630908165158	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630908167541	Marionette	INFO	Listening on port 50740
+1630908167700	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630910339306	geckodriver	INFO	Listening on 127.0.0.1:52648
+1630910340319	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileCWnigF"
+*** You are running in headless mode.
+1630910340958	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630910343406	Marionette	INFO	Listening on port 52659
+1630910343644	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630910635014	geckodriver	INFO	Listening on 127.0.0.1:54012
+1630910636033	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofilemR49lZ"
+*** You are running in headless mode.
+1630910636565	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630910638704	Marionette	INFO	Listening on port 54023
+1630910638804	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&qid=1630471478&rnid=1318502031&ref=sr_nr_p_36_5 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+console.log: WebExtensions: reset-default-search: starting.
+console.log: WebExtensions: reset-default-search: No addons in our list are installed.
+1630911561310	geckodriver	INFO	Listening on 127.0.0.1:57963
+1630911561330	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileYguJyI"
+*** You are running in headless mode.
+1630911561865	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1630911564287	Marionette	INFO	Listening on port 57968
+1630911564424	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+console.log: WebExtensions: reset-default-search: starting.
+console.log: WebExtensions: reset-default-search: No addons in our list are installed.
+JavaScript warning: https://www.amazon.in/s?k=ceiling+fan&i=kitchen&bbn=4369221031&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AA1X5VLS1GXL2LN%7CAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031&dc&crid=1TGIH58I2LW9I&qid=1630474424&rnid=1318474031&sprefix=ceili%2Caps%2C380&ref=sr_nr_p_6_2 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=ceiling+fan&i=kitchen&bbn=4369221031&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AA1X5VLS1GXL2LN%7CAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031&dc&crid=1TGIH58I2LW9I&qid=1630474424&rnid=1318474031&sprefix=ceili%2Caps%2C380&ref=sr_nr_p_6_2 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=refrigerator&i=kitchen&bbn=1380365031&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA3VI3FOOSYHJSV%7CAT95IG9ONZD7S&dc&qid=1630474394&rnid=1318474031&ref=sr_nr_p_6_3 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=refrigerator&i=kitchen&bbn=1380365031&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA3VI3FOOSYHJSV%7CAT95IG9ONZD7S&dc&qid=1630474394&rnid=1318474031&ref=sr_nr_p_6_3 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=washing+machine&i=kitchen&bbn=1380369031&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA3VI3FOOSYHJSV%7CAT95IG9ONZD7S&dc&qid=1630474338&rnid=1318474031&ref=sr_nr_p_6_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=washing+machine&i=kitchen&bbn=1380369031&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA3VI3FOOSYHJSV%7CAT95IG9ONZD7S&dc&qid=1630474338&rnid=1318474031&ref=sr_nr_p_6_1 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=hair+color&i=beauty&rh=n%3A1355016031%2Cn%3A1374305031%2Cn%3A1374336031%2Cn%3A1374309031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318477031&dc&qid=1606637227&rnid=1318475031&ref=sr_nr_p_72_2 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=hair+color&i=beauty&rh=n%3A1355016031%2Cn%3A1374305031%2Cn%3A1374336031%2Cn%3A1374309031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318477031&dc&qid=1606637227&rnid=1318475031&ref=sr_nr_p_72_2 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1630918571144	Marionette	INFO	Stopped listening on port 57968

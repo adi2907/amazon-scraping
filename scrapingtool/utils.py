@@ -20,13 +20,14 @@ customer_reviews_template = Template('https://www.amazon.in/review/widgets/avera
 qanda_template = Template('https://www.amazon.in/ask/questions/asin/$PID/$PAGE/ref=ask_dp_iaw_ql_hza?sort=$SORT_TYPE')
 
 # Not needed anymore
-listing_templates = [
-    Template('https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A976419031%2Cn%3A1389401031%2Cn%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031&dc&qid=1597812891&rnid=976420031&ref=sr_nr_n_$PAGE_NUM'),
-    Template('https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&fst=as%3Aoff&qid=1599294897&rnid=3837712031&ref=sr_pg_$PAGE_NUM'),
-    Template('https://www.amazon.in/s?k=ceiling+fan&i=kitchen&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031&dc&crid=1TGIH58I2LW9I&qid=1597813011&rnid=1318483031&sprefix=ceili%2Caps%2C380&ref=sr_nr_p_n_availability_2'),
-    Template('https://www.amazon.in/s?k=refrigerator&i=kitchen&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031&dc&qid=1597813026&rnid=1318483031&ref=sr_nr_p_n_availability_2'),
-    Template('https://www.amazon.in/s?k=washing+machine&i=kitchen&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_6%3AAT95IG9ONZD7S%2Cp_n_availability%3A1318485031&dc&qid=1597813042&rnid=1318483031&ref=sr_nr_p_n_availability_2'),
-]
+listing_templates = {
+            "smartphones": Template("https://www.amazon.in/s?k=smartphone&i=electronics&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-&dc&page=$PAGE_NUM&qid=1630905465&rnid=1318502031&ref=sr_pg_$PAGE_NUM"),
+            "headphones": Template("https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031&dc&page=$PAGE_NUM&fst=as%3Aoff&qid=1630905511&rnid=3837712031&ref=sr_pg_$PAGE_NUM"),
+            "ceiling fan": Template("https://www.amazon.in/s?k=ceiling+fan&i=kitchen&bbn=4369221031&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AA1X5VLS1GXL2LN%7CAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031&dc&page=$PAGE_NUM&crid=1TGIH58I2LW9I&qid=1630905549&rnid=1318474031&sprefix=ceili%2Caps%2C380&ref=sr_pg_$PAGE_NUM"),
+            "refrigerator": Template("https://www.amazon.in/s?k=refrigerator&i=kitchen&bbn=1380365031&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA3VI3FOOSYHJSV%7CAT95IG9ONZD7S&dc&page=$PAGE_NUM&qid=1630905592&rnid=1318474031&ref=sr_pg_$PAGE_NUM"),
+            "washing machine": Template("https://www.amazon.in/s?k=washing+machine&i=kitchen&bbn=1380369031&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA3VI3FOOSYHJSV%7CAT95IG9ONZD7S&dc&page=$PAGE_NUM&qid=1630905632&rnid=1318474031&ref=sr_pg_$PAGE_NUM"),
+            "hair color": Template("https://www.amazon.in/s?k=hair+color&i=beauty&rh=n%3A1355016031%2Cn%3A1374305031%2Cn%3A1374336031%2Cn%3A1374309031%2Cp_6%3AAT95IG9ONZD7S%2Cp_72%3A1318477031&dc&page=$PAGE_NUM&qid=1630905683&rnid=1318475031&ref=sr_pg_$PAGE_NUM")
+        }
 
 old_listing_templates = [
     Template('https://www.amazon.in/s?k=headphones&i=electronics&rh=n%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_72%3A1318478031&dc&page=$PAGE_NUM&qid=1597664105&rnid=1318475031&ref=sr_pg_$PAGE_NUM'),

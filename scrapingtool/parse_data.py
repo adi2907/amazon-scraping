@@ -53,15 +53,18 @@ def get_product_mapping(soup) -> dict:
     
     return product_map
 
-# Returns total number of products for the listing
+# Returns total number of products for the listing and first listing in current page
 def get_total_products_number(soup):
     # Gets response like "1-24 of 334 results for smartphones"
     result_info_bar = soup.find("div",class_="a-section a-spacing-small a-spacing-top-small").text
     
+    #First number shouldn't exceed total number of products
+    curr_page_listing = result_info_bar.split()[0].split('-')[0]
+    
     # Extract the total number i.e 334 and convert to number
-    w=re.findall("\s[0-9]+\s", result_info_bar)[0]
-    print("Total number of products "+w)
-    return int(w)
+    total_number=re.findall("\s[0-9]+\s", result_info_bar)[0]
+    print("Total number of products "+total_number)
+    return int(total_number),int(curr_page_listing)
 
 
 

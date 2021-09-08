@@ -72,7 +72,7 @@ def run_category(browser='Firefox'):
                             break
                         print(f"At Page Number {curr}")
                         print("Sleeping...")
-                        time.sleep(5) # Wait for some time to load
+                        time.sleep(10) # Wait for some time to load
 
                         html = driver.page_source.encode('utf-8', errors='ignore')
 
@@ -110,33 +110,35 @@ def run_category(browser='Firefox'):
                         except Exception as ex:
                             traceback.print_exc()
                             logger.info(f"Exception during storing daily listing: {ex}")
-
-                    
-                        with open(f'dumps/listing_{category}_{curr}.html', 'wb') as f:
-                            f.write(html)
                 
-
-                        print("Written html. Sleeping...")
-                        time.sleep(2)
+                        time.sleep(5)
 
                         # Find link of next page, if "Next" link is not enabled, then quit
                         try:
-                            element = driver.find_element_by_css_selector("a[class^='s-pagination-item s-pagination-next']")
+                            element = driver.find_element_by_css_selector("a[class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']")
+                            #element = driver.find_element_by_class_name('s-pagination-item s-pagination-next s-pagination-button s-pagination-separator')
                             if element.is_enabled() == False:
                                 print("link  disabled")
                                 # Check if number of pages correspond to total elements
-                                total_products = parse_data.get_total_products_number(soup)
+                                total_products,_ = parse_data.get_total_products_number(soup)
                                 if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
                                     logger.warning(f"{category} category: No of items mismatch")
                                 break
-                        except Exception as ex: #Link not foundc
+                        except Exception as ex: #Link not found
                             print(ex)
-                            total_products = parse_data.get_total_products_number(soup)
-                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                                logger.warning(f"{category} category: No of items mismatch")
-                            print("Next page not found. Quitting...")
                             break
-
+                            # template_url = listing_templates[category]
+                            # url = template_url.substitute(PAGE_NUM=curr)
+                            # total_products,curr_listing = parse_data.get_total_products_number(soup)
+                            
+                            # if curr_listing>total_products:
+                            #     logger.info(f"Current listing {curr_listing} exceeds total products {total_products}. Quitting")
+                            #     if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                            #         logger.warning(f"{category} category: No of items mismatch")
+                            #     break
+                            
+                            # curr+=1
+                            # continue
                         # Click on next link
                         
                         tmp = url

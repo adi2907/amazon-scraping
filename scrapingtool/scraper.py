@@ -1081,6 +1081,8 @@ def scrape_product_detail(product_url,category=None, review_pages=None, qanda_pa
             else:
                 response = my_proxy.get(server_url + product_url)
         
+        assert response.status_code == 200
+        
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
         
@@ -1248,11 +1250,7 @@ def scrape_qanda(server_url,qanda_url,product_id,threshold_date):
         else:  
             response = my_proxy.get(qanda_url, prev_url)
         
-        # Error response for QandA
-        if response.status_code != 200:
-            logger.error(f"{product_id} : QandA Page - Got code {response.status_code}")
-            error_logger.error(f"{product_id} : QandA Page - Got code {response.status_code}")
-            logger.error(f"Content = {response.content}")
+        assert response.status_code == 200
 
         time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
         
@@ -1290,9 +1288,17 @@ def scrape_qanda(server_url,qanda_url,product_id,threshold_date):
             qanda_url = qanda_url if qanda_url.startswith("http") else server_url + qanda_url
             
             curr += 1
+            
+            # Break if more than 50 QandA pages
+            if curr > 50:
+                logger.info(f"Breaking at 50 Q&A pages")
+                break
             rand = random.randint(4, 17)
             time.sleep(rand) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(3, 8)))
             logger.info(f"QandA: Going to Page {curr}")
+        else:
+            is_completed = True
+            break
     
     return is_completed
 
@@ -1324,11 +1330,7 @@ def scrape_reviews(server_url,reviews_url,product_id,threshold_date):
         else:  
             response = my_proxy.get(server_url + reviews_url, server_url + prev_url)
         
-        # Error response for reviews
-        if response.status_code != 200:
-            logger.error(f"{product_id} : Review Page - Got code {response.status_code}")
-            error_logger.error(f"{product_id} : Review Page - Got code {response.status_code}")
-            logger.error(f"Content = {response.content}")
+        assert response.status_code == 200
 
         time.sleep(5) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(2, 5)))
         
@@ -1362,9 +1364,16 @@ def scrape_reviews(server_url,reviews_url,product_id,threshold_date):
             prev_url = reviews_url
             reviews_url = next_url
             curr += 1
+            
+            if curr>100:
+                logger.info(f"Breaking at 100 reivew pages")
+                break
             rand = random.randint(4, 17)
             time.sleep(rand) if not speedup else (time.sleep(1 + random.uniform(0, 2)) if ultra_fast else time.sleep(random.randint(3, 8)))
             logger.info(f"Reviews: Going to Page {curr+1}")
+        else:
+            is_completed = True
+            break
    
     return is_completed
 
@@ -1796,7 +1805,8 @@ if __name__ == '__main__':
                             except Exception as ex:
                                 logger.critical(f"{ex}")
                                 logger.warning(f"Could not scrape details of Product - URL = {product_url}")
-                                logger.newline()
+                                my_proxy.switch_proxy()
+                                continue
                     else:
                         # Product ids are also there
                         jobs = []
