@@ -10,9 +10,9 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--categories","smartphones","--detail","--no_listing","--num_workers","5"],
+            //"args": ["--categories","washing machine","--detail","--no_listing","--num_workers","5"],
             //"args": ["--reviews_url","/KECHAODA-External-Memory-1-44-inch-Display/product-reviews/B07CTLZSQ3/ref=cm_cr_dp_d_show_all_btm?ie=UTF8&reviewerType=all_reviews"],
-            //"args":["category"]
+            "args":["subcategory"]
         },
     ]
 }

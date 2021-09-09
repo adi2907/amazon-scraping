@@ -126,7 +126,7 @@ def run_category(browser='Firefox'):
                                 break
                         except Exception as ex: #Link not found
                             print(ex)
-                            break
+                            
                             # template_url = listing_templates[category]
                             # url = template_url.substitute(PAGE_NUM=curr)
                             # total_products,curr_listing = parse_data.get_total_products_number(soup)
@@ -201,9 +201,6 @@ def run_category(browser='Firefox'):
 
 
 def run_subcategory(browser='Firefox'):
-    #from pyvirtualdisplay import Display
-    #display = Display(visible=0, size=(800, 800))
-    #display.start()
 
     options = Options()
     options.headless = True
@@ -250,42 +247,44 @@ def run_subcategory(browser='Firefox'):
                         time.sleep(12) # Wait for some time to load
 
                         html = driver.page_source.encode('utf-8', errors='ignore')
-                
+                        soup = BeautifulSoup(html, 'lxml')
                         with open(f'dumps/{category}_{subcategory_name}_{curr}.html', 'wb') as f:
                             f.write(html)
 
                         print("Written html. Sleeping...")
-                        time.sleep(2)
+                        time.sleep(6)
+                        
                         
                         # Find link of next page, if "Next" link is not enabled, then quit
                         try:
                             element = driver.find_element_by_css_selector(".a-pagination .a-last")
                             if element.is_enabled() == False:
-                                total_products = parse_data.get_total_products_number(soup)
+                                total_products,_ = parse_data.get_total_products_number(soup)
                                 if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
                                     logger.warning(f"{subcategory} subcategory: No of items mismatch")
                                 break
                         except Exception as ex: #Link not found
                             print(ex)
-                            total_products = parse_data.get_total_products_number(soup)
+                            total_products,_ = parse_data.get_total_products_number(soup)
                             if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
                                 logger.warning(f"{subcategory} subcategory: No of items mismatch")
                             print("Next page not found. Quitting...")
                             break
 
+                        
                         #Child link of this element
                         try:
                             e = element.find_element_by_tag_name("a")
                         except:
                             print("Tag element not found")
-                            total_products = parse_data.get_total_products_number(soup)
+                            total_products,_ = parse_data.get_total_products_number(soup)
                             if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
                                 logger.warning(f"{subcategory} subcategory: No of items mismatch")
                             break
                         
                         url = e.get_attribute("href")
-
-                        if url is not None:
+                        
+                        if url is not None:           
                             print(f"URL is {url}")
                             curr += 1
                             alpha = 1000 #Changes scroll height for all pages

@@ -1168,7 +1168,7 @@ def scrape_product_detail(product_url,category=None, review_pages=None, qanda_pa
         # scrape reviews till threshold date sorted by most recent
         qanda_completed = scrape_qanda(server_url,qanda_url,product_id,threshold_date)
         if qanda_completed is not True:
-            logger.error(f"Reviews for product id {product_id} could not be completed")
+            logger.error(f"QandA for product id {product_id} could not be completed")
     
     # Scrape reviews  
     logger.info(f"Scraping reviews for product {product_id}") 
@@ -1276,7 +1276,7 @@ def scrape_qanda(server_url,qanda_url,product_id,threshold_date):
         # Insert QandA to dB
         status = db_manager.insert_product_qanda(db_session, qandas, product_id=product_id)
         if not status:
-            logger.error(f"Not able to store reviews for {product_id}")     
+            logger.error(f"Not able to store QandA for {product_id}")     
         
             
         # Go to next page

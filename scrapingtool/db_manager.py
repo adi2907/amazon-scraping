@@ -759,7 +759,7 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
             func.max(tbl.detail_completed),
             tbl.product_url,
             tbl.duplicate_set
-        ).group_by(tbl.duplicate_set).filter(and_(ProductListing.category == category,ProductListing.total_ratings>500)).all()
+        ).group_by(tbl.duplicate_set).filter(and_(ProductListing.category == category,ProductListing.total_ratings>10)).all()
         
         # Add all list entries unless the last scrapped date (detail_scrapped) is less than 1 week old       
         for maxdate in maxdates:
@@ -769,7 +769,8 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
             result.append(maxdate[1]) #Domain + product_url
     except Exception as ex:
         logger.error("Exception in fetching product ids"+ex)
-    
+    print("Current set of product ids being scrapped are ")
+    print(result)
     return result
 
 def get_last_review_date(session,product_id,table="Reviews"):
@@ -1076,6 +1077,8 @@ def assign_subcategories(session, category, table='ProductDetails'):
         for _subcategory in subcategory_dict[category]:
             for subcategory_name in subcategory_dict[category][_subcategory]:
                 value = subcategory_dict[category][_subcategory][subcategory_name]
+                
+                # if subcategory is a url, parse the dumps files to assign subcategories
                 if isinstance(value, str):
                     # Parse the html for the subcategory
                     files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory_name}_*")
@@ -1086,6 +1089,7 @@ def assign_subcategories(session, category, table='ProductDetails'):
                     for filename in files:
                         process_subcategory_html(subcategory_name, filename, subcategory_type=_subcategory, subcategory_list=subcategory_list)
                 
+                # if subcategory is a lambday45we
                 elif isinstance(value, dict) and 'predicate' in value and 'field' in value:
                     # Use the predicate
                     field = value['field']
