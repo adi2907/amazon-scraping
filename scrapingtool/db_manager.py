@@ -1089,7 +1089,7 @@ def assign_subcategories(session, category, table='ProductDetails'):
                     for filename in files:
                         process_subcategory_html(subcategory_name, filename, subcategory_type=_subcategory, subcategory_list=subcategory_list)
                 
-                # if subcategory is a lambday45we
+                # if subcategory is a lambda
                 elif isinstance(value, dict) and 'predicate' in value and 'field' in value:
                     # Use the predicate
                     field = value['field']

@@ -30,10 +30,10 @@ class Command(BaseCommand):
         models = dict()
         results = []
 
-        delta = (datetime.now() - datetime(year=2020, month=8, day=1)).days
+        delta = (datetime.now() - datetime(year=2021, month=6, day=1)).days
 
         end_date = datetime.now()
-        start_date = datetime(year=2020, month=8, day=1)
+        start_date = datetime(year=2021, month=6, day=1)
 
         print(f"Delta = {delta}")
 

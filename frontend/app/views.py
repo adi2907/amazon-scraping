@@ -17,11 +17,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 
-@login_required(login_url="/login/")
+#@login_required(login_url="/login/")
 def index(request):
     return render(request, "index.html")
 
-@login_required(login_url="/login/")
+#@login_required(login_url="/login/")
 def pages(request):
     context = {}
     # All resource paths end in .html.

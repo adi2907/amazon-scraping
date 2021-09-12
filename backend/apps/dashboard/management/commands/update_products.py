@@ -100,15 +100,17 @@ class Command(BaseCommand):
                 if next_period > 12:
                     next_period = 1
 
-                first_date = datetime(year=2020, month=period, day=1)
-                last_date = datetime(year=(2020 + (period + 1)//12), month=(next_period), day=1)
+                first_date = datetime(year=2021, month=period, day=1)
+                last_date = datetime(year=(2021 + (period + 1)//12), month=(next_period), day=1)
                 try:
-                    num_reviews = Reviews.objects.using('scraped').filter(product_id__in=duplicate_product_ids, review_date__range=[first_date, last_date], is_duplicate=False, duplicate_set=duplicate_set).count()
+                    num_reviews = Reviews.objects.using('scraped').filter(product_id__in=duplicate_product_ids, review_date__range=[first_date, last_date]).count()
+                    
                 except Exception as ex:
                     print(ex)
                     num_reviews = 0
 
                 review_info[period] += num_reviews
+                #print("For period {0} number reviews is {1} for product {2}".format(period,num_reviews,product_id))
                             
         
             qs = ProductAggregate.objects.filter(product_id=product_id)

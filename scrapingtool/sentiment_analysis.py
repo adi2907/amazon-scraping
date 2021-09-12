@@ -36,13 +36,17 @@ def load_model(download=False):
     nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment')
     return nlp
 
-
+# Returns aspect based sentiment analysis for a review
 def aspect_based_sa(nlp, keywords, review, category):
     aspect_dict = {}
     param_list = []
+    
+    # aspect list for the category
     head_list = [_list[1:] for _list in keywords if _list[0] == category]
     for _list in head_list:
         param_list.append([x for x in _list if x])
+    
+    # Break review into sentences, assign sentiment to each sentence
     doc = nlp(review)
     for sentence in doc.sentences:
         for _list in param_list:
@@ -73,9 +77,6 @@ def analyse(df, nlp, keywords, category):
 
         review = df['body'][idx]
         _id = df['id'][idx]
-        #product_id = df['product_id'][idx]
-
-        # nlp, keywords, review, category
 
         if isinstance(df['body'][idx], str):
             sentiments.append({'id': i, **aspect_based_sa(nlp, keywords, review, df['category'][i])})
