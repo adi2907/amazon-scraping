@@ -759,7 +759,7 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
             func.max(tbl.detail_completed),
             tbl.product_url,
             tbl.duplicate_set
-        ).group_by(tbl.duplicate_set).filter(and_(ProductListing.category == category,ProductListing.total_ratings>10)).all()
+        ).group_by(tbl.duplicate_set).filter(and_(ProductListing.category == category,ProductListing.total_ratings>50)).all()
         
         # Add all list entries unless the last scrapped date (detail_scrapped) is less than 1 week old       
         for maxdate in maxdates:
@@ -769,25 +769,42 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
             result.append(maxdate[1]) #Domain + product_url
     except Exception as ex:
         logger.error("Exception in fetching product ids"+ex)
-    print("Current set of product ids being scrapped are ")
-    print(result)
+    print("# of ids to be scrapped are "+ str(len(result)))
     return result
 
 def get_last_review_date(session,product_id,table="Reviews"):
     try:
-        obj = session.query(table_map[table]).filter(Reviews.product_id == product_id).order_by(desc(Reviews.review_date)).one()
-        return obj.review_date
-    except: # No row was found
+        obj = session.query(table_map[table]).filter(Reviews.product_id == product_id).order_by(desc(Reviews.review_date)).first()
+        if obj is not None:
+            return obj.review_date
+        else:
+            return None
+    except Exception as ex: # No row was found
+        logger.error("Exception in getting review date "+ex)
         return None
     
 def get_last_qanda_date(session,product_id,table="QandA"):
     try:
-        obj = session.query(table_map[table]).filter(QandA.product_id == product_id).order_by(desc(QandA.date)).one()
-        return obj.review_date
-    except: # No row was found
+        obj = session.query(table_map[table]).filter(QandA.product_id == product_id).order_by(desc(QandA.date)).first()
+        if obj is not None:
+            return obj.date
+        else:
+            return None
+    except Exception as ex:
+        logger.error("Exception in getting QandA date "+ex) # No row was found
         return None
     
-
+def get_detail_scrapped_date(session,product_id,table="ProductDetails"):
+    try:
+        obj = session.query(table_map[table]).filter(ProductDetails.product_id == product_id).one_or_none()
+        if obj is not None:
+            return obj.date_completed
+        else:
+            return None
+    except Exception as ex:
+        logger.error("Exception in getting Product Details date "+ex) 
+        return None
+    
 def add_column(engine, table_name: str, column: Column):
     column_name = column.compile(dialect=engine.dialect)
     column_type = column.type.compile(engine.dialect)

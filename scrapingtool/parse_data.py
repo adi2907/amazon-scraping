@@ -1,8 +1,10 @@
+from itertools import product
 import os
 import pickle
 import re
 from datetime import datetime
-
+import requests
+import fnmatch
 from bs4 import BeautifulSoup
 
 from utils import create_logger
@@ -10,15 +12,14 @@ from utils import create_logger
 logger = create_logger(__name__)
 
 
-def init_parser(category: str):
-    if not os.path.exists(os.path.join(os.getcwd(), 'data', f'{category}.html')):
-        raise ValueError(f'HTML file for category:{category} missing. Please make sure that it is downloaded')
-
-    with open(os.path.join('data', f'{category}.html'), 'rb') as f:
-        html_text = f.read()
-        soup = BeautifulSoup(html_text, 'lxml')
-    
-    return soup
+def init_parser(url:str):
+    headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": f"www.amazon.in", "Upgrade-Insecure-Requests":"1", "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"}
+    response = requests.get(url,headers=headers,timeout=10)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text,'html.parser')
+        return soup
+    else:
+        return None
 
 
 def is_sponsored(url: str) -> bool:
@@ -26,6 +27,8 @@ def is_sponsored(url: str) -> bool:
 
 
 def get_product_id(url):
+    if url.startswith("https://"):
+        url.replace("https://www.amazon.in","")
     if url.startswith("/gp/slredirect"):
         # Only match until the first % (?)
         # Ignore the first 2 charactes (2F)
@@ -218,6 +221,33 @@ def get_product_data(soup, html=None):
         results['byline_info']['info'] = byline_info.text.strip()
         results['byline_info']['url'] = byline_info.attrs['href'] if 'href' in byline_info.attrs else None
     
+    # Product Overview - Key points to know
+    product_overview={}
+    product_div = soup.find('div',{'id':'productOverview_feature_div'})
+    table = product_div.find('table')
+    if table is not None:
+        rows = table.find_all('tr')
+        for row in rows:
+            aux = row.findAll('td')
+            x=aux[0].text.strip()
+            y=aux[1].text.strip()
+            key=re.split(';|:|\n|&',x)[0].encode('ascii', 'ignore').decode('utf-8').strip()
+            value=re.split(';|:|\n|&',y)[0].encode('ascii', 'ignore').decode('utf-8').strip()
+            product_overview[key] = value
+        results['product_overview'] =  product_overview 
+    else:
+        results['product_overview'] =  None 
+    
+    # Feature list - Key Selling Points
+    feature_div = soup.find('div',{'id':'feature-bullets'})
+    ul = feature_div.find('ul')
+    if ul is not None:
+        feature_list = [li.text.strip() for li in ul.findAll('li')]
+        results['features'] = feature_list
+    else:
+        results['features'] = None
+        
+    
     # Rating Information
     num_reviews = center_col_node.find("span", id="acrCustomerReviewText")
     if num_reviews is None:
@@ -249,18 +279,6 @@ def get_product_data(soup, html=None):
         if results['curr_price'][0].isdigit() == False:
             results['curr_price'] = results['curr_price'][1:]
     
-    # Feature Points
-    feature_node = center_col_node.find("div", id="feature-bullets")
-    if feature_node is None:
-        results['features'] = None
-    else:
-        contents = feature_node.find_all(recursive=True)
-        features = []
-        for content in contents:
-            if hasattr(content, 'text'):
-                # Filter to remove the empty strings during string.split('\n)
-                features.extend(filter(None, content.text.strip().split('\n')))
-        results['features'] = features
 
     # Offers
     offers_node = soup.find("div", id="sopp_feature_div")
@@ -289,117 +307,67 @@ def get_product_data(soup, html=None):
                 description.extend(filter(None, content.text.strip().split('\n')))
         results['description'] = description
     
-    # Product Details
-    detail_node = soup.find("div", id="prodDetails")
-    if detail_node is None:
-        results['product_details'] = None
-    else:
-        details = dict()
-        headers = detail_node.find_all("div", class_="secHeader")
-        flag = True
-        if headers is not None:
-            for header in headers:
-                flag = False
-                desc = header.text.strip()
-                details[desc] = dict()
-                # Per Table basis
-                table = detail_node.find("table")
-                if table is None:
-                    continue
-                labels, values = table.find_all("td", class_="label"), table.find_all("td", class_="value")
-                if len(labels) != len(values):
-                    continue
-                for label, value in zip(labels, values):
-                    _label, _value = label.text.strip(), value.text.strip()
-                    details[desc][_label] = _value
-        
-        if flag == True:
-            # For some categories, this may work
-            # Ex: headphones
-            tables = detail_node.find_all("table")
-            titles = detail_node.find_all("h1")
-
-            flag = True
-            if tables is not None:
-                for idx, table in enumerate(tables):
-                    flag = False
-                    try:
-                        desc = titles[idx].text.strip()
-                    except:
-                        desc = f'Product Details {idx}'
-                    details[desc] = dict()
-                    # Per Table basis
-                    labels, values = table.find_all("th"), table.find_all("td")
-                    if len(labels) != len(values):
-                        continue
-                    for label, value in zip(labels, values):
-                        _label, _value = label.text.strip(), value.text.strip()
-                        details[desc][_label] = _value
-            if flag == True:
-                # Is Empty
-                pass
-            else:
-                # Smartphones
-                results['product_details'] = details
-        else:
-            # Smartphones
-            results['product_details'] = details
     
+    # Get product Details
+    product_details = {}
+    detail_node = soup.find("div",id="productDetails_feature_div")
     if detail_node is None:
-        # Possible Empty. Ceiling Fan?
-        detail_node = soup.find("div", id="detailBullets_feature_div")
+        # Product Details
+        detail_node = soup.find("div",id="detail-bullets_feature_div")
         if detail_node is not None:
-            details = dict()
-            flag = True
-            tables = detail_node.find_all("span", class_="a-list-item")
-            desc = "Product Details"
-            details[desc] = dict()
-            for idx, detail in enumerate(tables):
-                flag = False
-                elements = detail.find_all("span")
-                try:
-                    label, value = elements[0].text.strip().replace("\n:", "").strip(), elements[1].text.strip()
-                    details[desc][label] = value
-                except:
-                    pass
-            
-            if flag == True:
-                # Is Empty
-                pass
+            ul = detail_node.find('ul')
+            if ul is not None:
+                lis = ul.findAll('li')
+                for row in lis:
+                    th = row.find('span',{'class':'a-text-bold'})
+                    td = th.find_next_sibling()
+                    x=th.text.strip()
+                    y=td.text.strip()
+                    key=re.split(';|:|\n|&',x)[0].encode('ascii', 'ignore').decode('utf-8').strip()
+                    value=re.split(';|:|\n|&',y)[0].encode('ascii', 'ignore').decode('utf-8').strip()              
+                    product_details[key] = value
+            results['product_details'] =  product_details
+        else:
+            results['product_details'] = None
+    else:
+        # Product Information - Technical details/Additional Information
+        tables = detail_node.find_all('table')
+        if tables is not None:
+            for table in tables:
+                rows = table.find_all('tr')
+                for row in rows:
+                    th = row.find('th')
+                    td = row.find('td')
+                    x=th.text.strip()
+                    y=td.text.strip()
+                    key=re.split(';|:|\n|&',x)[0].encode('ascii', 'ignore').decode('utf-8').strip()
+                    value=re.split(';|:|\n|&',y)[0].encode('ascii', 'ignore').decode('utf-8').strip()              
+                    product_details[key] = value
+            results['product_details'] = product_details
+        else:
+            results['product_details'] = None
 
-            results['product_details'] = details
+    # Assign brand and model
+    if product_details is not None and 'Brand' in product_details:
+        brand = product_details['Brand']
+    elif product_overview is not None and 'Brand' in product_overview:
+        brand = product_overview['Brand']
+    else:
+        brand = None
     
-    brand = None
-    model = None
-    try:
-        if 'product_details' in results:
-            if results['product_details'] not in (None, {}):
-                # Get the brand and model
-                key = 'Technical Details' if 'Technical Details' in results['product_details'] else 'Product Details'
-                if key in results['product_details']:
-                    if 'Brand' in results['product_details'][key]:
-                        brand = results['product_details'][key]['Brand']
-                    elif 'Brand Name' in results['product_details'][key]:
-                        brand = results['product_details'][key]['Brand Name']
-                    elif 'Manufacturer' in results['product_details'][key]:
-                        brand = results['product_details'][key]['Manufacturer']
-                    
-                    if 'Model' in results['product_details'][key]:
-                        model = results['product_details'][key]['Model']
-                    elif 'Item model name' in results['product_details'][key]:
-                        model = results['product_details'][key]['Item model name']
-                else:
-                    # Get it from byline_info
-                    if 'byline_info' in results and 'info' in results['byline_info']:
-                        brand = results['byline_info']['info']
-                        if brand.startswith("Visit the "):
-                            brand = brand.replace("Visit the ", "")
-                            if brand.strip()[-1] == 'store':
-                                brand = brand.replace(' store', '')
-    except Exception as ex:
-        print(ex)
-    results['brand'] = brand
-    results['model'] = model
+    if product_details is not None:
+        for key in product_details:
+            if 'model' in key.lower():
+                model = product_details[key]
+                break
+    elif product_overview is not None:
+        for key in product_overview:
+            if 'model' in key.lower():
+                model = product_details[key]
+    else:
+        model = None
+        
+    
     
     # Customer Q&A
     customer_node = soup.find("div", class_="askWidgetQuestions askLiveSearchHide")
@@ -450,31 +418,22 @@ def get_product_data(soup, html=None):
                 avg_rating = None
         
         results['avg_rating'] = avg_rating
-        
-        # Get the feature wise ratings
-        attribute_widget = customer_reviews.find("div", {"data-hook": "summarization-attributes-widget"})
-        if attribute_widget is not None:
-            featurewise_reviews = dict()
-
-            # Now we go to each featurewise review
-            featurewise_reviews = attribute_widget.find("div", {"data-hook": "cr-summarization-attributes-list"})
-            if featurewise_reviews is not None:
-                nodes = featurewise_reviews.find_all("div", {"data-hook": "cr-summarization-attribute"})
-                if nodes is not None:
-                    featurewise_reviews = dict()
-                    for node in nodes:
-                        key = None
-                        if hasattr(node, 'span') and hasattr(node.span, 'text'):
-                            key = node.span.text.strip()
-                        rating = node.find("span", class_="a-icon-alt")
-                        if rating is not None:
-                            rating = float(rating.text.strip())
-                        else:
-                            rating = 0.0
-                        if key is not None:
-                            featurewise_reviews[key] = rating
             
-            results['featurewise_reviews'] = featurewise_reviews
+        
+        featurewise_reviews = {}
+        # Now we go to each featurewise review
+        featurewise_reviews_node = customer_reviews.find("div", id= "cr-summarization-attributes-list")
+        if featurewise_reviews_node is not None:
+            feature_nodes = featurewise_reviews_node.find_all("div", {"data-hook": "cr-summarization-attribute"})
+            if feature_nodes is not None:
+                for node in feature_nodes:
+                    span_nodes = node.find_all("span")
+                    if span_nodes is not None:
+                        key=span_nodes[0].text.strip()
+                        featurewise_reviews[key]=span_nodes[2].text.strip() 
+                results[featurewise_reviews]=featurewise_reviews
+            else:
+                results['featurewise_reviews'] = None
         else:
             results['featurewise_reviews'] = None
         
@@ -697,50 +656,11 @@ def get_customer_reviews(soup, content={}):
 
 
 if __name__ == '__main__':
-    #soup = init_parser('sample')
-    #results = get_reviews(soup)
-    #print(results)
-    
-    #soup = init_parser('headphones/page_2')
-    #results, _ = get_product_info(soup)
-    #print(results)
-    #print(len(results.keys()))
-
-    #soup = init_parser('mobile/sample')
-    soup = init_parser('haircolor_reviews')
-    results = get_customer_reviews(soup)
-    #results = get_product_info(soup)
+    # Only details
+    url = 'https://www.amazon.in/iQOO-Storage-Processor-FlashCharge-Replacement/dp/B07WHR5RKH/ref=sr_1_1?dchild=1&keywords=B07WHR5RKH&qid=1631897443&qsid=257-7977364-1168566&sr=8-1&sres=B07WHR5RKH&th=1#customerReviews'
+    soup = init_parser(url)
+    results = get_product_data(soup)
     print(results)
-    exit(0)
-    #print(results['reviews_url'])
-    page_element = soup.find("ul", class_="a-pagination")
-    next_page = page_element.find("li", class_="a-last")
-    page_url = next_page.find("a")
-    page_url = page_url.attrs['href']
-    print(page_url)
-    exit(0)
-
-    # Get the Product Data (Including Customer Reviews)
-    #soup =  init_parser('headphones/B07HZ8JWCL')
-    #results = get_product_data(soup)
-    #print(results)
-
-    # Get the customer reviews alone (https://www.amazon.in/Sony-WH-1000XM3-Wireless-Cancellation-Headphones/product-reviews/B07HZ8JWCL/ref=cm_cr_getr_d_paging_btm_prev_1?ie=UTF8&pageNumber=1&reviewerType=all_reviews)
-    #soup = init_parser('headphones/reviews_B07HZ8JWCL')
-    #results, next_url, num_reviews = get_customer_reviews(soup)
-    #with open('dump_B07HZ8JWCL_reviews.pkl', 'wb') as f:
-    #    pickle.dump(results, f)
-    #print(results, next_url)
-
-    # Get the QandA for this product alone (https://www.amazon.in/ask/questions/asin/B07HZ8JWCL/ref=cm_cd_dp_lla_ql_ll#nav-top)
-    #soup = init_parser('headphones/qanda_B07HZ8JWCL')
-    #results, next_url = get_qanda(soup)
-    #print(results, next_url)
-
-    soup = init_parser('listing')
-    #soup = init_parser('detail')
-    #results = get_product_data(soup)
-    results, _ = get_product_info(soup)
-    for title in results:
-        product_url = results[title]['product_url']
-        print(product_url)
+    # Only reviews
+    
+    # Only Q&A

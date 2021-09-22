@@ -4,6 +4,7 @@ import requests
 import itertools
 import time
 
+
 from utils import (create_logger)
 logger = create_logger(__name__)
 
@@ -20,7 +21,8 @@ class Proxy():
             }
         if self.use_proxy == True:
             self.proxy_list = self.get_proxy_list()
-            self.switch_proxy()
+            ip = self.switch_proxy()
+        print("Proxy ip is "+ip)
         
         if OS == 'Linux':
             self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
