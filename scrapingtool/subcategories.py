@@ -62,19 +62,19 @@ subcategory_dict = {
             '>30000': {'field': 'curr_price', 'predicate': lambda curr_price: True if (curr_price is not None and curr_price >= 30000) else False},
         }
     },
-    # 'headphones': {
-    #     'Type': {
-    #         'wired': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564046031&dc&fst=as%3Aoff&qid=1599294897&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',
-    #         'wireless': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564047031%7C15564048031&dc&fst=as%3Aoff&qid=1599295118&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',
-    #         'tws': {'field': 'product_title', 'predicate': lambda product_title: True if (product_title is not None and any(token in product_title.lower() for token in ['tws', 'true wireless', 'true-wireless', 'truly wireless', 'truly-wireless'])) else False},
-    #     },
-    #     'Price': {
-    #         "<500": 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A-50000&dc&fst=as%3Aoff&qid=1599295515&ref=sr_ex_p_n_feature_six_brow_0',
-    #         '500-1000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A50000-100000&dc&fst=as%3Aoff&qid=1599295566&rnid=1318502031&ref=sr_nr_p_36_1',
-    #         '1000-2000':'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A100000-200000&dc&fst=as%3Aoff&qid=1599295865&rnid=1318502031&ref=sr_nr_p_36_5',
-    #         '2000-3000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A200000-300000&dc&fst=as%3Aoff&qid=1599295874&rnid=1318502031&ref=sr_nr_p_36_1',
-    #         '3000-5000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A300000-500000&dc&fst=as%3Aoff&qid=1599295929&rnid=1318502031&ref=sr_nr_p_36_5',
-    #         '>5000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A500000-5000000&dc&fst=as%3Aoff&qid=1599296034&rnid=1318502031&ref=sr_nr_p_36_5',
-    #     },
-    # },
+    'headphones': {
+        'Type': {
+            'wired': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564046031&dc&fst=as%3Aoff&qid=1599294897&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',
+            'wireless': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_n_feature_six_browse-bin%3A15564047031%7C15564048031&dc&fst=as%3Aoff&qid=1599295118&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',
+            'tws': {'field': 'product_title', 'predicate': lambda product_title: True if (product_title is not None and any(token in product_title.lower() for token in ['tws', 'true wireless', 'true-wireless', 'truly wireless', 'truly-wireless'])) else False},
+        },
+        'Price': {
+            "<500": 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A-50000&dc&fst=as%3Aoff&qid=1599295515&ref=sr_ex_p_n_feature_six_brow_0',
+            '500-1000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A50000-100000&dc&fst=as%3Aoff&qid=1599295566&rnid=1318502031&ref=sr_nr_p_36_1',
+            '1000-2000':'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A100000-200000&dc&fst=as%3Aoff&qid=1599295865&rnid=1318502031&ref=sr_nr_p_36_5',
+            '2000-3000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A200000-300000&dc&fst=as%3Aoff&qid=1599295874&rnid=1318502031&ref=sr_nr_p_36_1',
+            '3000-5000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A300000-500000&dc&fst=as%3Aoff&qid=1599295929&rnid=1318502031&ref=sr_nr_p_36_5',
+            '>5000': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A976419031%2Cn%3A976420031%2Cn%3A1388921031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_availability%3A1318485031%2Cp_72%3A1318478031%2Cp_36%3A500000-5000000&dc&fst=as%3Aoff&qid=1599296034&rnid=1318502031&ref=sr_nr_p_36_5',
+        },
+    },
 }
