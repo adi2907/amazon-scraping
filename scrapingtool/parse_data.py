@@ -355,6 +355,8 @@ def get_product_data(soup, html=None):
     else:
         brand = None
     
+    results['brand'] = brand
+    
     if product_details is not None:
         for key in product_details:
             if 'model' in key.lower():
@@ -366,8 +368,8 @@ def get_product_data(soup, html=None):
                 model = product_details[key]
     else:
         model = None
-        
     
+    results['model'] = model  
     
     # Customer Q&A
     customer_node = soup.find("div", class_="askWidgetQuestions askLiveSearchHide")

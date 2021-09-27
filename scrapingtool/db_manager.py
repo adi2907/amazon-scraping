@@ -70,6 +70,7 @@ tables = {
         'offers': 'LONGTEXT',
         'description': 'LONGTEXT',
         'product_details': 'LONGTEXT',
+        'product_overview': 'LONGTEXT',
         'featurewise_reviews': 'LONGTEXT',
         'customer_qa': 'LONGTEXT',
         'customer_lazy': 'INTEGER',

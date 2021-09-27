@@ -101,7 +101,7 @@ def analyse(df, nlp, keywords, category):
         pickle.dump(sentiments, f)
     sentiments = []
 
-
+# Combine all sentiment analysis pickles into a single pickle file
 def aggregate_sentiments_after_script():
     files = sorted(glob.glob(os.path.join(DATASET_PATH, 'sentiments_*.pkl')), key=lambda x: int(x.rsplit('_')[1].split('.')[0]))
     indexed_sentiments = []
@@ -115,7 +115,7 @@ def aggregate_sentiments_after_script():
     return indexed_sentiments
 
 
-def construct_indexed_df(reviews_df, indexed_sentiments=None): # From CLEANED_UP file
+def construct_indexed_df(reviews_df, indexed_sentiments=None): 
     if indexed_sentiments is None:
         with open(os.path.join(DATASET_PATH, 'indexed_sentiments.pkl'), 'rb') as f:
             indexed_sentiments = pickle.load(f)
@@ -269,9 +269,13 @@ if __name__ == '__main__':
     # Run the sentiment analysis
     sentiment_analysis(category)
     
-    # Post-process
+    # Read all reviews in reviews dataframe
     review_df = pd.read_csv(os.path.join(DATASET_PATH, REVIEWS_FILE), sep=",", encoding="utf-8", usecols=["id", "product_id", "title", "body", "category"])
+    
+    # Combine all sentiment analysis pickles into a single pickle file
     indexed_sentiments = aggregate_sentiments_after_script()
+    
+    
     db_df, indexed_df = construct_indexed_df(review_df, indexed_sentiments)
     db_df.to_csv(os.path.join(DATASET_PATH, f'sentiment_db_{category}.csv'))
     indexed_df.to_csv(os.path.join(DATASET_PATH, f'sentiment_analysis_{category}.csv'))

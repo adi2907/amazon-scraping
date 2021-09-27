@@ -23,16 +23,15 @@ python3 scrapingtool/browser.py category
 * Command to run the detail scraping:
 
 ```bash
-python3 scrapingtool/scraper.py --categories "smartphones" --detail --no_listing --num_workers 5
+python3 scrapingtool/scraper.py --categories "smartphones"
 ```
 
-This will scrape the details of the headphones category, and will spawn 5 worker threads (need to set `MULTITHREADING=True` in `.env` if using `--num_workers` option)
-
-After the details scraping is done, you can run the below command to post-process everything and dump any pending data from the cache.
+This will scrape the details of the smartphones category. You can scrape multiple categories by passing them as comma separated arguments
 
 ```bash
-bash post_detail_scraping.sh
+python3 scrapingtool/scraper.py --categories "smartphones","headphones
 ```
+
 
 3. Archive Scraping Module:
 

@@ -257,7 +257,8 @@ def run_subcategory(browser='Firefox'):
                         
                         # Find link of next page, if "Next" link is not enabled, then quit
                         try:
-                            element = driver.find_element_by_css_selector(".a-pagination .a-last")
+                            #element = driver.find_element_by_css_selector(".a-pagination .a-last")
+                            element = driver.find_element_by_css_selector("a[class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']")
                             if element.is_enabled() == False:
                                 total_products,_ = parse_data.get_total_products_number(soup)
                                 if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
@@ -273,16 +274,16 @@ def run_subcategory(browser='Firefox'):
 
                         
                         #Child link of this element
-                        try:
-                            e = element.find_element_by_tag_name("a")
-                        except:
-                            print("Tag element not found")
-                            total_products,_ = parse_data.get_total_products_number(soup)
-                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                                logger.warning(f"{subcategory} subcategory: No of items mismatch")
-                            break
+                        # try:
+                        #     e = element.find_element_by_tag_name("a")
+                        # except:
+                        #     print("Tag element not found")
+                        #     total_products,_ = parse_data.get_total_products_number(soup)
+                        #     if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                        #         logger.warning(f"{subcategory} subcategory: No of items mismatch")
+                        #     break
                         
-                        url = e.get_attribute("href")
+                        url = element.get_attribute("href")
                         
                         if url is not None:           
                             print(f"URL is {url}")
