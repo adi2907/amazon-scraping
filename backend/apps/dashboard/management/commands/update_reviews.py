@@ -99,7 +99,7 @@ class Command(BaseCommand):
                 avg_reviews_none = 0
                 
                 # TODO: Change this later to index only based on the base product_id
-                item_not_none = Reviews.objects.using('scraped').filter(product_id__in=duplicate_product_ids, review_date__range=[prev_date, curr_date], is_duplicate=False, duplicate_set=duplicate_set).aggregate(avg_rating=Avg('rating'), num_reviews=Count('id'))
+                item_not_none = Reviews.objects.using('scraped').filter(product_id__in=duplicate_product_ids, review_date__range=[prev_date, curr_date], is_duplicate=False).aggregate(avg_rating=Avg('rating'), num_reviews=Count('id'))
 
                 avg_reviews_not_none = item_not_none['avg_rating']
                 if avg_reviews_not_none is None:
