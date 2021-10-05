@@ -174,7 +174,9 @@ class Proxy():
         print(self.get_ip())
         self.get(url)
 
-
+    def get_current_proxy(self):
+        return self.proxies['http']
+    
 if __name__ == '__main__':
     proxy = Proxy()
     # print(proxy.get_proxy_list())

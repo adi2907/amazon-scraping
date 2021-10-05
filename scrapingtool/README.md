@@ -63,18 +63,12 @@ The main database tables are listed below:
 
 There is no need to run this module separately, but it can still be used to fetch records in case a need arises to examine databases.
 
-To export a database table into an external csv file, you can run the below command:
-
-```bash
-python3 scrapingtool/db_manager.py --export_to_csv --table "ProductListing" --csv "listing.csv"
 ```
 
 This will export the `ProductListing` table into a csv file called `listing.csv`
 
 Similarly, if you want to import a database table from an existing csv file, you can run the below command:
 
-```bash
-python3 scrapingtool/db_manager.py --import_from_csv --table "ProductListing" --csv "updated_listing.csv"
 ```
 
 This will do the inverse operation of the export, where the database table is populated from an existing csv file.

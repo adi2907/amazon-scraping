@@ -1,5 +1,6 @@
 import random
 import argparse
+from selenium.webdriver.chrome.webdriver import WebDriver
 from sqlalchemy.sql.operators import is_
 import parse_data
 import time
@@ -12,20 +13,22 @@ from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
 from sqlalchemy import asc, desc, text
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.exc import NoResultFound
-from sqlitedict import SqliteDict
 
 import db_manager
-import parse_data
 import proxy
 from utils import (category_to_domain, create_logger,
                    customer_reviews_template, domain_map, domain_to_db,
                    listing_categories, listing_templates, qanda_template,
                    subcategory_map, url_template)
 
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+from webdriver_manager.firefox import GeckoDriverManager
+
 logger = create_logger('scraper')
 
 error_logger = create_logger('errors')
+
 
 headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36", "Accept-Encoding":"gzip, deflate", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close", "Upgrade-Insecure-Requests":"1"}
 
@@ -45,15 +48,8 @@ try:
 except UndefinedValueError:
     OS = 'Linux'
 
-try:
-    cache_file = config('cache_file')
-except UndefinedValueError:
-    cache_file = 'cache.sqlite3'
 
-logger.info(f"Using Sqlite3 Cache File = {cache_file}")
-
-
-# Start the session
+# Start the requests session
 session = requests.Session()
 
 # Use a proxy if possible
@@ -105,9 +101,9 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
     connection_params = db_manager.get_credentials()
     _engine,SessionFactory = db_manager.connect_to_db(domain_to_db[domain], connection_params)
 
-    reviews_completed = False
-    qanda_completed = False
     detail_completed = False
+    qanda_completed = False
+    reviews_completed = False
     
     #Assign threshold_date if none
     if threshold_date is None:
@@ -125,15 +121,6 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
         duplicate_set = obj.duplicate_set
 
     dont_update = False
-
-    # Store to cache first
-    with SqliteDict(cache_file, autocommit=True) as mydict:
-        try:
-            _set = mydict[f"DETAILS_SET_{category}"]
-        except KeyError:
-            _set = set()
-        _set.add(product_id)
-        mydict[f"DETAILS_SET_{category}"] = _set
     
     if my_proxy is None:
         response = session.get(server_url, headers=headers,cookies=cookies)
@@ -164,55 +151,49 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
         
         if hasattr(response, 'cookies'):
             cookies = {**cookies, **dict(response.cookies)}
-        
-        time.sleep(10) 
 
-        final_results = dict()
-
-        time.sleep(3)
+        time.sleep(10)
         html = response.content
         
         soup = BeautifulSoup(html, 'lxml')
-        
+        details = dict()
         # Get the product details 
         try:
             details = parse_data.get_product_data(soup, html=html)
             break
         except ValueError:
-            tries+=1
-            logger.warning(f"Written html to {category}_{product_url}.html")
             logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
             logger.warning(f"Try No {tries}")         
             time.sleep(random.randint(5, 10))
-            
-    details['product_id'] = product_id # Add the product ID
-    details['duplicate_set'] = duplicate_set
+                
+        details['product_id'] = product_id # Add the product ID
+        details['duplicate_set'] = duplicate_set
     
-    # Check if the product is sponsored
-    sponsored = parse_data.is_sponsored(product_url)
+        # Validate some important fields
+        important_fields = ['product_title', 'product_details', 'reviews_url', 'customer_qa']
+        empty_fields = []
+        for field in important_fields:
+            if details.get(field) in [None, "", {}, []]:
+                empty_fields.append(field)
+        
+        if empty_fields != []:
+            msg = ','.join([field for field in empty_fields])
+            logger.critical(f"{msg} fields are missing in product details" )
+        
+        # Insert to the DB
+        try:
+            with db_manager.session_scope(SessionFactory) as db_session:
+                status = db_manager.insert_product_details(db_session, details)
+                # if Database insertion fails, store in cache to examine later
+                if status == True:
+                    detail_completed = True
+                else:
+                    logger.critical(f"Couldn't insert product details for {product_id}")
+        except:
+            logger.critical(f"Couldn't insert product details for {product_id}")
     
-    # Validate some important fields
-    important_fields = ['product_title', 'product_details', 'reviews_url', 'customer_qa']
-    empty_fields = []
-    for field in important_fields:
-        if details.get(field) in [None, "", {}, []]:
-            empty_fields.append(field)
-    
-    if empty_fields != []:
-        msg = ','.join([field for field in empty_fields])
-        logger.critical(f"{msg} fields are missing in product details" )
-    
-    # Insert to the DB
-    try:
-        with db_manager.session_scope(SessionFactory) as db_session:
-            status = db_manager.insert_product_details(db_session, details, is_sponsored=sponsored)
-            # if Database insertion fails, store in cache to examine later
-            if status == True:
-                detail_completed = True
-            else:
-                logger.critical(f"Couldn't insert product details for {product_id}")
-    except:
-        logger.critical(f"Couldn't insert product details for {product_id}")
+    # Get variant data and iterate through them to get all duplicate sets
+    # Update variant ids in ProductListing and data in ProductDetails
     
     time.sleep(4)
 
@@ -285,7 +266,12 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
 
     time.sleep(3)
 
-    return final_results
+    return is_completed
+
+
+    
+   
+    
 
 #TODO: Need to handle following usecases
 # 1. Not able to scrape all QandA till a date - retry mechanism or delete all entries in case not successful
@@ -440,7 +426,7 @@ def scrape_reviews(server_url,reviews_url,product_id,threshold_date):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--categories', help='List of all categories (comma separated)', type=lambda s: [item.strip() for item in s.split(',')])
-    parser.add_argument('--url', help='Scrape the product detail for the url', type=str, default=None)
+    parser.add_argument('--url', help='Scrape the product detail for the url', type=str)
     args = parser.parse_args()
     
         

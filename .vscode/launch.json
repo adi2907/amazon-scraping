@@ -11,9 +11,9 @@
             "program": "${file}",
             "console": "integratedTerminal",
             //"args":["--url","https://www.amazon.in/Havells-Pacer-1400mm-Ceiling-Brown/dp/B00B4BBIDW/ref=sr_1_1?dchild=1&keywords=B00B4BBIDW&qid=1631638572&sr=8-1&th=1"],
-            //"args": ["--categories","headphones,ceiling fan,refrigerator,washing machine"],
+            "args": ["--categories","headphones,ceiling fan,refrigerator,washing machine"],
             //"args":["--category","all","--start_date","2021-01-01","--end_date","2021-09-30","--last_review"]
-            "args":["subcategory"]
+            //"args":["category"]
         },
     ]
 }

@@ -1,11 +1,20 @@
+import glob
+import os
 import time
+import traceback
 import math
 from datetime import datetime
+from string import Template
+
+import lxml
 from bs4 import BeautifulSoup
 from decouple import UndefinedValueError, config
 from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.remote.webelement import WebElement
+from sqlitedict import SqliteDict
+from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 
 import db_manager
@@ -13,13 +22,6 @@ import parse_data
 from subcategories import subcategory_dict
 from utils import (category_to_domain, create_logger, domain_map, domain_to_db,
                    is_lambda, listing_categories, listing_templates)
-
-# This scraper does the following:
-# Scrapes the listings and updates in ProductListing and DailyProductListing DB
-# Goes to product page and updates product details in ProductDetails DB
-# Updates duplicate variants in ProductListing and ProductDetails DB
-# Runs subcategory scraping and assigns subcategories in ProductDetails DB
-
 
 logger = create_logger('browser')
 
@@ -30,8 +32,14 @@ connection_params = db_manager.get_credentials()
 def run_category(browser='Firefox'):
     options = Options()
     options.headless = True
-    driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
+    if browser == 'Chrome':
+        # Use chrome
+        driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
+    elif browser == 'Firefox':
+        # Set it to Firefox
+        driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
     
+    from sqlalchemy.orm import sessionmaker
     
     try:
         for domain in domain_map:
@@ -42,6 +50,7 @@ def run_category(browser='Firefox'):
                 engine, Session = db_manager.connect_to_db(domain_to_db[domain], connection_params)
                 engine.execute(f"UPDATE ProductListing SET is_active = False")
             except Exception as ex:
+                traceback.print_exc()
                 logger.critical(f"Error during initiation session: {ex}")
 
             try:
@@ -67,7 +76,16 @@ def run_category(browser='Firefox'):
 
                         html = driver.page_source.encode('utf-8', errors='ignore')
 
-                        # Extract listing page contents and write to DB
+                        try:
+                            captcha = driver.find_element_by_id("captchacharacters")
+                            print("Fuck. Captcha")
+                            time.sleep(10)
+                            driver.get(url)
+                            continue
+                        except:
+                            pass
+                        
+                        # Extract page contents and write to DB
                         try:
                             soup = BeautifulSoup(html, 'lxml')
                             product_info, _ = parse_data.get_product_info(soup)
@@ -90,19 +108,10 @@ def run_category(browser='Firefox'):
 
 
                         except Exception as ex:
+                            traceback.print_exc()
                             logger.info(f"Exception during storing daily listing: {ex}")
                 
                         time.sleep(5)
-                        
-                        # Go to each product detail page
-                        for product in page_results[category][curr]:
-                            product_url = product['product_url']
-                            url =  "https://"+domain + product_url
-                            print(f"Get url "+url)
-                            time.sleep(5)
-                            driver.get(url)
-                            
-                            
 
                         # Find link of next page, if "Next" link is not enabled, then quit
                         try:
@@ -195,7 +204,12 @@ def run_subcategory(browser='Firefox'):
 
     options = Options()
     options.headless = True
-    driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
+    if browser == 'Chrome':
+        # Use chrome
+        driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
+    elif browser == 'Firefox':
+        # Set it to Firefox
+        driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
 
     url = ''
 

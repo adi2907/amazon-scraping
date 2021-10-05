@@ -177,7 +177,34 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
         
     return product_info, serial_no
 
-
+def get_feature_review_summartization(product_id):
+    
+    headers = {
+        'authority': 'www.amazon.in',
+        'sec-ch-ua': '"Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"',
+        'rtt': '100',
+        'sec-ch-ua-mobile': '?0',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36',
+        'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'accept': 'text/html,*/*',
+        'cache-control': 'no-cache',
+        'x-requested-with': 'XMLHttpRequest',
+        'downlink': '9.75',
+        'ect': '4g',
+        'origin': 'https://www.amazon.in',
+        'sec-fetch-site': 'same-origin',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-dest': 'empty',
+        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    }
+    params = (
+        ('asin', product_id),
+        ('language', 'en_IN'),
+        ('lazyWidget', 'cr-summarization-attributes'),
+    )
+    
+    response = requests.get('https://www.amazon.in/hz/reviews-render/ajax/lazy-widgets/stream', headers=headers, params=params)
+    
 def get_review_elements(soup):
     target_class = "a-popover-trigger a-declarative"
     js_elements = soup.find_all("a", class_=target_class)
