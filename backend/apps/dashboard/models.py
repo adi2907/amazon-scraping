@@ -76,7 +76,7 @@ class Qanda(models.Model):
     answer = models.TextField(blank=True, null=True)
     date = models.DateTimeField(blank=True, null=True)
     page_num = models.IntegerField(blank=True, null=True)
-    duplicate_set = models.IntegerField(blank=True, null=True)
+    duplicate_set = models.CharField(blank=True, null=True, max_length=100)
 
     class Meta:
         managed = False
@@ -96,7 +96,7 @@ class Reviews(models.Model):
     helpful_votes = models.IntegerField(blank=True, null=True)
     page_num = models.IntegerField(blank=True, null=True)
     is_duplicate = models.BooleanField(blank=True, null=True)
-    duplicate_set = models.IntegerField(blank=True, null=True)
+    duplicate_set = models.CharField(blank=True, null=True, max_length=100)
 
     class Meta:
         managed = False
@@ -163,7 +163,7 @@ class ProductAggregate(models.Model):
     short_title = models.TextField(blank=True, null=True)
     listing_reviews = models.IntegerField(blank=True, null=True)
     sentiments = models.TextField(blank=True, null=True, db_column="sentiments")
-    duplicate_set = models.IntegerField(blank=True, null=True)
+    duplicate_set = models.CharField(blank=True, null=True, max_length=100)
     total_reviews = models.TextField(blank=True, null=True)
 
 
@@ -179,7 +179,7 @@ class ReviewAggregate(models.Model):
     curr_price = models.FloatField(null=True, blank=True)
     is_duplicate = models.BooleanField(blank=True, null=True)
     short_title = models.TextField(blank=True, null=True)
-    duplicate_set = models.IntegerField(blank=True, null=True)
+    duplicate_set = models.CharField(blank=True, null=True, max_length=100)
     total_reviews = models.TextField(blank=True, null=True)
 
 
