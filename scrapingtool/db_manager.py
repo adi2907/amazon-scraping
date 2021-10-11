@@ -1,5 +1,4 @@
 # Represents all the Models used to create our scraper
-
 import argparse
 import datetime
 import glob
@@ -7,9 +6,13 @@ import json
 import os
 import pickle
 import re
-import sqlite3
 from contextlib import contextmanager
 from unicodedata import normalize
+from bs4 import BeautifulSoup
+import parse_data
+import requests
+import time
+
 
 import pymysql
 from decouple import UndefinedValueError, config
@@ -19,11 +22,18 @@ from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import mapper, relationship, sessionmaker
 from sqlalchemy.orm.exc import FlushError, NoResultFound
+from sqlalchemy.sql.expression import except_all, null
 from sqlitedict import SqliteDict
 
 import tokenize_titles
 from subcategories import subcategory_dict
 from utils import create_logger, subcategory_map, listing_categories
+from sp_api.base import SellingApiException,Marketplaces
+from sp_api.base.reportTypes import ReportType
+from sp_api.api import Catalog
+
+
+
 
 # This is required for integration with MySQL and Python
 pymysql.install_as_MySQLdb()
@@ -50,13 +60,11 @@ tables = {
         'old_price': 'FLOAT',
         'secondary_information': 'LONGTEXT',
         'image': 'TEXT(1000)',
-        'is_duplicate': 'BOOLEAN',
         'short_title': 'TEXT(100)',
-        'duplicate_set': 'INTEGER',
-        'is_active': 'BOOLEAN',
+        'duplicate_set': 'TEXT(100)',
         'date_completed': 'DATETIME',
         'brand': 'TEXT(100)',
-        'alert': 'BOOLEAN',
+        'model': 'TEXT(100)',
         'detail_completed': 'DATETIME',
         },
     'ProductDetails': {
@@ -70,22 +78,18 @@ tables = {
         'offers': 'LONGTEXT',
         'description': 'LONGTEXT',
         'product_details': 'LONGTEXT',
-        'product_overview': 'LONGTEXT',
         'featurewise_reviews': 'LONGTEXT',
         'customer_qa': 'LONGTEXT',
-        'customer_lazy': 'INTEGER',
         'histogram': 'LONGTEXT',
         'reviews_url': 'LONGTEXT',
         'created_on': 'DATETIME',
         'subcategories': 'LONGTEXT',
-        'is_sponsored': 'BOOLEAN',
-        'completed': 'BOOLEAN',
         'brand': 'TEXT(100)',
         'model': 'TEXT(100)',
         'date_completed': 'DATETIME',
-        'is_duplicate': 'BOOLEAN',
-        'alert': 'BOOLEAN',
-        'duplicate_set': 'INTEGER',
+        'duplicate_set': 'TEXT(100)',
+        'product_overview': 'LONGTEXT',
+        'related_products':'LONGTEXT',
     },
     'SponsoredProductDetails': {
         'product_id': 'TEXT(16) PRIMARY KEY',
@@ -144,7 +148,6 @@ tables = {
         'price': 'FLOAT',
         'old_price': 'FLOAT',
         'date': 'DATETIME',
-        #'_product_id': ['FOREIGN KEY', 'REFERENCES ProductListing (product_id)'],
     },
     'SentimentAnalysis': {
         'id': 'INTEGER PRIMARY KEY',
@@ -381,7 +384,16 @@ table_map = {
     'SentimentBreakdown': SentimentBreakdown,
 }
 
-
+# Credentials for Amazon API
+credentials=dict(
+    refresh_token='Atzr|IwEBIMjdGchHxslnhs965zD6ZOprd5y48jqQW-_YryyVZGp7mvpJLJIEyH3d7vV3DYm-vFj5NzpqykvgmttDxhFZk336qOdZ-ADU8SmzlaJVbGv70Ks-8tvTr37sA7RZ46xHakDcf3zeMRj0BKb68YGRrziXvWpD2hdIiDLjeKXdRC9FM4502nO4sHNzTRj-rxEB1Br9GWyA2pelV4LgQ322AnLcV1DKx2OC0zF_WTMasQPq3VLRarl0-hx07BcBpRkKggH6pI0eFg3gvtzVvTr1GB_y0NUPEj73RbXyc43q5OuH39GiFtYEBP3zLCc6puzkJYc',
+    lwa_app_id='amzn1.application-oa2-client.f995345f18ec49f79df4c4187d68ef23',
+    lwa_client_secret='59c490020431165a15450dd3461bc057963c132f8613a699e927456ec37ac378',
+    aws_secret_key='z1dBpqlEUoZmgSCpIQKgCGkzidBFhRCNkn8E1DTg',
+    aws_access_key='AKIAV2GQNFTIXV2GKZH6',
+    role_arn='arn:aws:iam::399869029585:role/sellerAPI',
+)
+    
 def get_short_title(product_title):
     if product_title is None:
         return product_title
@@ -852,9 +864,6 @@ def update_brands_and_models(session, table='ProductDetails'):
 
 
 def assign_subcategories(session, category, table='ProductDetails'):
-    from bs4 import BeautifulSoup
-
-    import parse_data
 
     DUMP_DIR = os.path.join(os.getcwd(), 'dumps')
 
@@ -999,140 +1008,210 @@ def insert_short_titles(session):
         logger.critical(f"Error during updating short_title field")
 
 
-def update_duplicate_set(session, table='ProductListing', insert=False, strict=False, very_strict=False):
-    return index_duplicate_sets(session, table='ProductListing', insert=insert, strict=strict, index_all=False, very_strict=very_strict)
-
-
-def index_duplicate_sets(session, table='ProductListing', insert=False, strict=False, index_all=True, very_strict=False):
-    # Important function for assigning duplicate set indices
-    import time
-
-    from sqlalchemy import asc, desc, func
-    from sqlitedict import SqliteDict
-
-    _table = table_map[table]
-
-    queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
-
-    if index_all == False:
-        queryset = session.query(_table).filter(ProductListing.duplicate_set == None).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
-    else:
-        queryset = session.query(_table).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
-    
-    if index_all == False:
-        # Update indexes
-        try:
-            num_sets = session.query(func.max(ProductListing.duplicate_set)).scalar()
-        except Exception as ex:
-            logger.critical(f"Exception during fetching maximum value: {ex}")
-            return
-        if num_sets is None or num_sets <= 0:
-            num_sets = 1
-    else:
-        # Completely re-index from scratch
-        num_sets = 1
-
-    idx = num_sets
-
-    info = {}
-
-    if index_all == False:
-        # Populate info with existing duplicate_set values
-        non_null_queryset = session.query(_table).filter(ProductListing.duplicate_set != None).order_by(asc('category')).order_by(asc('brand')).order_by(desc('total_ratings'))
-        info = {instance.product_id: instance.duplicate_set for instance in non_null_queryset if instance.duplicate_set is not None}
-
-    DELTA = 0.01
-
-    def get_max(info):
-        maxval = num_sets
-        for key in info:
-            if info[key] > maxval:
-                maxval = info[key]
-        return maxval
-
-    for obj1 in queryset:
-        if obj1.product_id in info:
-            continue
-        
-        # Query only for products which have the same brand as the one to be inserted
-        q = session.query(_table).filter(ProductListing.category == obj1.category, ProductListing.brand == obj1.brand).order_by(desc('total_ratings'))
-        
-        duplicate_flag = False
-        break_flag = False
-
-        for obj2 in q:
-            if obj1.product_id == obj2.product_id:
-                continue
-            
-            a = ((obj1.avg_rating == obj2.avg_rating) or ((obj1.avg_rating is not None) and (obj2.avg_rating is not None) and abs(obj1.avg_rating - obj2.avg_rating) <= (0.1 + 0.001)))
-            b = ((obj1.total_ratings == obj2.total_ratings) or (obj1.total_ratings is not None and obj2.total_ratings is not None and abs(obj1.total_ratings - obj2.total_ratings) <= (DELTA) * (max(obj1.total_ratings, obj2.total_ratings))))            
-            
-            if b == False:
-                if (obj1.total_ratings is not None) and (obj2.total_ratings is not None):
-                    if max(obj1.total_ratings, obj2.total_ratings) <= 100:
-                        if abs(obj1.total_ratings - obj2.total_ratings) <= 5:
-                            b = True
-            
-            if (a & b):
-                duplicate_flag = True
-            
-                if duplicate_flag == True and obj2.product_id in info:
-                    info[obj1.product_id] = info[obj2.product_id]
-                    break_flag = True
-                    break
-                elif duplicate_flag == True and obj2.product_id not in info:
-                    idx = get_max(info)
-                    info[obj1.product_id] = idx + 1
-                    info[obj2.product_id] = idx + 1
-                    break_flag = True
-                    break
-            
-        if break_flag == True:
-            pass
-        else:
-            # Not a duplicate
-            idx = get_max(info)
-            info[obj1.product_id] = idx + 1
-            idx += 1
-    
-    with SqliteDict('cache.sqlite3', autocommit=True) as mydict:
-        mydict[f"DUPLICATE_INFO"] = info
-    
-    logger.info(f"Successfully indexed {idx} duplicate sets")
-
-    if insert == True:
-        logger.info(f"Inserting indexes into the DB...")
-        
-        with SqliteDict('cache.sqlite3', autocommit=True) as cache:
-            if "DUPLICATE_INFO_OLD" not in cache:
-                cache[f"DUPLICATE_INFO_OLD"] = {}
-
-            idxs = cache.get(f"DUPLICATE_INFO")
-            if not idxs:
-                logger.warning("idxs is None")
-            else:
-                for product_id in idxs:
-                    instance = session.query(_table).filter(_table.product_id == product_id).first()
-                    if instance:
-                        cache[f"DUPLICATE_INFO_OLD"][product_id] = instance.duplicate_set
-                        setattr(instance, 'duplicate_set', idxs[product_id])
-
-        try:
-            session.commit()
-        except Exception as ex:
-            session.rollback()
-            logger.critical(f"Exception: {ex} when trying to commit idxs")
-        
-        logger.info(f"Finished inserting!")       
-
 def index_qandas(engine, table='QandA'):
     engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, duplicate_set FROM ProductListing) as t2 SET t1.duplicate_set = t2.duplicate_set WHERE t1.product_id = t2.product_id' % (table))
-
 
 def index_reviews(engine, table='Reviews'):
     engine.execute('UPDATE %s as t1 JOIN (SELECT product_id, duplicate_set FROM ProductListing) as t2 SET t1.duplicate_set = t2.duplicate_set WHERE t1.product_id = t2.product_id' % (table))
 
+def update_product_duplicates(session,product_id):
+    try:
+        # get feature summary and update in ProductDetails table
+        data = get_duplicate_products(product_id)
+        # Add all details to listing table
+        listing_obj = session.query(ProductListing).filter(ProductListing.product_id==product_id).one()
+        listing_obj.duplicate_set = data['parent_asin']
+        if data['brand']:
+            listing_obj.brand = data['brand'] 
+        if data['model']:
+            listing_obj.model = data['model']  
+        session.flush()
+        
+        details_obj = session.query(ProductDetails).filter(ProductDetails.product_id==product_id).first()
+        if details_obj is not None:
+            details_obj.duplicate_set = data['parent_asin']
+            details_obj.related_products = json.dumps(data['related_products'])
+            if data['brand']:
+                details_obj.brand = data['brand'] 
+            if data['model']:
+                details_obj.model = data['model']  
+        session.flush() 
+        # Commit the session
+        session.commit()
+    except Exception as ex:
+        print(ex)
 
+def update_duplicate_sets(session,update_all='False'): 
+    # Get all product ids from ProductDetails, update_all is string value from command line
+    if update_all=='True':
+        product_list = [product.product_id for product in session.query(ProductListing).all()]
+    else:
+        product_list = [product.product_id for product in session.query(ProductListing).filter(ProductListing.duplicate_set==None).all()]
+    
+    print("# of products to be updated "+str(len(product_list)))
+    for product_id in product_list:
+        time.sleep(2)
+        print("Update product id "+product_id)
+        update_product_duplicates(session,product_id)
+    
+def get_duplicate_products(product_id):
+    try:    
+        child_data = Catalog(marketplace=Marketplaces.IN,credentials=credentials).get_item(product_id).payload
+    except SellingApiException as ex:
+        print(ex)
+        
+    results = {}
+    # Get brand and define model. Model is not picked here since it may be including variant info
+    brand = ""
+    model = ""
+    title = ""
+    parent_asin=""
+    related_products = []
+    # Get parent asin
+    if len(child_data['Relationships']) >0:
+        parent_asin = child_data['Relationships'][0]['Identifiers']['MarketplaceASIN']['ASIN']
+        # Get all related products
+        try:
+            parent_data = Catalog(marketplace=Marketplaces.IN,credentials=credentials).get_item(parent_asin).payload
+        except SellingApiException as ex:
+            print(ex)
+            
+        if len(parent_data['Relationships'])>0:
+            related_products = []
+            #Take keys from any row
+            keys = parent_data['Relationships'][0].keys()
+            for row in parent_data['Relationships']:
+                dict ={}
+                dict['product_id']=row['Identifiers']['MarketplaceASIN']['ASIN']
+                for key in keys:
+                    if key =='Identifiers':
+                        continue
+                    dict[key] = row[key]
+                related_products.append(dict)
+        
+        # Get brand, model and title
+        if 'Brand' in parent_data['AttributeSets'][0].keys():
+            brand = parent_data['AttributeSets'][0]['Brand']
+        if 'Model' in parent_data['AttributeSets'][0].keys():
+            model = parent_data['AttributeSets'][0]['Model']
+        if 'Title' in parent_data['AttributeSets'][0].keys():
+            title = parent_data['AttributeSets'][0]['Title']
+                
+   
+    # if brand and model not available in parent data, then take it from child
+    if not model and 'Model' in child_data['AttributeSets'][0].keys():
+        model = child_data['AttributeSets'][0]['Model']     
+    if not brand and 'Brand' in child_data['AttributeSets'][0].keys():
+        brand = child_data['AttributeSets'][0]['Brand']
+    
+        
+    results['brand'] = brand.lower()
+    results['model'] = model.lower()
+    results['title'] = title.lower()
+    results['parent_asin'] = parent_asin
+    results['related_products'] = related_products
+    return results
+                    
+
+def update_featurewise_reviews(session,product_id=None,update_all=False):
+    
+    if product_id is not None:
+        try:
+            # get feature summary and update in ProductDetails table
+            data = json.dumps(get_featurewise_reviews(product_id))
+            obj = session.query(ProductDetails).filter(ProductDetails.product_id==product_id).one()
+            obj.featurewise_reviews = data
+            session.commit()
+        except Exception as ex:
+            print(ex)
+        
+    else:
+        # Get all product ids from ProductDetails, update_all is string value from command line
+        if update_all=='True':
+            product_list = [product.product_id for product in session.query(ProductDetails).all()]
+        else:
+            product_list = [product.product_id for product in session.query(ProductDetails).filter(ProductDetails.featurewise_reviews==None).all()]
+        print(len(product_list))
+        for product_id in product_list:
+            try:
+                data = json.dumps(get_featurewise_reviews(product_id))
+                time.sleep(2)
+                obj = session.query(ProductDetails).filter(ProductDetails.product_id==product_id).one()
+                obj.featurewise_reviews = data
+                session.commit()
+            except Exception as ex:
+                print(ex) 
+                
+
+def get_featurewise_reviews(product_id):
+    # General request headers for fetching featurewise_reviews
+    url='https://www.amazon.in/hz/reviews-render/ajax/lazy-widgets/stream'
+    
+    headers = {
+    'authority': 'www.amazon.in',
+    'sec-ch-ua': '"Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"',
+    'rtt': '100',
+    'sec-ch-ua-mobile': '?0',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36',
+    'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
+    'accept': 'text/html,*/*',
+    'cache-control': 'no-cache',
+    'x-requested-with': 'XMLHttpRequest',
+    'downlink': '9.75',
+    'ect': '4g',
+    'origin': 'https://www.amazon.in',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-dest': 'empty',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    }
+    
+    params = (
+            ('asin', product_id),
+            ('language', 'en_IN'),
+            ('lazyWidget', 'cr-summarization-attributes'),
+            )
+    
+    proxies = { # Hard coded for now
+    'http': 'http://192.126.131.174:8800',
+    'https': 'http://192.126.131.174:8800',
+    }
+    
+    response = requests.get('https://www.amazon.in/hz/reviews-render/ajax/lazy-widgets/stream', headers=headers, params=params,proxies=proxies)
+    assert response.status_code == 200
+    # Parse the response
+    soup = BeautifulSoup(response.text,'lxml')
+    
+    txt = soup.text 
+    '''Output like: '["update",".cr-lazy-widget.cr-summarization-attributes","\\n      
+    \\n\\n  By featurePicture quality4.44.4Sound quality4.44.4Low light4.24.2
+    Fingerprint reader4.24.2Camera quality4.04.0Battery life3.33.3See more\\n\\n\\n  "]\n&&&\n'''
+    data = {}
+    
+    if "by feature" in txt.lower():    
+        new_str = txt[txt.find("By feature")+len("By feature"):txt.find("See more")] #Output like: 'Picture quality4.44.4Sound quality4.44.4Low light4.24.2Fingerprint reader4.24.2Camera quality4.04.0Battery life3.33.3'
+        
+        # Split with delimiter like 4.3
+        res = re.split('(\d.\d)', new_str) 
+
+        '''Output like: ['Picture quality', '4.4', '', '4.4', 'Sound quality', '4.4', '', '4.4', 
+        'Low light', '4.2', '', '4.2', 'Fingerprint reader', '4.2', '', '4.2', 
+        'Camera quality', '4.0', '', '4.0', 'Battery life', '3.3', '', '3.3', '']'''
+        
+        list_str = [i for i in res if i] # remove blank strings Output like  ['Picture quality', '4.4', '4.4', 'Sound quality', '4.4', '4.4', 'Low light', '4.2', '4.2', 'Fingerprint reader', '4.2', '4.2', 'Camera quality', '4.0', '4.0', 'Battery life', '3.3', '3.3']
+        
+        # Finally remove every 3rd element in the list since they are repeating
+        del list_str[2::3]
+        
+        # Change list to dictionary, every odd element is key and every even element is value
+        key_list=list_str[::2]
+        val_list=list_str[1::2]
+        for index in range(len(key_list)):
+            data[key_list[index]]=val_list[index]
+            
+    return data
+    
+    
 def close_all_db_connections(engine, SessionFactory):
     SessionFactory.close_all()
     engine.dispose()
@@ -1142,8 +1221,8 @@ def close_all_db_connections(engine, SessionFactory):
 if __name__ == '__main__':
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
-    parser.add_argument('--index_duplicate_sets', help='Index Duplicate Sets', default=False, action='store_true')
-    parser.add_argument('--update_duplicate_sets', help='Update Duplicate Sets', default=False, action='store_true')
+    # parser.add_argument('--index_duplicate_sets', help='Index Duplicate Sets', default=False, action='store_true')
+    # parser.add_argument('--update_duplicate_sets', help='Update Duplicate Sets', default=False, action='store_true')
     parser.add_argument('--index_qandas', help='Index Q and A', default=False, action='store_true')
     parser.add_argument('--index_reviews', help='Index Reviews', default=False, action='store_true')
     parser.add_argument('--update_listing_alerts', help='Update Listing Alerts', default=False, action='store_true')
@@ -1154,9 +1233,11 @@ if __name__ == '__main__':
     parser.add_argument('--insert_sentiment_breakdown', help='Inserts the sentiment summary to the DB', default=False, action='store_true')
     parser.add_argument('--insert_sentiment_reviews', help='Inserts the sentiment reviews to the DB', default=False, action='store_true')
     parser.add_argument('--filename', help='Filename', default=None, type=str)
+    parser.add_argument('--featurewise_review', help='Update all features or only non existing featurewise reviews, value True or False', default=None, type=str)
+    parser.add_argument('--update_feature_product', help='Product_id for feature update', default=None, type=str)
+    parser.add_argument('--update_duplicate_sets', help='Update all duplicate sets or only non existing duplicate sets in ProductListing and ProductDetails tables, value True or False', default=None, type=str)
     
-
-
+    
     args = parser.parse_args()
     
     _assign_subcategories = args.assign_subcategories
@@ -1165,6 +1246,10 @@ if __name__ == '__main__':
 
     _insert_sentiment_breakdown = args.insert_sentiment_breakdown
     _insert_sentiment_reviews = args.insert_sentiment_reviews
+    _feature_product = args.update_feature_product
+    _featurewise_review = args.featurewise_review
+    _update_duplicates = args.update_duplicate_sets
+
 
     filename = args.filename
 
@@ -1184,5 +1269,12 @@ if __name__ == '__main__':
         insert_sentiment_breakdown(config('DB_NAME'), filename=filename)
     if _insert_sentiment_reviews == True:
         insert_sentiment_reviews(config('DB_NAME'), filename=filename)
+    if _feature_product:
+        update_featurewise_reviews(session,product_id=_feature_product)
+    if _featurewise_review:
+        update_featurewise_reviews(session,update_all=_featurewise_review)  
+    if _update_duplicates:
+        update_duplicate_sets(session,update_all=_update_duplicates)
+        
     exit(0)
    

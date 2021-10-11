@@ -13,11 +13,12 @@ class Productlisting(models.Model):
     old_price = models.IntegerField(blank=True, null=True)
     secondary_information = models.TextField(blank=True, null=True)
     image = models.CharField(blank=True, null=True, max_length=1000)
-    is_duplicate = models.BooleanField(blank=True, null=True)
     short_title = models.CharField(blank=True, null=True, max_length=100)
-    duplicate_set = models.IntegerField(blank=True, null=True)
+    duplicate_set = models.CharField(blank=True, null=True, max_length=100)
     brand = models.CharField(blank=True, null=True, max_length=100)
-
+    model = models.CharField(blank=True, null=True, max_length=100)
+    date_completed = models.DateTimeField(blank=True, null=True)
+    detail_completed = models.DateTimeField(blank=True, null=True)
     class Meta:
         managed = False
         db_table = 'ProductListing'
@@ -52,18 +53,17 @@ class Productdetails(models.Model):
     product_details = models.TextField(blank=True, null=True)
     featurewise_reviews = models.TextField(blank=True, null=True)
     customer_qa = models.TextField(blank=True, null=True)
-    customer_lazy = models.IntegerField(blank=True, null=True)
     histogram = models.TextField(blank=True, null=True)
     reviews_url = models.TextField(blank=True, null=True)
     created_on = models.DateTimeField(blank=True, null=True)
     subcategories = models.TextField(blank=True, null=True)
-    is_sponsored = models.BooleanField(blank=True, null=True)
-    completed = models.IntegerField(blank=True, null=True)
     brand = models.CharField(blank=True, null=True, max_length=100)
     model = models.CharField(blank=True, null=True, max_length=100)
     date_completed = models.DateTimeField(blank=True, null=True)
-    is_duplicate = models.BooleanField(blank=True, null=True)
-
+    duplicate_set = models.CharField(blank=True, null=True, max_length=100)
+    product_overview = models.TextField(blank=True, null=True)
+    related_products = models.TextField(blank=True, null=True)
+    
     class Meta:
         managed = False
         db_table = 'ProductDetails'
