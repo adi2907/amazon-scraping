@@ -26,7 +26,7 @@ class Command(BaseCommand):
         dup_sets = set()
 
         queryset = Productdetails.objects.using('scraped').filter(date_completed__isnull=False).values('brand', 'model', 'product_id', 'num_reviews', 'subcategories').order_by('-date_completed')
-
+        
         models = dict()
         results = []
 

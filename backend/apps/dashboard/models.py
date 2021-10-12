@@ -177,7 +177,6 @@ class ReviewAggregate(models.Model):
     product_title = models.TextField(blank=True, null=True)
     num_reviews = models.IntegerField(blank=True, null=True)
     curr_price = models.FloatField(null=True, blank=True)
-    is_duplicate = models.BooleanField(blank=True, null=True)
     short_title = models.TextField(blank=True, null=True)
     duplicate_set = models.CharField(blank=True, null=True, max_length=100)
     total_reviews = models.TextField(blank=True, null=True)

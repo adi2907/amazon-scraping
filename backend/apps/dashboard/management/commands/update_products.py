@@ -37,11 +37,8 @@ class Command(BaseCommand):
                 print("Sleeping...")
                 time.sleep(3)
             
-            if item['brand'] is not None:
-                brand = item['product_title'].split(' ')[0].lower()
-            else:
-                brand = None
             
+            brand = item['brand'] 
             model = item['model']
             product_title = item['product_title']
 
