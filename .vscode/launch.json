@@ -12,7 +12,8 @@
             "console": "integratedTerminal",
             //"args": ["--categories","headphones,ceiling fan,refrigerator,washing machine"],
             //"args":["--category","all","--start_date","2021-01-01","--end_date","2021-09-30","--last_review"]
-            "args":["--featurewise_review","False"]
+            //"args":["--featurewise_review","False"]
+            "args":["runserver"]
         },
     ]
 }

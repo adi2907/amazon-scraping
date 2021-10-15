@@ -31,7 +31,7 @@ urlpatterns = [
 
     path('brandmarketshare/<str:category>/<int:period>/<int:max_products>', api.BrandMarketShare.as_view()),
     
-    path('individualmarketshare/<str:category>/<str:model>/<int:period>', api.IndividualModelMarketShare.as_view()),
+    path('model-sales/<str:category>/<str:model>/<int:period>', api.ModelSales.as_view()),
     path('rating/<str:category>', api.RatingsoverTimeAPI.as_view()),
     path('review-count/<str:category>', api.ReviewCount.as_view()),
     path('aspect-rating/<str:category>', api.AspectBasedRatingAPI.as_view()),

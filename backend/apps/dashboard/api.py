@@ -746,9 +746,6 @@ class BrandMarketShare(APIView):
                             return Response(f"subcategory {subcategory} not found for category {category}", status=status.HTTP_400_BAD_REQUEST)
                     except:
                         return Response(f"subcategory {subcategory} not found for category {category}", status=status.HTTP_400_BAD_REQUEST)
-        
-        last_date = datetime.datetime.now() - datetime.timedelta(days=7)
-        first_date = last_date - datetime.timedelta(weeks=4*period)
 
         agg = []
         idx = 0
@@ -808,7 +805,6 @@ class BrandMarketShare(APIView):
 
 
 class CummulativeModelMarketShare(APIView):
-
 
     def get(self, request, category, max_products=10, period=None):
         # Get the category Market Share
@@ -1155,62 +1151,22 @@ class SubCategoryMarketShare(APIView):
         
         return Response(results, status=status.HTTP_200_OK)
 
-class IndividualModelMarketShare(APIView):
+class ModelSales(APIView):
 
-
-    def get(self, request, category, model, period=6):
-        params = request.query_params
-        # Get the individual model Market Share
-        # Output: subcategory, brand, model, num_reviews
-        # Period can be '1M', '3M', '6M'
-
-        subcategory = params.get('subcategory')
-
-        if 'max_products' in request.data:
-            max_products = request.data['max_products']
-        else:
-            max_products = 10
-
-        if max_products <= 0:
-            return Response("max_products must be a positive integer", status=status.HTTP_400_BAD_REQUEST)
+    def get(self, request, category, model, period):
 
         # Count number of reviews until the last N months
         if period not in range(1, 12+1):
             return Response("Period must be one of 1 to 12", status=status.HTTP_400_BAD_REQUEST)
         
-        last_date = datetime.datetime.now() - datetime.timedelta(days=7)
-        first_date = last_date - datetime.timedelta(weeks=4*period)
-        
-        results = []
-        num_products = 0
-        models = set()
-        duplicate_sets = set()
-        short_titles = set()
-        curr = 0
-
-        if subcategory is not None:
-            queryset = ProductAggregate.objects.filter(category=category, model=model, subcategories__icontains=f'"{subcategory}"').values('product_title', 'brand', 'model', 'product_id', 'review_info', 'short_title', 'duplicate_set').order_by('-product_id').distinct()
-        else:
-            queryset = ProductAggregate.objects.filter(model=model, category=category).values('product_title', 'brand', 'model', 'product_id', 'review_info', 'short_title', 'duplicate_set').order_by('-product_id').distinct()
-
-        for item in queryset:
-            if item['duplicate_set'] in duplicate_sets:
-                continue
-            else:
-                duplicate_sets.add(item['duplicate_set'])
-                short_titles.add(item['short_title'])
+        item = ProductAggregate.objects.filter(short_title=model, category=category).values('product_title', 'brand', 'model', 'product_id', 'review_info', 'short_title').order_by('-product_id').first()
+        num_reviews = json.loads(item['review_info'])[str(period)]
+                 
+        results = {"product_title": item['product_title'], 
+                   "brand": item['brand'], 
+                   "model": item['short_title'], 
+                   "num_reviews": num_reviews}
             
-            num_reviews = json.loads(item['review_info'])[str(period)]
-            
-            if item['short_title'] not in models:
-                models.add(item['short_title'])
-                #models.add(item['model'])
-                curr += 1
-            
-            results.append({"subcategory": subcategory, "product_title": item['product_title'], "brand": item['brand'], "model": item['short_title'], "num_reviews": num_reviews})
-            if curr == max_products:
-                break
-        
         return Response(results, status=status.HTTP_200_OK)
 
 

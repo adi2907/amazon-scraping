@@ -91,12 +91,8 @@ Query Params:
 Query Params:
 * `subcategory` (Optional): Subcategory
 
-8. Individual Marketshare API: POST `individualmarketshare`
-Request Payload:
-* `subcategory` (Optional)
-* `model`
-* `max_products` (Default = 10)
-* `period` (Month)
+8. Individual Model sales API: `GET model-sales/<str:category>/<str:model>/<int:period>`
+
 
 9. Ratings over Time API: GET `rating/<str:category>`
 Query Params:
