@@ -1130,7 +1130,7 @@ def update_featurewise_reviews(session,product_id=None,update_all=False):
         if update_all=='True':
             product_list = [product.product_id for product in session.query(ProductDetails).all()]
         else:
-            product_list = [product.product_id for product in session.query(ProductDetails).filter(ProductDetails.featurewise_reviews==None).all()]
+            product_list = [product.product_id for product in session.query(ProductDetails).filter(or_(ProductDetails.featurewise_reviews==None,ProductDetails.featurewise_reviews=='{}')).all()]
         print(len(product_list))
         for product_id in product_list:
             try:
@@ -1203,6 +1203,10 @@ def get_featurewise_reviews(product_id):
         # Finally remove every 3rd element in the list since they are repeating
         del list_str[2::3]
         
+        # If we don't have See more in feature-reviews, need to remove the last element since output is like list_str=['Battery life', '4.1', 'Fingerprint reader', '4.0', 'Value for money', '3.8', '\\n\\n\\n  "]\n&&&']
+        if "See more" not in txt:
+            list_str.pop(-1)
+            
         # Change list to dictionary, every odd element is key and every even element is value
         key_list=list_str[::2]
         val_list=list_str[1::2]
