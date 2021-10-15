@@ -1158,28 +1158,18 @@ class SubCategoryMarketShare(APIView):
 class IndividualModelMarketShare(APIView):
 
 
-    def post(self, request, category):
+    def get(self, request, category, model, period=6):
+        params = request.query_params
         # Get the individual model Market Share
         # Output: subcategory, brand, model, num_reviews
         # Period can be '1M', '3M', '6M'
 
-        if 'subcategory' not in request.data:
-            subcategory = None
-        
-        if  'model' not in request.data:
-            return Response("Need to send model", status=status.HTTP_400_BAD_REQUEST)
-        
-        model = request.data['model']
-        
+        subcategory = params.get('subcategory')
+
         if 'max_products' in request.data:
             max_products = request.data['max_products']
         else:
             max_products = 10
-        
-        if 'period' not in request.data:
-            period = 6
-        else:
-            period = request.data['period']
 
         if max_products <= 0:
             return Response("max_products must be a positive integer", status=status.HTTP_400_BAD_REQUEST)

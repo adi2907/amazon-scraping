@@ -8,12 +8,13 @@ import pandas as pd
 from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import render
+
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 from .models import (Dailyproductlisting, Productdetails, Productlisting,
                      Qanda, Reviews)
-
-matplotlib.use('Agg') # Refer https://stackoverflow.com/questions/27147300/matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
 
 plt.ioff()
 
