@@ -1,10 +1,8 @@
 import random
 import argparse
 from selenium.webdriver.chrome.webdriver import WebDriver
-from sqlalchemy.sql.operators import is_
 import parse_data
 import time
-from copy import deepcopy
 from datetime import datetime, timedelta
 
 
@@ -426,10 +424,11 @@ def scrape_reviews(server_url,reviews_url,product_id,threshold_date):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--categories', help='List of all categories (comma separated)', type=lambda s: [item.strip() for item in s.split(',')])
-    parser.add_argument('--url', help='Scrape the product detail for the url', type=str)
+    parser.add_argument('--details_url', help='Scrape the product detail for the url', type=str)
     args = parser.parse_args()
     
-        
+    details_url = args.details_url
+     
     if args.categories:
         for category in args.categories:             
             # Get product urls for categories with detail_completed = None or done a week prior
@@ -455,6 +454,6 @@ if __name__ == '__main__':
                     logger.warning(f"Could not scrape details of Product - URL = {product_url}")
                     my_proxy.switch_proxy()
                     continue
-    if args.url:
-        scrape_product_detail(args.url)
+    if details_url:
+        scrape_product_detail(details_url)
     

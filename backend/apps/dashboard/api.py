@@ -482,7 +482,7 @@ class RatingsoverTimeAPI(APIView):
         
         brands = request.GET.getlist('brand')
 
-        NUM_WEEKS = 8
+        NUM_WEEKS = 12
 
         if 'weeks' not in query_params:
             pass
@@ -498,6 +498,7 @@ class RatingsoverTimeAPI(APIView):
         else:
             subcategory = query_params['subcategory']
         
+        # Get subcategory(s) from query
         if subcategory is None:
             subcategories = None
         else:
@@ -524,6 +525,7 @@ class RatingsoverTimeAPI(APIView):
                 final_results[brand] = []
                 agg = []
                 idx = 0
+                # Query for models only related to subcategory(s)
                 if subcategories is not None:
                     for subcategory in subcategories:
                         if idx == 0:
@@ -532,6 +534,7 @@ class RatingsoverTimeAPI(APIView):
                             queryset = ProductAggregate.objects.filter(brand__iexact=brand, category=category, subcategories__icontains=f'"{subcategory}"')
                             agg = agg.union(queryset)
                         idx += 1
+                # Query for all models
                 else:
                     agg = ProductAggregate.objects.filter(brand__iexact=brand, category=category)
             
