@@ -14,12 +14,6 @@ from subcategories import subcategory_dict
 from utils import (category_to_domain, create_logger, domain_map, domain_to_db,
                    is_lambda, listing_categories, listing_templates)
 
-# This scraper does the following:
-# Scrapes the listings and updates in ProductListing and DailyProductListing DB
-# Goes to product page and updates product details in ProductDetails DB
-# Updates duplicate variants in ProductListing and ProductDetails DB
-# Runs subcategory scraping and assigns subcategories in ProductDetails DB
-
 
 logger = create_logger('browser')
 
@@ -39,8 +33,7 @@ def run_category(browser='Firefox'):
             curr = 1
             
             try: #Initialize DB ses
-                engine, Session = db_manager.connect_to_db(domain_to_db[domain], connection_params)
-                engine.execute(f"UPDATE ProductListing SET is_active = False")
+                engine, Session = db_manager.connect_to_db(domain_to_db[domain], connection_params)   
             except Exception as ex:
                 logger.critical(f"Error during initiation session: {ex}")
 
@@ -82,32 +75,18 @@ def run_category(browser='Firefox'):
                             if not status:
                                 logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
 
-                            with db_manager.session_scope(Session) as _session:
-                                status = db_manager.insert_daily_product_listing(_session, page_results)
-
-                            if not status:
-                                logger.warning(f"Error while inserting DAILY LISTING Page {curr} of category - {category}")
-
 
                         except Exception as ex:
-                            logger.info(f"Exception during storing daily listing: {ex}")
+                            logger.info(f"Exception during storing listing: {ex}")
                 
                         time.sleep(5)
-                        
-                        # Go to each product detail page
-                        for product in page_results[category][curr]:
-                            product_url = product['product_url']
-                            url =  "https://"+domain + product_url
-                            print(f"Get url "+url)
-                            time.sleep(5)
-                            driver.get(url)
-                            
                             
 
                         # Find link of next page, if "Next" link is not enabled, then quit
                         try:
-                            element = driver.find_element_by_css_selector("a[class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']")
-                            #element = driver.find_element_by_class_name('s-pagination-item s-pagination-next s-pagination-button s-pagination-separator')
+                            #element = driver.find_element_by_css_selector("a[class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']")
+                            element = driver.find_element_by_css_selector(".a-pagination .a-last")
+                            
                             if element.is_enabled() == False:
                                 print("link  disabled")
                                 # Check if number of pages correspond to total elements
@@ -118,31 +97,27 @@ def run_category(browser='Firefox'):
                         except Exception as ex: #Link not found
                             print(ex)
                             
-                            # template_url = listing_templates[category]
-                            # url = template_url.substitute(PAGE_NUM=curr)
-                            # total_products,curr_listing = parse_data.get_total_products_number(soup)
-                            
-                            # if curr_listing>total_products:
-                            #     logger.info(f"Current listing {curr_listing} exceeds total products {total_products}. Quitting")
-                            #     if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                            #         logger.warning(f"{category} category: No of items mismatch")
-                            #     break
-                            
-                            # curr+=1
-                            # continue
                         # Click on next link
                         
                         tmp = url
                         #Child link of this element
+                        # try:
+                        #     url = element.get_attribute("href")
+                        # except:
+                        #     print("Next page url not found")
+                        #     total_products = parse_data.get_total_products_number(soup)
+                        #     if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
+                        #         logger.warning(f"{category} category: No of items mismatch")
+                        #     break
+                        
+                        #Child link of this element
                         try:
-                            url = element.get_attribute("href")
+                            e = element.find_element_by_tag_name("a")
                         except:
-                            print("Next page url not found")
-                            total_products = parse_data.get_total_products_number(soup)
-                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                                logger.warning(f"{category} category: No of items mismatch")
+                            print("Tag element not found")
                             break
                         
+                        url = e.get_attribute("href")
                         print(f"URL is {url}")
                         curr += 1
                         alpha = 1000 #Changes scroll height for all pages
@@ -174,15 +149,6 @@ def run_category(browser='Firefox'):
                 print(ex)
             
             finally:
-                logger.info(f"Updating duplicate indices...")
-                # Update set indexes
-                try:
-                    with db_manager.session_scope(Session) as _session:
-                        db_manager.update_duplicate_set(_session, table='ProductListing', insert=True)
-                        logger.info("Updated indexes!")
-                except Exception as ex:
-                    logger.critical(f"Error when updating listing indexes: {ex}")
-                
                 try:
                     db_manager.close_all_db_connections(engine, Session)
                 except Exception as ex:

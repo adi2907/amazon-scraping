@@ -447,8 +447,6 @@ def insert_product_listing(session, data, table='ProductListing', domain='amazon
                 try:
                     if row['product_id'] is not None:
                         obj = table_map[table]()
-                        row['is_duplicate'] = None
-                        row['is_active'] = True
                         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
                         # Update the date
                         date = datetime.datetime.now(timezone('Asia/Kolkata'))#.date()
@@ -464,13 +462,11 @@ def insert_product_listing(session, data, table='ProductListing', domain='amazon
                         continue
                     else:
                         update_fields = [field for field in tables[table] if field != "product_id"]
-                        temp = getattr(result, 'is_duplicate')
                         short_title = getattr(result, 'short_title')
                         for field in update_fields:
                             if field in row:
                                 setattr(result, field, row[field])
-                        setattr(result, 'is_duplicate', temp)
-                        setattr(result, 'is_active', True)
+
                         # Update the date
                         date = datetime.datetime.now(timezone('Asia/Kolkata'))#.date()
                         if hasattr(result, 'date_completed'):
