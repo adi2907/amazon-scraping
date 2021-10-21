@@ -164,6 +164,8 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
             logger.warning(f"Couldn't parse product Details for {product_id}. Possibly blocked")
             logger.warning(f"Try No {tries}")         
             time.sleep(random.randint(5, 10))
+            tries+=1
+            
                 
     details['product_id'] = product_id # Add the product ID
     details['duplicate_set'] = duplicate_set
