@@ -118,8 +118,8 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
             return {}
     
         duplicate_set = obj.duplicate_set
-
-    dont_update = False
+        brand=obj.brand
+        model = obj.model
     
     if my_proxy is None:
         response = session.get(server_url, headers=headers,cookies=cookies)
@@ -167,6 +167,8 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
                 
     details['product_id'] = product_id # Add the product ID
     details['duplicate_set'] = duplicate_set
+    details['brand'] = brand
+    details['model'] = model
 
     # Validate some important fields
     important_fields = ['product_title', 'product_details', 'reviews_url', 'customer_qa']
@@ -234,32 +236,30 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
 
     is_completed = detail_completed and qanda_completed and reviews_completed
     # Finally update in ProductDetails and ProductListing table
-    if dont_update == True:
-        pass
-    else:
-        with db_manager.session_scope(SessionFactory) as db_session:
-            #Update ProductDetails table
-            obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
-            if obj is not None:
-                logger.info(f"Product with ID {product_id} is completed = {is_completed}")             
-                setattr(obj, 'completed', is_completed)
-                if obj.completed == True:
-                    obj.date_completed = datetime.now()
+    
+    with db_manager.session_scope(SessionFactory) as db_session:
+        #Update ProductDetails table
+        obj = db_manager.query_table(db_session, 'ProductDetails', 'one', filter_cond=({'product_id': f'{product_id}'}))
+        if obj is not None:
+            logger.info(f"Product with ID {product_id} is completed = {is_completed}")             
+            setattr(obj, 'completed', is_completed)
+            if obj.completed == True:
+                obj.date_completed = datetime.now()
 
-                    # Update ProductListing table detail_completed field
-                    listing_obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
-                    if listing_obj is not None:
-                        if hasattr(listing_obj, 'detail_completed'):
-                            listing_obj.detail_completed = datetime.now()
-                        else:
-                            error_logger.critical(f"Unable to update listing table for product id {product_id}")
+                # Update ProductListing table detail_completed field
+                listing_obj = db_manager.query_table(db_session, 'ProductListing', 'one', filter_cond=({'product_id': f'{product_id}'}))
+                if listing_obj is not None:
+                    if hasattr(listing_obj, 'detail_completed'):
+                        listing_obj.detail_completed = datetime.now()
                     else:
-                            error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+                        error_logger.critical(f"Unable to update listing table for product id {product_id}")
+                else:
+                        error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
 
-                db_session.add(obj)
-            else:
-                error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
-           
+            db_session.add(obj)
+        else:
+            error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
+        
    
     time.sleep(3)
 

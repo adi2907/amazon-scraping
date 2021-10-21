@@ -374,29 +374,29 @@ def get_product_data(soup, html=None):
         else:
             results['product_details'] = None
 
-    # Assign brand and model
-    if product_details is not None and 'Brand' in product_details:
-        brand = product_details['Brand']
-    elif product_overview is not None and 'Brand' in product_overview:
-        brand = product_overview['Brand']
-    else:
-        brand = None
+    # # Assign brand and model
+    # if product_details is not None and 'Brand' in product_details:
+    #     brand = product_details['Brand']
+    # elif product_overview is not None and 'Brand' in product_overview:
+    #     brand = product_overview['Brand']
+    # else:
+    #     brand = None
     
-    results['brand'] = brand
+    # results['brand'] = brand
     
-    if product_details is not None:
-        for key in product_details:
-            if 'model' in key.lower():
-                model = product_details[key]
-                break
-    elif product_overview is not None:
-        for key in product_overview:
-            if 'model' in key.lower():
-                model = product_details[key]
-    else:
-        model = None
+    # if product_details is not None:
+    #     for key in product_details:
+    #         if 'model' in key.lower():
+    #             model = product_details[key]
+    #             break
+    # elif product_overview is not None:
+    #     for key in product_overview:
+    #         if 'model' in key.lower():
+    #             model = product_details[key]
+    # else:
+    #     model = None
     
-    results['model'] = model  
+    # results['model'] = model  
     
     # Customer Q&A
     customer_node = soup.find("div", class_="askWidgetQuestions askLiveSearchHide")
