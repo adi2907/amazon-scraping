@@ -406,8 +406,6 @@ def get_product_data(soup, html=None):
         if customer_node is not None:
             url = customer_node.find("a").attrs['href']
             results['customer_qa'] = url
-            # Mark it as lazy so that we can fetch it later
-            results['customer_lazy'] = True
         else:
             results['customer_qa'] = None
     else:

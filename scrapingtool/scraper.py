@@ -1,6 +1,7 @@
 import random
 import argparse
 from selenium.webdriver.chrome.webdriver import WebDriver
+from sqlalchemy.sql.operators import is_
 import parse_data
 import time
 from datetime import datetime, timedelta
@@ -132,7 +133,7 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
 
     is_completed = False
 
-    REVIEWS_PER_PAGE = 10
+    
     LIMIT = 3
     tries = 1
     while tries <= LIMIT:
@@ -164,31 +165,30 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
             logger.warning(f"Try No {tries}")         
             time.sleep(random.randint(5, 10))
                 
-        details['product_id'] = product_id # Add the product ID
-        details['duplicate_set'] = duplicate_set
+    details['product_id'] = product_id # Add the product ID
+    details['duplicate_set'] = duplicate_set
+
+    # Validate some important fields
+    important_fields = ['product_title', 'product_details', 'reviews_url', 'customer_qa']
+    empty_fields = []
+    for field in important_fields:
+        if details.get(field) in [None, "", {}, []]:
+            empty_fields.append(field)
     
-        # Validate some important fields
-        important_fields = ['product_title', 'product_details', 'reviews_url', 'customer_qa']
-        empty_fields = []
-        for field in important_fields:
-            if details.get(field) in [None, "", {}, []]:
-                empty_fields.append(field)
-        
-        if empty_fields != []:
-            msg = ','.join([field for field in empty_fields])
-            logger.critical(f"{msg} fields are missing in product details" )
-        
-        # Insert to the DB
-        try:
-            with db_manager.session_scope(SessionFactory) as db_session:
-                status = db_manager.insert_product_details(db_session, details)
-                # if Database insertion fails, store in cache to examine later
-                if status == True:
-                    detail_completed = True
-                else:
-                    logger.critical(f"Couldn't insert product details for {product_id}")
-        except:
-            logger.critical(f"Couldn't insert product details for {product_id}")
+    if empty_fields != []:
+        msg = ','.join([field for field in empty_fields])
+        logger.critical(f"{msg} fields are missing in product details" )
+    
+    # Insert to the DB
+    try:
+        with db_manager.session_scope(SessionFactory) as db_session:
+            status = db_manager.insert_product_details(db_session, details)
+            if status == True:
+                detail_completed = True
+            else:
+                logger.critical(f"Couldn't insert product details for {product_id}")
+    except:
+        logger.critical(f"Couldn't insert product details for {product_id}")
     
     # Get variant data and iterate through them to get all duplicate sets
     # Update variant ids in ProductListing and data in ProductDetails
@@ -233,8 +233,7 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
             logger.error(f"Reviews for product id {product_id} could not be completed")
 
     is_completed = detail_completed and qanda_completed and reviews_completed
-    # Finally add completed flag and date_completed flag to ProductDetails table
-    # Also update the detail_completed flag in Listing table
+    # Finally update in ProductDetails and ProductListing table
     if dont_update == True:
         pass
     else:
@@ -261,15 +260,12 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
             else:
                 error_logger.critical(f"Product with ID {product_id} not in DB. This shouldn't happen")
            
-
+   
     time.sleep(3)
 
     return is_completed
 
 
-    
-   
-    
 
 #TODO: Need to handle following usecases
 # 1. Not able to scrape all QandA till a date - retry mechanism or delete all entries in case not successful

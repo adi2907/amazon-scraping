@@ -16,7 +16,18 @@ The entire library is divided into five parts:
 python3 scrapingtool/browser.py category
 ```
 
-2. Detail Scraping Module:
+2. Updating duplicates
+* During list scraping, lot of SKUs get captured which are actually variants of the same SKU like color, size etc. They have the same number of ratings and price, hence are classified as duplicates
+* Updating duplicates also updates the brand, title, model in both the ProductListing and ProductDetails table
+* Update duplicates after list scraping so that only one value among duplicates is picked up during details scraping
+* From amazon the duplicate set identifier is Parent Asin in case there are variants or child asin in case there are none
+
+Update duplicates using the following command, set "True" to update all and "False" to update only those without a duplicate set
+```bash
+python scrapingtool/db_manager.py --update_duplicate_sets True
+```
+
+3. Detail Scraping Module:
 
 * For *updating* the `ProductDetails`, qanda and review information of existing products from the Listing table. This module is typically run on a weekly basis
 * Relevant files: `scrapingtool/scraper.py`. The detail scraping is done using requests.
@@ -33,20 +44,6 @@ python3 scrapingtool/scraper.py --categories "smartphones","headphones
 ```
 
 
-3. Archive Scraping Module:
-
-* For *updating* the listing information of archived products. By definition, any product which does not show up in the listing page for that day will be classified as an archived product
-* Relevant files: `spider/spiders/scraper.py` and `spider/pipelines.py`. The archive scraping is done using Scrapy.
-
-To run scrapy, you must copy `.env` to `spider/.env` as well!
-
-Change your directory to `spider` (where you recently copied your `.env` file) and run the below command to start the archive scraping:
-Command to run the archive scraping:
-
-```bash
-scrapy crawl archive_details_spider -a category='all' -a instance_id=0 -a start_idx=0 -a end_idx=5 -o output.csv
-```
-
 4. Database Manager:
 
 * This module is responsible for constructing the Database Schema and performing all database related operations for inserting and updating records for all the tables involved in the scraping.
@@ -62,16 +59,6 @@ The main database tables are listed below:
 * SentimentAnalysis: The sentiment reviews table
 
 There is no need to run this module separately, but it can still be used to fetch records in case a need arises to examine databases.
-
-```
-
-This will export the `ProductListing` table into a csv file called `listing.csv`
-
-Similarly, if you want to import a database table from an existing csv file, you can run the below command:
-
-```
-
-This will do the inverse operation of the export, where the database table is populated from an existing csv file.
 
 
 5. Subcategory Listing

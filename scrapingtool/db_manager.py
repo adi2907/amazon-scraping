@@ -562,7 +562,6 @@ def insert_product_details(session, data, table='ProductDetails', is_sponsored=F
             elif field in ('curr_price'):
                 row[field] = float(row[field].replace(',', ''))
     row['created_on'] = datetime.datetime.now()
-    row['is_sponsored'] = is_sponsored
     try:
         obj = table_map[table]()
         [setattr(obj, key, value) for key, value in row.items() if hasattr(obj, key)]
@@ -751,13 +750,7 @@ def fetch_product_ids(session, table, categories):
 # Fetch unscrapped product urls - based on category
 def fetch_product_urls_unscrapped_details(session,category,table="ProductListing"):
     result = []
-    # try:
-    #     queries = session.query(table_map[table]).filter(and_(ProductListing.category==category,ProductListing.total_ratings>100,ProductListing.total_ratings<1000,ProductListing.detail_completed == None)).all()
-    # except Exception as ex:
-    #     print(ex)
-    
-    # for query in queries:
-    #     result.append(query.product_url)
+   
     if category is None:
         raise ValueError("Category can't be empty")
     try:
@@ -768,7 +761,7 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
             func.max(tbl.detail_completed),
             tbl.product_url,
             tbl.duplicate_set
-        ).group_by(tbl.duplicate_set).filter(and_(ProductListing.category == category,ProductListing.total_ratings>50)).all()
+        ).group_by(tbl.duplicate_set).filter(and_(ProductListing.category == category)).all()
         
         # Add all list entries unless the last scrapped date (detail_scrapped) is less than 1 week old       
         for maxdate in maxdates:
@@ -1278,3 +1271,4 @@ if __name__ == '__main__':
         
     exit(0)
    
+    
