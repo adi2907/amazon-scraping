@@ -40,7 +40,7 @@ python3 scrapingtool/scraper.py --categories "smartphones"
 This will scrape the details of the smartphones category. You can scrape multiple categories by passing them as comma separated arguments
 
 ```bash
-python3 scrapingtool/scraper.py --categories "smartphones","headphones
+python3 scrapingtool/scraper.py --categories "smartphones","headphones"
 ```
 
 
