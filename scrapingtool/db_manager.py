@@ -766,12 +766,13 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
         # Add all list entries unless the last scrapped date (detail_scrapped) is less than 1 week old       
         for maxdate in maxdates:
             if(isinstance(maxdate[0],datetime.datetime)):
-                if ((datetime.datetime.today() - maxdate[0]).days<7):
+                if ((datetime.datetime.today() - maxdate[0]).days<15):
                     continue
             result.append(maxdate[1]) #Domain + product_url
     except Exception as ex:
         logger.error("Exception in fetching product ids"+ex)
     print("# of ids to be scrapped are "+ str(len(result)))
+    
     return result
 
 def get_last_review_date(session,product_id,table="Reviews"):
@@ -1035,9 +1036,10 @@ def update_duplicate_sets(session,update_all='False'):
     if update_all=='True':
         product_list = [product.product_id for product in session.query(ProductListing).all()]
     else:
-        product_list = [product.product_id for product in session.query(ProductListing).filter(ProductListing.duplicate_set==None).all()]
+        product_list = [product.product_id for product in session.query(ProductListing).filter(or_(ProductListing.duplicate_set==None,ProductListing.duplicate_set=="")).all()]
     
     print("# of products to be updated "+str(len(product_list)))
+    
     for product_id in product_list:
         time.sleep(2)
         print("Update product id "+product_id)

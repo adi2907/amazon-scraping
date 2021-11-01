@@ -3840,3 +3840,15 @@ JavaScript warning: https://www.amazon.in/s?k=washing+machine&i=kitchen&bbn=1380
 JavaScript error: , line 0: uncaught exception: Object
 JavaScript error: , line 0: uncaught exception: Object
 1634658594576	Marionette	INFO	Stopped listening on port 61520
+1635791297666	geckodriver	INFO	Listening on 127.0.0.1:57819
+1635791298582	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "--marionette" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/wq/b328wy_d0fn5gkq1ydz67kvm0000gn/T/rust_mozprofileyzhKcA"
+*** You are running in headless mode.
+1635791299200	Marionette	INFO	Marionette enabled
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1635791301733	Marionette	INFO	Listening on port 57830
+1635791301849	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&bbn=1805560031&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-%2Cp_6%3AA1K6XQ7KUWCZYH%7CA23AODI1X2CEAE%7CAQUYM0O99MFUT&dc&qid=1635791064&rnid=1318474031&ref=sr_nr_p_6_9 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+JavaScript warning: https://www.amazon.in/s?k=smartphone&i=electronics&bbn=1805560031&rh=n%3A1805560031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_36%3A400000-%2Cp_6%3AA1K6XQ7KUWCZYH%7CA23AODI1X2CEAE%7CAQUYM0O99MFUT&dc&qid=1635791064&rnid=1318474031&ref=sr_nr_p_6_9 line 7 > injectedScript, line 1: Failed to create WebGL context: WebGL creation failed: 
+* Can't use WebGL in headless mode (https://bugzil.la/1375585).
+1635791755526	Marionette	INFO	Stopped listening on port 57830

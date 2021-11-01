@@ -333,8 +333,8 @@ def scrape_qanda(server_url,qanda_url,product_id,threshold_date):
             curr += 1
             
             # Break if more than 50 QandA pages
-            if curr > 50:
-                logger.info(f"Breaking at 50 Q&A pages")
+            if curr > 100:
+                logger.info(f"Breaking at 100 Q&A pages")
                 is_completed = True
                 break
             rand = random.randint(4, 17)
@@ -406,8 +406,8 @@ def scrape_reviews(server_url,reviews_url,product_id,threshold_date):
             reviews_url = next_url
             curr += 1
             
-            if curr>100:
-                logger.info(f"Breaking at 100 reivew pages")
+            if curr>300:
+                logger.info(f"Breaking at 300 reivew pages")
                 is_completed=True
                 break
             rand = random.randint(4, 17)
