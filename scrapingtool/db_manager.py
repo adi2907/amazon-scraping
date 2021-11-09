@@ -754,25 +754,23 @@ def fetch_product_urls_unscrapped_details(session,category,table="ProductListing
     if category is None:
         raise ValueError("Category can't be empty")
     try:
-        tbl =  table_map[table]
-
-        # Get max date for each duplicate_set
-        maxdates = session.query(
-            func.max(tbl.detail_completed),
-            tbl.product_url,
-            tbl.duplicate_set
-        ).group_by(tbl.duplicate_set).filter(and_(ProductListing.category == category)).all()
         
-        # Add all list entries unless the last scrapped date (detail_scrapped) is less than 1 week old       
+        # Get max date for each duplicate_set
+        query_string="SELECT n.detail_completed,n.product_url,n.duplicate_set FROM ProductListing AS n INNER JOIN (SELECT duplicate_set, MAX(detail_completed) AS detail_completed FROM ProductListing GROUP BY duplicate_set) AS max on max.duplicate_set=n.duplicate_set and max.detail_completed=n.detail_completed WHERE n.category='{}'".format(category)
+        query = engine.execute(query_string)
+        maxdates=[]
+        for row in query:
+            maxdates.append((row[0],row[1],row[2]))
+            
+        # Add all list entries unless the last scrapped date (detail_scrapped) is less than 5 days old      
         for maxdate in maxdates:
             if(isinstance(maxdate[0],datetime.datetime)):
-                if ((datetime.datetime.today() - maxdate[0]).days<15):
+                if ((datetime.datetime.today() - maxdate[0]).days<5):
                     continue
             result.append(maxdate[1]) #Domain + product_url
     except Exception as ex:
         logger.error("Exception in fetching product ids"+ex)
     print("# of ids to be scrapped are "+ str(len(result)))
-    
     return result
 
 def get_last_review_date(session,product_id,table="Reviews"):

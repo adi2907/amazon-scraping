@@ -419,6 +419,7 @@ def scrape_reviews(server_url,reviews_url,product_id,threshold_date):
    
     return is_completed
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--categories', help='List of all categories (comma separated)', type=lambda s: [item.strip() for item in s.split(',')])
@@ -442,6 +443,7 @@ if __name__ == '__main__':
                     # if product detail has been scrapped earlier
                     if db_manager.get_detail_scrapped_date(db_session,pd_id) is not None:
                         logger.info(f"Product {pd_id} has been dormant for more than 2 months")
+                        #TODO:Update the detail_completed and date_completed fields in DB
                         continue
                 
                 logger.info(f"Scraping product details for product_id {pd_id}")
