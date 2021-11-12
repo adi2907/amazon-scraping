@@ -6,10 +6,14 @@
             "ceiling fan": "https://www.amazon.in/s?k=ceiling+fan&i=kitchen&bbn=4369221031&rh=n%3A2083427031%2Cn%3A4369221031%2Cp_6%3AA1X5VLS1GXL2LN%7CAT95IG9ONZD7S%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031&dc&crid=1TGIH58I2LW9I&qid=1630474424&rnid=1318474031&sprefix=ceili%2Caps%2C380&ref=sr_nr_p_6_2",
             "refrigerator": "https://www.amazon.in/s?k=refrigerator&i=kitchen&bbn=1380365031&rh=n%3A1380365031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA3VI3FOOSYHJSV%7CAT95IG9ONZD7S&dc&qid=1630474394&rnid=1318474031&ref=sr_nr_p_6_3",
             "washing machine": "https://www.amazon.in/s?k=washing+machine&i=kitchen&bbn=1380369031&rh=n%3A1380263031%2Cn%3A1380369031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA3VI3FOOSYHJSV%7CAT95IG9ONZD7S&dc&qid=1630474338&rnid=1318474031&ref=sr_nr_p_6_1"
+        },
+        "flipkart.com": {
+            "headphones": "https://www.flipkart.com/audio-video/headphones/pr?sid=0pm,fcn"
         }
     },
     "domains": {
         "amazon.in": "amazonin",
-        "amazon.com": "amazonusa"
+        "amazon.com": "amazonusa",
+        "flipkart.com": "flipkart"
     }
 }

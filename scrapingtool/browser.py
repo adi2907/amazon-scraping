@@ -27,137 +27,153 @@ def run_category(browser='Firefox'):
     options = Options()
     options.headless = True
     driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
-    
-    
+
     try:
-        for domain in domain_map:
-            logger.info(f"Domain: {domain}")
-            curr = 1
-            
-            try: #Initialize DB ses
-                engine, Session = db_manager.connect_to_db(domain_to_db[domain], connection_params)   
-            except Exception as ex:
-                logger.critical(f"Error during initiation session: {ex}")
+        domain = config("DOMAIN")
+        logger.info(f"Domain: {domain}")
+        curr = 1
 
+        try: #Initialize DB ses
+            engine, Session = db_manager.connect_to_db(domain_to_db[domain], connection_params)
+        except Exception as ex:
+            logger.critical(f"Error during initiation session: {ex}")
+
+        try:
+            for category, base_url in domain_map[domain].items():
+                url = base_url
+
+                logger.info(f"Scraping category {category} with URL {url}")
+                print(f"GET URL {url}")
+                driver.get(url)
+                scrape_listing(category, url, driver, domain)
+                print("Sleeping...")
+                time.sleep(2)
+
+        except Exception as ex:
+            print(ex)
+
+        finally:
             try:
-                prev_url = ''
-
-                for category, base_url in domain_map[domain].items():
-                    url = base_url
-
-                    logger.info(f"Scraping category {category} with URL {url}")
-                    
-                    # page number
-                    curr = 1
-
-                    print(f"GET URL {url}")
-                    driver.get(url)
-                    while True:
-                        if url == prev_url:
-                            logger.warning(f"Got the same URL {url}. Skipping the rest...")
-                            break
-                        print(f"At Page Number {curr}")
-                        print("Sleeping...")
-                        time.sleep(10) # Wait for some time to load
-
-                        html = driver.page_source.encode('utf-8', errors='ignore')
-
-                        # Extract listing page contents and write to DB
-                        try:
-                            soup = BeautifulSoup(html, 'lxml')
-                            product_info, _ = parse_data.get_product_info(soup)
-                            
-                            page_results = dict()
-                            page_results[category] = dict()
-                            page_results[category][curr] = product_info
-                            
-                            with db_manager.session_scope(Session) as _session:
-                                status = db_manager.insert_product_listing(_session, page_results, domain=domain)
-
-                            if not status:
-                                logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
-
-
-                        except Exception as ex:
-                            logger.info(f"Exception during storing listing: {ex}")
-                
-                        time.sleep(5)
-                            
-
-                        # Find link of next page, if "Next" link is not enabled, then quit
-                        try:
-                            #element = driver.find_element_by_css_selector("a[class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']")
-                            element = driver.find_element_by_css_selector(".a-pagination .a-last")
-                            
-                            if element.is_enabled() == False:
-                                print("link  disabled")
-                                # Check if number of pages correspond to total elements
-                                total_products,_ = parse_data.get_total_products_number(soup)
-                                if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                                    logger.warning(f"{category} category: No of items mismatch")
-                                break
-                        except Exception as ex: #Link not found
-                            print(ex)
-                            
-                        # Click on next link
-                        
-                        tmp = url
-                        #Child link of this element
-                        # try:
-                        #     url = element.get_attribute("href")
-                        # except:
-                        #     print("Next page url not found")
-                        #     total_products = parse_data.get_total_products_number(soup)
-                        #     if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                        #         logger.warning(f"{category} category: No of items mismatch")
-                        #     break
-                        
-                        #Child link of this element
-                        try:
-                            e = element.find_element_by_tag_name("a")
-                        except:
-                            print("Tag element not found")
-                            break
-                        
-                        url = e.get_attribute("href")
-                        print(f"URL is {url}")
-                        curr += 1
-                        alpha = 1000 #Changes scroll height for all pages
-                        while alpha <= 5000:
-                            try:
-                                actions = ActionChains(driver)
-                                driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
-                                time.sleep(5)
-                                #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                                actions.move_to_element(element)
-                                time.sleep(2)
-                                actions.click(element).perform()
-                                time.sleep(5)
-                                break
-                            except Exception as ex:
-                                print(ex)
-                                print(f"Alpha is {alpha}. Now incrementing")
-                                alpha += 500
-                                time.sleep(1)
-
-                        print("Went to the next URL")
-                        prev_url = tmp
-                    
-                                
-                    print("Sleeping...")
-                    time.sleep(2)
-                
+                db_manager.close_all_db_connections(engine, Session)
             except Exception as ex:
-                print(ex)
-            
-            finally:
-                try:
-                    db_manager.close_all_db_connections(engine, Session)
-                except Exception as ex:
-                    logger.critical(f"Error when trying to close all sessions: {ex}")
+                logger.critical(f"Error when trying to close all sessions: {ex}")
     finally:
         driver.quit()
 
+
+def scrape_listing(category, url, driver, domain):
+    curr = 0
+
+    while True:
+        if url is None:
+            logger.warning(f"No next URL. Skipping the rest...")
+            break
+
+        curr += 1
+        print(f"At Page Number {curr}")
+        print("Sleeping...")
+
+        time.sleep(10) # Wait for some time to load
+
+        html = driver.page_source.encode('utf-8', errors='ignore')
+
+        # Extract listing page contents and write to DB
+        try:
+            soup = BeautifulSoup(html, 'lxml')
+            product_info, _ = parse_data.get_product_info(soup)
+            print(product_info)
+            page_results = dict()
+            page_results[category] = dict()
+            page_results[category][curr] = product_info
+
+            with db_manager.session_scope(Session) as _session:
+                status = True
+                print(page_results)
+                # status = db_manager.insert_product_listing(_session, page_results, domain=domain)
+
+            if not status:
+                logger.warning(f"Error while inserting LISTING Page {curr} of category - {category}")
+
+
+        except Exception as ex:
+            logger.info(f"Exception during storing listing: {ex}")
+
+        time.sleep(5)
+
+        if domain == "amazon.in":
+            url = click_next_url_amazon(url, curr, soup, driver)
+        elif domain == "flipkart.com":
+            url = click_next_url_flipkart(url, curr, soup, driver)
+
+
+def click_next_url_amazon(url, curr, soup, driver):
+    products_per_page = 40
+     # Find link of next page, if "Next" link is not enabled, then quit
+    try:
+        element = driver.find_element_by_css_selector(".a-pagination .a-last")
+
+        if element.is_enabled() == False:
+            print("link  disabled")
+            # Check if number of pages correspond to total elements
+            total_products,_ = parse_data.get_total_products_number(soup)
+            if curr != math.ceil(total_products/products_per_page):
+                logger.warning(f"{category} category: No of items mismatch")
+            return None
+
+    except Exception as ex: #Link not found
+        print(ex)
+
+    try:
+        e = element.find_element_by_tag_name("a")
+    except:
+        print("Tag element not found")
+        return None
+
+    url = e.get_attribute("href")
+    scroll_and_click(driver, url)
+    return url
+
+def click_next_url_flipkart(url, curr, soup, driver):
+    next_element = soup.find("a", class_="_1LKTO3", text="Next")
+
+    # There is no next page
+    if next_element is None:
+        return None
+
+    # If we're on page 25, which we identify by a highlighted page number,
+    # we've hit the flipkart max limit and won't be able to get the next page.
+    if soup.find("a", class_="_2Kfbh8", text="25"):
+        return None
+
+    elements = driver.find_elements_by_class_name("_1LKTO3")
+    e = elements[-1] # Get the last element which is the Next page button
+
+    url = e.get_attribute("href")
+    scroll_and_click(driver, url)
+    return url
+
+def scroll_and_click(driver, url):
+    print(f"URL is {url}")
+    alpha = 1000 #Changes scroll height for all pages
+    while alpha <= 5000:
+        try:
+            actions = ActionChains(driver)
+            driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
+            time.sleep(5)
+            #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            actions.move_to_element(element)
+            time.sleep(2)
+            print(f"Clicking URL {url}")
+            actions.click(element).perform()
+            time.sleep(5)
+            break
+        except Exception as ex:
+            print(ex)
+            print(f"Alpha is {alpha}. Now incrementing")
+            alpha += 500
+            time.sleep(1)
+
+    print("Went to the next URL")
 
 def run_subcategory(browser='Firefox'):
 

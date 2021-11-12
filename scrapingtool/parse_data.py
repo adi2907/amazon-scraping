@@ -8,6 +8,7 @@ import fnmatch
 from bs4 import BeautifulSoup
 
 from utils import create_logger
+from decouple import config
 
 logger = create_logger(__name__)
 
@@ -27,19 +28,32 @@ def is_sponsored(url: str) -> bool:
 
 
 def get_product_id(url):
-    if url.startswith("https://"):
-        url.replace("https://www.amazon.in","")
-    if url.startswith("/gp/slredirect"):
-        # Only match until the first % (?)
-        # Ignore the first 2 charactes (2F)
-        pattern = r'/gp/slredirect/.+dp%..(.+?)%.+'
-    else:
-        pattern = r'/.+/dp/(.+)/.+$'
-    match = re.match(pattern, url)
-    product_id = None
-    if match and len(match.groups()) > 0:
-        product_id = match.groups()[0]
-    return product_id
+    domain = config("DOMAIN")
+    if domain == "amazon.in":
+        if url.startswith("https://"):
+            url.replace("https://www.amazon.in","")
+        if url.startswith("/gp/slredirect"):
+            # Only match until the first % (?)
+            # Ignore the first 2 charactes (2F)
+            pattern = r'/gp/slredirect/.+dp%..(.+?)%.+'
+        else:
+            pattern = r'/.+/dp/(.+)/.+$'
+        match = re.match(pattern, url)
+        product_id = None
+        if match and len(match.groups()) > 0:
+            product_id = match.groups()[0]
+        return product_id
+
+    elif domain == "flipkart.com":
+        if url.startswith("https://"):
+            url.replace("https://www.flipkart.com","")
+
+        pattern = r'.*/p/(.*?)([/?].*|$)'
+        match = re.match(pattern, url)
+        product_id = None
+        if match and len(match.groups()) > 0:
+            product_id = match.groups()[0]
+        return product_id
 
 
 def get_product_mapping(soup) -> dict:
@@ -70,8 +84,17 @@ def get_total_products_number(soup):
     return int(total_number),int(curr_page_listing)
 
 
+def get_product_info(soup):
+    domain = config("DOMAIN")
+    if domain == "amazon.in":
+        return get_product_info_amazonin(soup)
+    elif domain == "flipkart.com":
+        return get_product_info_flipkart(soup)
+    else:
+        logger.critical(f"Don't know how to parse product info for domain: {domain}")
 
-def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
+
+def get_product_info_amazonin(soup, base_url="https://www.amazon.in", curr_serial_no=1):
     """Fetches the product details for all the products for a single page
     :return: product_info{}{} of product details
     :curr_serial_no: Tracker of total products scraped till now, @param curr_serial_no + # of products on page
@@ -175,6 +198,85 @@ def get_product_info(soup, base_url="https://www.amazon.in", curr_serial_no=1):
         product_info[title]['serial_no'] = serial_no
         serial_no += 1
         
+    return product_info, serial_no
+
+def get_product_info_flipkart(soup, base_url="https://www.amazon.in", curr_serial_no=1):
+    """Fetches the product details for all the products for a single page
+    :return: product_info{}{} of product details
+    :curr_serial_no: Tracker of total products scraped till now, @param curr_serial_no + # of products on page
+    """
+    products = soup.find_all("div", class_="_4ddWXP")
+    product_info = dict()
+    serial_no = curr_serial_no
+
+    for product in products:
+        title_node = product.find("a", class_="s1Q9rs")
+
+        if title_node is None:
+            # Invalid node. Leave this
+            continue
+
+        title = title_node.get("title")
+
+        if title in product_info:
+            # We've already covered this product
+            serial_no += 1
+            continue
+
+        product_info[title] = dict()
+
+        if 'href' in title_node.attrs:
+            product_info[title]['product_url'] = title_node.attrs['href']
+            product_info[title]['product_id'] = get_product_id(title_node.attrs['href'])
+        else:
+            product_info[title]['product_url'] = None
+            product_info[title]['product_id'] = None
+            logger.warning(f"Product url and id data missing for product {title}")
+
+        rating_row = product.find("div", class_="gUuXy- _2D5lwg")
+        if rating_row is not None:
+            avg_rating_div = rating_row.find(class_='_3LWZlK')
+            avg_rating = avg_rating_div.text
+            total_ratings_span = rating_row.find(class_='_2_R_DZ')
+            total_ratings = total_ratings_span.text
+            if total_ratings.startswith("("):
+                total_ratings = total_ratings[1:-1] # Remove braces
+        else:
+            avg_rating, total_ratings = None, None
+            logger.warning(f"Avg and total ratings missing for {title}")
+
+        product_info[title]['avg_rating'] = avg_rating
+        product_info[title]['total_ratings'] = total_ratings
+
+        price_whole = product.find("div", class_="_30jeq3")
+
+        if price_whole is not None:
+            product_info[title]['price'] = price_whole.text[1:]
+        else:
+            product_info[title]['price'] = None
+            logger.warning(f"Price missing for {title}")
+
+        # If the price is reduced, get the old price as well
+        old_price = product.find("div", class_="_3I9_wc")
+        if old_price is not None:
+            product_info[title]['old_price'] = old_price.text[1:]
+        else:
+            product_info[title]['old_price'] = None
+            logger.warning(f"Old Price missing for {title}")
+
+        # TODO: What's secondary_information in FK?
+        product_info[title]['secondary_information'] = None
+
+        # Get the image information
+        img_node = product.find("img", class_="_396cs4 _3exPp9")
+        if img_node is not None:
+            product_info[title]['image'] = img_node.attrs['src']
+        else:
+            product_info[title]['image'] = None
+
+        product_info[title]['serial_no'] = serial_no
+        serial_no += 1
+
     return product_info, serial_no
 
 def get_feature_review_summartization(product_id):

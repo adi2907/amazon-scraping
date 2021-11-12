@@ -1212,6 +1212,7 @@ def close_all_db_connections(engine, SessionFactory):
 
 
 if __name__ == '__main__':
+    print(config('DB_NAME'))
     # Start a session using the existing engine
     parser = argparse.ArgumentParser()
     # parser.add_argument('--index_duplicate_sets', help='Index Duplicate Sets', default=False, action='store_true')

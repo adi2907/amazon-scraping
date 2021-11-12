@@ -7,3 +7,4 @@ logs
 .vscode
 geckodriver.log
 cache.sqlite3
+db.sqlite
