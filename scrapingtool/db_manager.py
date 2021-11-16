@@ -26,7 +26,7 @@ from sqlalchemy.sql.expression import except_all, null
 from sqlitedict import SqliteDict
 
 import tokenize_titles
-from subcategories import subcategory_dict
+from subcategories import subcategory_dict, subcategory_dict_flipkart
 from utils import create_logger, subcategory_map, listing_categories
 from sp_api.base import SellingApiException,Marketplaces
 from sp_api.base.reportTypes import ReportType
@@ -850,6 +850,27 @@ def update_brands_and_models(session, table='ProductDetails'):
                 session.rollback()
                 print(ex)
 
+def get_subcategory_map():
+    subcategory_map = {}
+    domain = config("DOMAIN")
+    if domain == "amazon.in":
+        subcategory_map = subcategory_dict
+    elif domain == "flipkart.com":
+        subcategory_map = subcategory_dict_flipkart
+    else:
+        logger.critical(f"Don't know subcategory dict for domain {domain}")
+
+    return subcategory_map
+
+def get_marketplace_prefix():
+    domain = config("DOMAIN")
+    if domain == "amazon.in":
+        return ""
+    elif domain == "flipkart.com":
+        return "_flipkart_"
+    else:
+        logger.critical(f"Don't know subcategory file prefix for domain {domain}")
+        return ""
 
 def assign_subcategories(session, category, table='ProductDetails'):
 
@@ -898,23 +919,24 @@ def assign_subcategories(session, category, table='ProductDetails'):
         head, name = os.path.split(filename)
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
 
+    subcategory_map = get_subcategory_map()
 
-    for category in subcategory_dict:
+    for category in subcategory_map:
         queryset = session.query(ProductListing).filter(ProductListing.category == category)
         pids = dict()
         for obj in queryset:
             pids[obj.product_id] = obj.price
         
-        for _subcategory in subcategory_dict[category]:
-            for subcategory_name in subcategory_dict[category][_subcategory]:
-                value = subcategory_dict[category][_subcategory][subcategory_name]
+        for _subcategory in subcategory_map[category]:
+            for subcategory_name in subcategory_map[category][_subcategory]:
+                value = subcategory_map[category][_subcategory][subcategory_name]
                 
                 # if subcategory is a url, parse the dumps files to assign subcategories
                 if isinstance(value, str):
                     # Parse the html for the subcategory
-                    files = glob.glob(f"{DUMP_DIR}/{category}_{subcategory_name}_*")
+                    files = glob.glob(f"{DUMP_DIR}/{category}_{get_marketplace_prefix()}{subcategory_name}_*")
                     if _subcategory == 'Price':
-                        subcategory_list = list(subcategory_dict[category][_subcategory].values())
+                        subcategory_list = list(subcategory_map[category][_subcategory].values())
                     else:
                         subcategory_list = []
                     for filename in files:
@@ -933,7 +955,7 @@ def assign_subcategories(session, category, table='ProductDetails'):
                         result = predicate(instance_field)
                         if result == True:
                             if _subcategory == 'Price':
-                                subcategory_list = list(subcategory_dict[category][_subcategory].values())
+                                subcategory_list = list(subcategory_map[category][_subcategory].values())
                             else:
                                 subcategory_list = []
                             insert_subcategory(session, instance, subcategory_name, subcategory_type=_subcategory, subcategory_list=subcategory_list)
@@ -1255,7 +1277,7 @@ if __name__ == '__main__':
     if _get_last_review_date is not None:
         get_last_review_date(session,_get_last_review_date)
     if _assign_subcategories == True:
-        for category in subcategory_dict:
+        for category in get_subcategory_map():
             assign_subcategories(session, category, table='ProductDetails')
     if _close_all_db_connections == True:
         close_all_db_connections(engine, Session)

@@ -81,3 +81,5 @@ subcategory_dict = {
     #     }
     # },
 }
+
+subcategory_dict_flipkart = {}

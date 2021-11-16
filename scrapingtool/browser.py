@@ -181,101 +181,52 @@ def run_subcategory(browser='Firefox'):
     options.headless = True
     driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
 
-    url = ''
-
-    curr = 1
-
     try:
         for category in subcategory_dict:
             for subcategory in subcategory_dict[category]:
                 for subcategory_name in subcategory_dict[category][subcategory]:
                     value = subcategory_dict[category][subcategory][subcategory_name]
                     url = None
-                    
+
                     if isinstance(value, str):
-                        # Url
                         url = value
                     else:
                         # None
                         continue
 
-                    if url is None:
-                        continue
-                    
-                    for filename in glob.glob(f"dumps/{category}_{subcategory_name}_*"):
+                    for filename in glob.glob(f"dumps/{category}_{db_manager.get_marketplace_prefix()}{subcategory_name}_*"):
                         if os.path.exists(filename):
                             os.remove(filename)
-                    
-                    curr = 1
-                          
+
+                    curr = 0
+
                     while True:
+
+                        if url is None:
+                            logger.warning(f"No next URL. Skipping the rest...")
+                            break
+
+                        curr += 1
                         print(f"GET URL {url}")
                         driver.get(url)
-                        
+
                         print(f"At Page Number {curr}")
                         print("Sleeping...")
                         time.sleep(12) # Wait for some time to load
 
                         html = driver.page_source.encode('utf-8', errors='ignore')
                         soup = BeautifulSoup(html, 'lxml')
-                        with open(f'dumps/{category}_{subcategory_name}_{curr}.html', 'wb') as f:
+                        with open(f'dumps/{category}_{db_manager.get_marketplace_prefix()}{subcategory_name}_{curr}.html', 'wb') as f:
                             f.write(html)
 
                         print("Written html. Sleeping...")
                         time.sleep(6)
-                        
-                        
-                        # Find link of next page, if "Next" link is not enabled, then quit
-                        try:
-                            element = driver.find_element_by_css_selector(".a-pagination .a-last")
-                            #element = driver.find_element_by_css_selector("a[class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']")
-                            if element.is_enabled() == False:
-                                total_products,_ = parse_data.get_total_products_number(soup)
-                                if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                                    logger.warning(f"{subcategory} subcategory: No of items mismatch")
-                                break
-                        except Exception as ex: #Link not found
-                            print(ex)
-                            total_products,_ = parse_data.get_total_products_number(soup)
-                            if curr != math.ceil(total_products/PRODUCTS_PER_PAGE):
-                                logger.warning(f"{subcategory} subcategory: No of items mismatch")
-                            print("Next page not found. Quitting...")
-                            break
 
-                        
-                        #Child link of this element
-                        try:
-                            e = element.find_element_by_tag_name("a")
-                        except:
-                            print("Tag element not found")
-                            break
-                        
-                        url = e.get_attribute("href")
-                        
-                        if url is not None:           
-                            print(f"URL is {url}")
-                            curr += 1
-                            alpha = 1000 #Changes scroll height for all pages
-                            while alpha <= 5000:
-                                try:
-                                    actions = ActionChains(driver)
-                                    driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight-{alpha});")
-                                    time.sleep(5)
-                                    actions.move_to_element(element)
-                                    time.sleep(2)
-                                    actions.click(element).perform()
-                                    time.sleep(5)
-                                    break
-                                except Exception as ex:
-                                    print(ex)
-                                    print(f"Alpha is {alpha}. Now incrementing")
-                                    alpha += 500
-                                    time.sleep(1)
+                        if domain == "amazon.in":
+                            url = click_next_url_amazon(url, curr, soup, driver)
+                        elif domain == "flipkart.com":
+                            url = click_next_url_flipkart(url, curr, soup, driver)
 
-                            print("Went to the next URL")
-                                
-                        print("Sleeping...")
-                        time.sleep(2)
         driver.quit()
     except Exception as ex:
         print(ex)
