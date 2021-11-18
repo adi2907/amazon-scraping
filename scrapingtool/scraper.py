@@ -90,7 +90,7 @@ def scrape_product_detail(product_url,category=None,threshold_date=None, listing
     global cache_file
 
     # set default domain
-    domain = category_to_domain[category] if category is not None else 'amazon.in'
+    domain = config("DOMAIN")
     
     server_url = 'https://www.' + domain if not product_url.startswith('http') else ""
 

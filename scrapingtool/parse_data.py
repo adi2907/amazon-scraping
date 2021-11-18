@@ -200,6 +200,28 @@ def get_product_info_amazonin(soup, base_url="https://www.amazon.in", curr_seria
         
     return product_info, serial_no
 
+def get_brand_model_title_flipkart(soup, acc):
+    attribute_trs = soup.find_all("tr", class_="_1s_Smc")
+
+    acc["model"] = ""
+    for tr in attribute_trs:
+        attr = tr.find("td", class_="_1hKmbr")
+        if "Model" in attr.text:
+            acc["model"] = tr.find("li", class_="_21lJbe").text
+
+    acc["brand"] = ""
+    breadcrumb_links = soup.find_all("a", class_="_2whKao")
+    for a in breadcrumb_links:
+        href = a.get("href") or ""
+        if "~brand" in href:
+            pattern = r'.*/(.*?)~brand.*'
+            match = re.match(pattern, href)
+            if match and len(match.groups()) > 0:
+                acc["brand"] = match.groups()[0]
+
+    acc["title"] = soup.find("span", class_="B_NuCI").text
+
+
 def get_product_info_flipkart(soup, base_url="https://www.amazon.in", curr_serial_no=1):
     """Fetches the product details for all the products for a single page
     :return: product_info{}{} of product details

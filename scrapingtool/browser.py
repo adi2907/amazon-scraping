@@ -232,6 +232,44 @@ def run_subcategory(browser='Firefox'):
         print(ex)
         driver.quit()
 
+def scrape_flipkart_duplicates(product_id):
+    options = Options()
+    options.headless = True
+    driver = webdriver.Firefox(executable_path=GeckoDriverManager().install(), options=options)
+    try:
+        acc = {"related_products": set()}
+        result = do_scrape_flipkart_duplicates(product_id, driver, acc)
+        result["related_products"] = list(map(lambda pid: {"product_id": pid}, result["related_products"]))
+        driver.quit()
+        return result
+    except Exception as ex:
+        print(ex)
+        driver.quit()
+
+def do_scrape_flipkart_duplicates(product_id, driver, acc):
+    acc["related_products"].add(product_id)
+    # url = f"https://www.flipkart.com/product/p/x?pid={product_id}"
+    url = f"https://www.flipkart.com/product/p/{product_id}"
+    driver.get(url)
+    elements = driver.find_elements_by_class_name("_3F0T5D")
+    for element in elements:
+        element.click()
+
+    html = driver.page_source.encode('utf-8')
+    soup = BeautifulSoup(html, 'lxml')
+
+    if acc.get("title") is None:
+        parse_data.get_brand_model_title_flipkart(soup, acc)
+
+    variant_lis = soup.find_all("li", class_="_3V2wfe")
+    for li in variant_lis:
+        href = li.find("a")["href"]
+        variant_product_id = parse_data.get_product_id(href)
+
+        if variant_product_id not in acc["related_products"]:
+            do_scrape_flipkart_duplicates(variant_product_id, driver, acc)
+
+    return acc
 
 
 if __name__ == '__main__':

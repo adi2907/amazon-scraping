@@ -1027,7 +1027,7 @@ def index_reviews(engine, table='Reviews'):
 def update_product_duplicates(session,product_id):
     try:
         # get feature summary and update in ProductDetails table
-        data = get_duplicate_products(product_id)
+        data = get_duplicate_products(session, product_id)
         # Add all details to listing table
         listing_obj = session.query(ProductListing).filter(ProductListing.product_id==product_id).one()
         listing_obj.duplicate_set = data['parent_asin']
@@ -1065,7 +1065,30 @@ def update_duplicate_sets(session,update_all='False'):
         print("Update product id "+product_id)
         update_product_duplicates(session,product_id)
     
-def get_duplicate_products(product_id):
+def get_duplicate_products(session, product_id):
+    domain = config("DOMAIN")
+    if domain == "amazon.in":
+        return get_duplicate_products_amazon(product_id)
+    elif domain == "flipkart.com":
+        return get_duplicate_products_flipkart(session, product_id)
+    else:
+        logger.critical(f"Don't know how to get duplicate product ids for domain {domain}")
+
+def get_duplicate_products_flipkart(session, product_id):
+    import browser
+    result = browser.scrape_flipkart_duplicates(product_id)
+
+    obj = session.query(ProductDetails).filter(ProductDetails.related_products.contains(product_id)).first()
+    parent_asin = ""
+    if obj:
+        parent_asin = obj.duplicate_set
+    else:
+        parent_asin = product_id
+
+    result["parent_asin"] = parent_asin
+    return result
+
+def get_duplicate_products_amazon(product_id):
     try:    
         child_data = Catalog(marketplace=Marketplaces.IN,credentials=credentials).get_item(product_id).payload
     except SellingApiException as ex:
