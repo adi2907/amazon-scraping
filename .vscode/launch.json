@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--categories","smartphones"]
-            //"args":["--category","all","--start_date","2021-01-01","--end_date","2021-09-30","--last_review"]
+            //"args": ["--categories","smartphones"]
+            "args":["--category","all","--start_date","2021-01-01","--end_date","2021-11-10"]
             //"args":["--featurewise_review","False"]
             //"args":["--details_url","https://www.amazon.in/Samsung-Galaxy-M12-Storage-Processor/dp/B08XGDN3TZ/ref=sr_1_1?dchild=1&pd_rd_r=e2d5aff2-1185-407c-84dc-d5d19c5bcd57&pd_rd_w=CVeMT&pd_rd_wg=PQwNc&pf_rd_p=5deb767e-83fb-4ad4-a3a4-6de91c33ec6b&pf_rd_r=J4EEHAGHF131MSJPZKXS&qid=1634533826&qsid=257-7977364-1168566&refinements=p_36%3A1318505031&s=electronics&sr=1-1&sres=B08XGDN3TZ%2CB08XJCMGL7%2CB08697N43N%2CB08XJGNQS7%2CB08697N43G%2CB09GFNZT24%2CB08696XB4B%2CB09GFPVD9Y%2CB086978F2L%2CB08696W3B3%2CB09FKDH6FS%2CB09FKGDJNC%2CB08697MJDK%2CB096LS7N6Z%2CB08697WT79%2CB08696XM8J%2CB09GFLFMPS%2CB09FKBQ3JM%2CB09GFLXVH9%2CB086973W9M"]
         },

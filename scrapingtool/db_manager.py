@@ -891,14 +891,30 @@ def assign_subcategories(session, category, table='ProductDetails'):
             product_id = product_info[title]['product_id']
             if product_id is None:
                 continue
-            print(product_id, title)
+            
             obj = query_table(session, 'ProductDetails', 'one', filter_cond=({'product_id': product_id}))
+            
             if obj is not None:
                 insert_subcategory(session, obj, subcategory, subcategory_type, subcategory_list)
+            else:
+                # Check the duplicate product_id in product_listing table
+                obj = session.query(ProductListing).filter(ProductListing.product_id == product_id).first()
+                if obj is None:
+                    print ("No duplicate value for {} in Product Listing ".format(product_id))
+                    continue
+                else:
+                    duplicate_set = obj.duplicate_set
+                    # Check the product_id in ProductDetails table
+                    obj = session.query(ProductDetails).filter(ProductDetails.duplicate_set == duplicate_set).first()
+                    if obj is None:
+                        print ("No entry for {} in Product Details ".format(product_id))
+                        continue
+                    else:
+                        insert_subcategory(session, obj, subcategory, subcategory_type, subcategory_list)          
+                    
         head, name = os.path.split(filename)
         os.rename(filename, os.path.join(DUMP_DIR, f"archived_{name}"))
-
-
+    
     for category in subcategory_dict:
         queryset = session.query(ProductListing).filter(ProductListing.category == category)
         pids = dict()

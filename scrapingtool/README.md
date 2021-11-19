@@ -100,7 +100,7 @@ The complete sequence of commands for sentiment analysis is given below: (Here, 
 This will analyze reviews for the period from August 1 to November 1 for all available categories, and insert the sentiment reviews + breakdown onto the database. The corresponding tables are at *SentimentAnalysis* and *SentimentBreakdown*
 
 ```bash
-python3 scrapingtool/sentiment_analysis.py --category "all" --start_date "2020-08-01" --end_date "2020-11-01"
+python3 scrapingtool/sentiment_analysis.py --category "all" --start_date "2021-01-01" --end_date "2021-10-31"
 python3 scrapingtool/db_manager.py --insert_sentiment_breakdown --filename "data/sentiment_counts_all.pkl"
 python3 scrapingtool/db_manager.py --insert_sentiment_reviews --filename "data/sentiment_db_all.csv"
 ```
