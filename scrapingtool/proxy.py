@@ -3,6 +3,7 @@ import random
 import requests
 import itertools
 import time
+from decouple import config
 
 
 from utils import (create_logger)
@@ -12,8 +13,9 @@ logger = create_logger(__name__)
 class Proxy():
     """Our own Proxy Class 
     """
-    def __init__(self,OS='Linux', country_code='in',server_url='https://www.amazon.in', use_proxy=True):
-        self.server_url = server_url
+    def __init__(self,OS='Linux', use_proxy=True):
+        domain = config("DOMAIN")
+        self.server_url = f"https://www.{domain}"
         self.use_proxy = use_proxy
         self.proxies = {
                 'http': None,
@@ -31,7 +33,8 @@ class Proxy():
             self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:81.0) Gecko/20100101 Firefox/81.0"
         
         self.headers = dict()
-        self.headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": f"www.amazon.{country_code}", "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
+        host = f"www.{domain}"
+        self.headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": host, "Upgrade-Insecure-Requests":"1", "User-Agent": self.user_agent}
         self.headers['Sec-Fetch-Dest'] = 'document'
         self.headers['Sec-Fetch-Mode'] = 'navigate'
         self.headers['Sec-Fetch-User'] = '?1'

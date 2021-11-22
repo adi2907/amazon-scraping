@@ -10,11 +10,16 @@ from bs4 import BeautifulSoup
 from utils import create_logger
 from decouple import config
 
+import flipkart_parser
+import amazonin_parser
+
 logger = create_logger(__name__)
 
 
 def init_parser(url:str):
-    headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": f"www.amazon.in", "Upgrade-Insecure-Requests":"1", "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"}
+    domain = config("DOMAIN")
+    host = f"www.{domain}"
+    headers = {"Accept-Encoding":"gzip, deflate, br", "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Connection":"keep-alive", "DNT": "1", "Host": host, "Upgrade-Insecure-Requests":"1", "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"}
     response = requests.get(url,headers=headers,timeout=10)
     if response.status_code == 200:
         soup = BeautifulSoup(response.text,'html.parser')
@@ -344,6 +349,40 @@ def get_reviews(soup):
     results = [five_star_reviews.text.strip()] + [review.text.strip() for review in other_reviews]
     return results
 
+def get_product_data_amazon(soup):
+    pass
+
+def get_product_data_flipkart(soup):
+    pass
+
+def get_product_data_new(soup):
+    parser = None
+    domain = config("DOMAIN")
+
+    if domain == "amazon.in":
+        parser = amazonin_parser.AmazoninParser(soup)
+    elif domain == "flipkart.com":
+        parser = flipkart_parser.FlipkartParser(soup)
+    else:
+        raise Exception(f"No parser implemented for domain {domain}")
+
+    result = {}
+    result["title"] = parser.title()
+    result["byline_info"] = parser.byline_info()
+    result["product_overview"] = parser.product_overview()
+    result["features"] = parser.features()
+    result["num_reviews"] = parser.num_reviews()
+    result["answered_questions"] = parser.answered_questions()
+    result["curr_price"] = parser.curr_price()
+    result["offers"] = parser.offers()
+    result["description"] = parser.description()
+    result["product_details"] = parser.product_details()
+    result["customer_qa"] = parser.customer_qa_path()
+    result["histogram"] = parser.review_histogram()
+    result["avg_rating"] = parser.avg_rating()
+    result["featurewise_reviews"] = parser.featurewise_reviews()
+    result["reviews_url"] = parser.reviews_url()
+    return result
 
 def get_product_data(soup, html=None):
     """Scrapes the Individual product detail page for a particular product
