@@ -63,7 +63,8 @@ class Command(BaseCommand):
                 obj = Sentimentbreakdown.objects.using('scraped').get(product_id=product_id)
                 sentiments = json.loads(obj.sentiments)
             except Exception as ex:
-                print(ex+": "+product_id)
+                print(product_id)
+                print(ex)
                 sentiments = {}
 
             if duplicate_set not in dup_sets:
