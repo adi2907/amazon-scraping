@@ -2,7 +2,7 @@
 subcategory_dict = {
     'headphones': {
         'Type': {
-            'wired': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A1388921031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_feature_six_browse-bin%3A15564046031&dc&qid=1637309938&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_1',
+            'wired': {'field': 'product_title', 'predicate': lambda product_title: True if (product_title is not None and any(token in product_title.lower() for token in ['wired'])) else False},
             'wireless': 'https://www.amazon.in/s?i=electronics&bbn=1388921031&rh=n%3A1388921031%2Cp_72%3A1318478031%2Cp_n_availability%3A1318485031%2Cp_6%3AA14CZOWI0VEHLG%2Cp_n_feature_six_browse-bin%3A15564047031%7C15564048031%7C22749596031&dc&qid=1637309977&rnid=15564019031&ref=sr_nr_p_n_feature_six_browse-bin_4',
             'tws': {'field': 'product_title', 'predicate': lambda product_title: True if (product_title is not None and any(token in product_title.lower() for token in ['tws', 'true wireless', 'true-wireless', 'truly wireless', 'truly-wireless'])) else False},
         },
